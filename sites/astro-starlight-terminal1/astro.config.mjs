@@ -4,7 +4,7 @@ import starlight from '@astrojs/starlight';
 import mdx from '@astrojs/mdx';
 
 export default defineConfig({
-  site: 'https://ai.shll.in',
+  site: 'https://shll.ai',
   server: { host: '0.0.0.0' },
   vite: {
     server: {

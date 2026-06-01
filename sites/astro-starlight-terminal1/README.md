@@ -1,6 +1,6 @@
 # astro-starlight-terminal1
 
-The currently-live build of [ai.shll.in](https://ai.shll.in). Astro 6 + Starlight 0.39, terminal-themed.
+The currently-live build of [shll.ai](https://shll.ai). Astro 6 + Starlight 0.39, terminal-themed.
 
 ## Develop
 
@@ -37,7 +37,7 @@ src/
 │   └── prompt.svg       # site logo (caret > prompt)
 └── styles/terminal.css  # palette + terminal aesthetic overrides
 public/
-├── CNAME                # ai.shll.in custom domain
+├── CNAME                # shll.ai custom domain
 ├── favicon.{svg,ico}    # browser tab icon
 ├── diagrams/loop-{light,dark}.svg
 └── og-image.png
