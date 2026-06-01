@@ -5,6 +5,17 @@ import mdx from '@astrojs/mdx';
 
 export default defineConfig({
   site: 'https://shll.ai',
+  // Short, memorable per-tool URLs (shll.ai/wt) that redirect to the canonical
+  // docs page. Static <meta refresh> pages emitted at build — works on Pages.
+  redirects: {
+    '/idea': '/tools/idea/overview/',
+    '/hop': '/tools/hop/overview/',
+    '/fab-kit': '/tools/fab-kit/overview/',
+    '/wt': '/tools/wt/overview/',
+    '/run-kit': '/tools/run-kit/overview/',
+    '/tu': '/tools/tu/overview/',
+    '/shll': '/tools/shll/overview/',
+  },
   server: { host: '0.0.0.0' },
   vite: {
     server: {

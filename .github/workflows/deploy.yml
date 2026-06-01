@@ -14,7 +14,7 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
-# Path to the site that ships to ai.shll.in. Change this single value to swap
+# Path to the site that ships to shll.ai. Change this single value to swap
 # which site under sites/ is built and deployed.
 env:
   SITE_DIR: sites/astro-starlight-terminal1

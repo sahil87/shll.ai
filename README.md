@@ -8,7 +8,8 @@ This repo hosts multiple website variants under `sites/`. One is the live build;
 
 ```
 sites/
-├── astro-tailwind-terminal1/   # currently live at shll.ai
+├── astro-starlight-terminal1/  # currently live at shll.ai
+├── astro-tailwind-terminal1/   # alternate build (previously live)
 └── _playground/                # scratch space for new experiments
 ```
 
@@ -17,13 +18,13 @@ Each site is a self-contained project with its own `package.json` and dependenci
 ## Run the live site locally
 
 ```sh
-cd sites/astro-tailwind-terminal1
+cd sites/astro-starlight-terminal1
 pnpm install
 pnpm dev        # http://localhost:4321
 pnpm build      # static output → ./dist/
 ```
 
-See [`sites/astro-tailwind-terminal1/README.md`](./sites/astro-tailwind-terminal1/README.md) for site-specific details.
+See [`sites/astro-starlight-terminal1/README.md`](./sites/astro-starlight-terminal1/README.md) for site-specific details.
 
 ## Start a new experiment
 
