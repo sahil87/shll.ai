@@ -8,7 +8,7 @@ interface Props {
 }
 
 const { title, description } = Astro.props;
-const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://ai.shll.in').toString();
+const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://shll.ai').toString();
 ---
 
 <!doctype html>
@@ -31,7 +31,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://ai.shll.in'
     </script>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title} · ai.shll.in</title>
+    <title>{title} · shll.ai</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -40,11 +40,11 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://ai.shll.in'
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
-    <meta property="og:image" content="https://ai.shll.in/og-image.png" />
+    <meta property="og:image" content="https://shll.ai/og-image.png" />
     <meta property="og:image:width" content="512" />
     <meta property="og:image:height" content="512" />
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:image" content="https://ai.shll.in/og-image.png" />
+    <meta name="twitter:image" content="https://shll.ai/og-image.png" />
   </head>
   <body>
     <TopBar />

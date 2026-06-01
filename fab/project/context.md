@@ -1,6 +1,6 @@
 # Project Context
 
-Landing page for the **shll AI coding toolkit** at [ai.shll.in](https://ai.shll.in). The site is a front door into seven Go CLIs: `idea`, `hop`, `fab-kit`, `wt`, `run-kit`, `tu`, `shll`.
+Landing page for the **shll AI coding toolkit** at [shll.ai](https://shll.ai). The site is a front door into seven Go CLIs: `idea`, `hop`, `fab-kit`, `wt`, `run-kit`, `tu`, `shll`.
 
 This repo is in an active **design-iteration phase** — content, tech stack, and visual theme are all in flux. To enable parallel exploration without churning the live site, the repo hosts multiple self-contained website variants under `sites/`.
 
@@ -8,7 +8,7 @@ This repo is in an active **design-iteration phase** — content, tech stack, an
 
 ```
 sites/
-├── astro-tailwind-terminal1/   # currently LIVE at ai.shll.in (Astro 6 + Tailwind v4, terminal theme)
+├── astro-tailwind-terminal1/   # currently LIVE at shll.ai (Astro 6 + Tailwind v4, terminal theme)
 └── _playground/                # scratch space — experiments (no deploy)
 .github/workflows/deploy.yml    # SITE_DIR env var selects which site ships
 fab/                            # project meta (config, constitution, this file)
@@ -21,11 +21,11 @@ Per-site implementation details (stack choices, file conventions, styling system
 
 GitHub Pages via `.github/workflows/deploy.yml` on push to `main`. The workflow's `SITE_DIR` env var picks which subdirectory under `sites/` is built and deployed — swap the live site by editing that one line.
 
-`dist/` is gitignored at any depth; CI is the single source of truth for what's live (Constitution VI). Custom domain `ai.shll.in` set via `public/CNAME` inside the live site's directory.
+`dist/` is gitignored at any depth; CI is the single source of truth for what's live (Constitution VI). Custom domain `shll.ai` set via `public/CNAME` inside the live site's directory.
 
 ## What this project is
 
-- **A repo of website experiments** competing to be the front door to ai.shll.in.
+- **A repo of website experiments** competing to be the front door to shll.ai.
 - **Static-first** — every site SHALL produce fully static output. No SSR adapters, no server endpoints, no runtime data fetching for primary content.
 
 ## What this project is NOT

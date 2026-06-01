@@ -2,7 +2,7 @@
 
 ## Overview
 
-ai.shll.in is a static Astro 6 site. There is no UI framework on top of Astro — no Starlight, no MDX. The chrome (topbar, sidebar, theme toggle, TOC) is hand-rolled in `src/components/` and `src/layouts/`. Content lives in two places: tool pages as `.md` files in a single `tools` content collection (`src/content/tools/`), and everything else (home, `/tools/` index) as `.astro` pages under `src/pages/`.
+shll.ai is a static Astro 6 site. There is no UI framework on top of Astro — no Starlight, no MDX. The chrome (topbar, sidebar, theme toggle, TOC) is hand-rolled in `src/components/` and `src/layouts/`. Content lives in two places: tool pages as `.md` files in a single `tools` content collection (`src/content/tools/`), and everything else (home, `/tools/` index) as `.astro` pages under `src/pages/`.
 
 The site is a "directory of tools" — the home page presents the loop narrative and renders the seven tools as a tree-list (`├── name  description`) via the `<ToolRow>` component. Each tool gets a short page under `/tools/` that links out to its full README on GitHub. The seven tool slugs and one-line blurbs are centralized in `src/data/tools.ts` so the sidebar and the home-page tree-list stay in sync from a single source.
 
@@ -49,7 +49,7 @@ src/
 │   ├── BaseLayout.astro        # html + head + theme-init + TopBar + slot
 │   └── DocLayout.astro         # BaseLayout + Sidebar + main + TableOfContents
 ├── components/
-│   ├── TopBar.astro            # [ai.shll.in] brand + ThemeToggle chip + social links
+│   ├── TopBar.astro            # [shll.ai] brand + ThemeToggle chip + social links
 │   ├── Sidebar.astro           # # Start here / # Tools groups, active-state from Astro.url.pathname
 │   ├── TableOfContents.astro   # right-rail H2 list from a page's headings
 │   ├── ThemeToggle.astro       # chip-styled button cycling auto → light → dark, persists to localStorage

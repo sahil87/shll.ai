@@ -1,6 +1,6 @@
-# ai.shll.in
+# shll.ai
 
-Source for **[ai.shll.in](https://ai.shll.in)** — the landing page for the [@sahil87](https://github.com/sahil87) AI coding toolkit (`idea`, `hop`, `fab-kit`, `wt`, `run-kit`, `tu`, `shll`).
+Source for **[shll.ai](https://shll.ai)** — the landing page for the [@sahil87](https://github.com/sahil87) AI coding toolkit (`idea`, `hop`, `fab-kit`, `wt`, `run-kit`, `tu`, `shll`).
 
 ## Layout
 
@@ -8,7 +8,7 @@ This repo hosts multiple website variants under `sites/`. One is the live build;
 
 ```
 sites/
-├── astro-tailwind-terminal1/   # currently live at ai.shll.in
+├── astro-tailwind-terminal1/   # currently live at shll.ai
 └── _playground/                # scratch space for new experiments
 ```
 

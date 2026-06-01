@@ -1,4 +1,4 @@
-# ai.shll.in Constitution
+# shll.ai Constitution
 
 ## Core Principles
 
@@ -9,7 +9,7 @@ Every site under `sites/` MUST build to fully static output — no SSR adapters,
 Each website variant lives under `sites/<name>/` and owns its own stack, dependencies, and conventions. Sites MUST NOT share `node_modules`, lockfiles, or configuration at the repo root. Cross-site sharing (shared components, content, assets) MUST be explicit and justified. Rationale: this repo's purpose is parallel exploration of website designs — isolation lets experiments fail freely without polluting the live build.
 
 ### III. One Live Site at a Time
-The live ai.shll.in build is selected by a single `SITE_DIR` value in `.github/workflows/deploy.yml`. Swapping which site is live SHALL be a one-line PR. Experiments under `sites/_playground/` MUST NOT be deployed. Rationale: a single, explicit source of truth for "what is live" — no ambiguity, no symlink games.
+The live shll.ai build is selected by a single `SITE_DIR` value in `.github/workflows/deploy.yml`. Swapping which site is live SHALL be a one-line PR. Experiments under `sites/_playground/` MUST NOT be deployed. Rationale: a single, explicit source of truth for "what is live" — no ambiguity, no symlink games.
 
 ### IV. Deploy via CI, Never Manually
 Deployments to GitHub Pages MUST go through the `.github/workflows/` pipeline on push to `main`. `dist/` directories at any depth SHALL NOT be committed (they are gitignored). Rationale: manual deploys diverge from source; CI is the single source of truth for what is live.

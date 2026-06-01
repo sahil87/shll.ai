@@ -1,6 +1,6 @@
 # _playground
 
-Scratch space for website experiments — alternate frameworks, themes, or content shapes for [ai.shll.in](https://ai.shll.in).
+Scratch space for website experiments — alternate frameworks, themes, or content shapes for [shll.ai](https://shll.ai).
 
 Each experiment is a self-contained subdirectory with its own `package.json` and dependencies. No experiment here is deployed; the live site is built from a sibling `sites/<name>/` directory chosen by `.github/workflows/deploy.yml`.
 

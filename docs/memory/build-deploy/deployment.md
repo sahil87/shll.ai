@@ -2,7 +2,7 @@
 
 ## Overview
 
-The site deploys to GitHub Pages via a single workflow at `.github/workflows/deploy.yml`. Every push to `main` triggers a build-and-deploy pipeline. The custom domain `ai.shll.in` is configured via `public/CNAME`, which Astro copies into the output `dist/` as-is.
+The site deploys to GitHub Pages via a single workflow at `.github/workflows/deploy.yml`. Every push to `main` triggers a build-and-deploy pipeline. The custom domain `shll.ai` is configured via `public/CNAME`, which Astro copies into the output `dist/` as-is.
 
 There is no preview/staging environment. There is no manual deploy path — `dist/` is gitignored and never committed.
 
@@ -14,7 +14,7 @@ There is no preview/staging environment. There is no manual deploy path — `dis
 - Node version MUST be 22 (matching `package.json` engines `>=22.12.0`).
 - The workflow MUST have two jobs: `build` (uploads pages artifact) and `deploy` (uses `actions/deploy-pages@v4`). The split exists so artifact upload completes before deploy permissions activate.
 - The `pages` concurrency group MUST have `cancel-in-progress: false` — letting in-flight deploys complete prevents partial state.
-- `public/CNAME` MUST contain `ai.shll.in` (no protocol, no path). GitHub Pages reads this to configure the custom domain.
+- `public/CNAME` MUST contain `shll.ai` (no protocol, no path). GitHub Pages reads this to configure the custom domain.
 
 ## Permissions
 

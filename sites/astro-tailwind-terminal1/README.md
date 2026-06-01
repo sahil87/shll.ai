@@ -1,6 +1,6 @@
 # astro-tailwind-terminal1
 
-The currently-live build of [ai.shll.in](https://ai.shll.in). Astro 6 + Tailwind v4, terminal-themed.
+The currently-live build of [shll.ai](https://shll.ai). Astro 6 + Tailwind v4, terminal-themed.
 
 ## Develop
 
