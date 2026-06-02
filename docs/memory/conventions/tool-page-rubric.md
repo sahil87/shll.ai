@@ -1,5 +1,7 @@
 # Tool Page Rubric
 
+> **Live-site mismatch — read first.** The body of this rubric below describes the **non-live tailwind site** (`sites/astro-tailwind-terminal1`): single-page tool entries at `src/content/tools/{name}.md`, frontmatter validated by the `tools` zod schema in `src/content.config.ts`, and sidebar coupling via `src/data/tools.ts`. **That site is no longer live.** The live site (per `SITE_DIR` in `.github/workflows/deploy.yml`, swap `fbb046f`, 2026-05-31) is **Starlight** (`sites/astro-starlight-terminal1`): tools are **multi-page** (`src/content/docs/tools/<tool>/{overview,install,commands,workflows}.{md,mdx}`), the sidebar is **hardcoded in `astro.config.mjs`** (no `src/data/`). Fully reconciling this rubric's body to Starlight is a separate concern (the rubric predates the swap); this file currently carries only the [Command reference exception](#generated-command-reference-exception) below as a Starlight-aware addition.
+
 ## Overview
 
 Every tool documented at `src/content/tools/{name}.md` follows the same shape. The rubric is short on purpose — these pages are "directory entries" pointing to each tool's full README on GitHub, not full docs.
@@ -18,10 +20,20 @@ Every tool page MUST contain the following sections, in order:
 
 Tool pages SHALL NOT contain:
 
-- Long-form command reference (every flag, every subcommand)
+- Long-form command reference (every flag, every subcommand) — **except** the *generated* Command reference described in [the exception below](#generated-command-reference-exception). This rule still stands for hand-written content; the exception is narrowly for binary-generated reference.
 - Architecture diagrams (those belong in the tool's own README)
 - Changelog or version history
 - Screenshots (the toolkit is CLI-first; if a tool needs a screenshot, link to the GitHub README)
+
+## Generated Command reference (exception)
+
+The one permitted exception to "SHALL NOT contain long-form command reference" is a **generated** CLI command reference, sourced from `help/<slug>.json` (see [help-collection](./help-collection.md)). On the **live Starlight site** it renders as each tool's dedicated **`commands` page** (`sites/astro-starlight-terminal1/src/content/docs/tools/<tool>/commands.{md,mdx}`), filling Starlight's existing "commands … coming soon" slot.
+
+This is permitted precisely because it is **generated, not hand-written** — single-sourced from the binary's own `-h` output, so it cannot drift from the tool the way a hand-copied reference would. The anti-drift intent of the "SHALL NOT" rule is preserved: hand-maintained long-form reference is still forbidden; only binary-generated, single-sourced reference is allowed.
+
+**Placement decision.** The reference renders as a **dedicated `commands` page per tool** on the live Starlight site (multi-page docs model), chosen over an expandable `<details>` block on the `overview` page — the per-page model is the idiomatic Starlight shape and fills the existing empty `commands` slot.
+
+> The loader and rendering UI that consume `help/<slug>.json` are a **follow-up change**; this rubric only records that the generated `commands` page is the permitted, justified exception and where it lands.
 
 ## Bullet Style
 
@@ -49,3 +61,4 @@ Every new tool page MUST also have a corresponding entry in `src/data/tools.ts` 
 |------|--------|
 | 2026-05-17 | Generated from code analysis |
 | 2026-05-17 | Starlight removal (branch `starlight-removal`): tool pages moved from `src/content/docs/tools/` to `src/content/tools/`. Frontmatter now validates against the `tools` zod schema in `src/content.config.ts` (was `docsSchema()`). Sidebar coupling now via `src/data/tools.ts` instead of `astro.config.mjs`. |
+| 2026-06-02 | Change `xiis`: added the generated Command-reference exception (renders as the per-tool `commands` page on the live Starlight site, sourced from `help/<slug>.json`); preserved the "SHALL NOT contain long-form command reference" rule with this single exception; added a live-site mismatch note flagging that this rubric's body describes the now-non-live tailwind site while the live site is Starlight. Full rubric-to-Starlight reconciliation deferred. |
