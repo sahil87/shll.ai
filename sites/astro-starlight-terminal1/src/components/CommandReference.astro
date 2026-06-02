@@ -33,12 +33,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { HelpDocSchema, type Node, type HelpDoc } from '../lib/schemas.ts';
-import CommandReference from './CommandReference.astro';
 
 interface Props {
   /** Tool slug — names the help file at `<repo-root>/help/<tool>.json`. */
   tool?: string;
-  /** Internal: a single node to render recursively (used by self-recursion). */
+  /** Internal: a single node to render recursively (used by `Astro.self`). */
   node?: Node;
 }
 
@@ -75,15 +74,23 @@ function findRepoRoot(startDir: string): string {
 }
 
 // Two modes in one component:
-//   - `node` passed → render that subtree (recursive self-import below).
+//   - `node` passed → render that subtree (recursive `Astro.self` below).
 //   - `tool` passed → top-level entry: read + validate the help doc, then
-//     render the root and delegate each child to `<CommandReference node={...} />`.
+//     render the root and delegate each child to `<Astro.self node={...} />`.
 let doc: HelpDoc | null = null;
 let missing = false;
 let githubUrl = '';
 
 if (!node) {
-  const slug = tool ?? '';
+  // Top-level mode requires a `tool` slug. A missing slug is a page author
+  // error (the prop was forgotten) — fail the build loudly rather than silently
+  // rendering the placeholder against a broken GitHub URL (`sahil87/`).
+  if (!tool) {
+    throw new Error(
+      'CommandReference: a `tool` slug is required in top-level mode (no `node` prop was given).',
+    );
+  }
+  const slug = tool;
   githubUrl = `https://github.com/sahil87/${slug}`;
   const repoRoot = findRepoRoot(path.dirname(fileURLToPath(import.meta.url)));
   const helpPath = path.join(repoRoot, 'help', `${slug}.json`);
@@ -129,7 +136,7 @@ if (!node) {
       {node.commands.length > 0 && (
         <div class="cmd-children">
           {node.commands.map((child) => (
-            <CommandReference node={child} />
+            <Astro.self node={child} />
           ))}
         </div>
       )}
@@ -149,7 +156,7 @@ if (!node) {
       {doc!.root.commands.length > 0 && (
         <div class="cmd-children cmd-root-children">
           {doc!.root.commands.map((child) => (
-            <CommandReference node={child} />
+            <Astro.self node={child} />
           ))}
         </div>
       )}
