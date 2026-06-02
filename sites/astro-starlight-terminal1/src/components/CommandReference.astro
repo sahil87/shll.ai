@@ -1,0 +1,289 @@
+---
+/**
+ * CommandReference — renders a tool's CLI command reference at BUILD TIME.
+ *
+ * Reads `<repo-root>/help/<tool>.json`, validates it against the shared
+ * `HelpDocSchema` contract, and renders the recursive command tree as a
+ * terminal-styled, collapsible reference. All work happens in this frontmatter,
+ * which runs during `astro build` — no client-side fetch (Constitution I).
+ *
+ * The data lives at the repo root (`help/*.json`), OUTSIDE this site directory —
+ * the documented cross-boundary read (see docs/memory/conventions/help-collection.md).
+ * The path is anchored on the component module via `import.meta.url`, NOT on
+ * `process.cwd()` (which varies by invocation) and NOT via `import.meta.glob`
+ * (Vite's project-root `fs.allow` blocks files outside the site dir).
+ *
+ * Anchoring detail: a FIXED relative depth (e.g. `../../../../help`) does NOT
+ * survive `astro build`, because Vite bundles this frontmatter into a chunk at
+ * an unstable depth (e.g. `dist/.prerender/chunks/`), so the `..` count from the
+ * source file is wrong at build time. Instead we ascend from `import.meta.url`
+ * until we find the directory that CONTAINS a `help/` folder — the repo root.
+ * This is robust to both dev (source location) and build (bundled location) and
+ * to future changes in Astro's output layout, while still anchoring on the
+ * module URL rather than the working directory.
+ *
+ * Failure modes are deliberately distinct:
+ *   - MISSING file (ENOENT) → neutral placeholder, build SUCCEEDS (producers
+ *     land over time; an absent file is an expected interim state).
+ *   - PRESENT but schema-invalid → the validation error propagates (wrapped with
+ *     the filename) so `astro build` FAILS loudly (a committed defect must not
+ *     deploy). Malformed JSON fails the build the same way.
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { HelpDocSchema, type Node, type HelpDoc } from '../lib/schemas.ts';
+
+interface Props {
+  /** Tool slug — names the help file at `<repo-root>/help/<tool>.json`. */
+  tool?: string;
+  /** Internal: a single node to render recursively (used by `Astro.self`). */
+  node?: Node;
+}
+
+const { tool, node } = Astro.props as Props;
+
+/**
+ * Resolve the repo root by ascending from a starting directory until a `help/`
+ * directory is found. Anchored on the module URL (passed by the caller), not on
+ * `process.cwd()`. Throws if no `help/` directory exists in any ancestor — which
+ * would mean the cross-boundary contract is broken, a build-stopping condition.
+ *
+ * (The standalone `scripts/validate-help.mjs` uses a fixed-depth resolve instead,
+ * because it runs in plain Node where the module path is stable; this component
+ * runs through Vite, which relocates the bundled chunk to an unstable depth — so
+ * a fixed `..` count would be wrong at build time. Hence the marker search here.)
+ */
+// Max ancestors to climb while searching for the repo-root `help/` dir. The real
+// ascent is ~5 hops (from dist/.prerender/chunks/); 12 is generous headroom.
+const MAX_ASCENT = 12;
+function findRepoRoot(startDir: string): string {
+  let dir = startDir;
+  for (let i = 0; i < MAX_ASCENT; i += 1) {
+    const candidate = path.join(dir, 'help');
+    if (fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()) {
+      return dir;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break; // reached filesystem root
+    dir = parent;
+  }
+  throw new Error(
+    `CommandReference: could not locate a repo-root 'help/' directory by ascending from ${startDir}`,
+  );
+}
+
+// Two modes in one component:
+//   - `node` passed → render that subtree (recursive `Astro.self` below).
+//   - `tool` passed → top-level entry: read + validate the help doc, then
+//     render the root and delegate each child to `<Astro.self node={...} />`.
+let doc: HelpDoc | null = null;
+let missing = false;
+let githubUrl = '';
+
+if (!node) {
+  // Top-level mode requires a `tool` slug. A missing slug is a page author
+  // error (the prop was forgotten) — fail the build loudly rather than silently
+  // rendering the placeholder against a broken GitHub URL (`sahil87/`).
+  if (!tool) {
+    throw new Error(
+      'CommandReference: a `tool` slug is required in top-level mode (no `node` prop was given).',
+    );
+  }
+  const slug = tool;
+  githubUrl = `https://github.com/sahil87/${slug}`;
+  const repoRoot = findRepoRoot(path.dirname(fileURLToPath(import.meta.url)));
+  const helpPath = path.join(repoRoot, 'help', `${slug}.json`);
+
+  let raw: string;
+  try {
+    raw = fs.readFileSync(helpPath, 'utf8');
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      missing = true;
+    } else {
+      throw err;
+    }
+  }
+
+  if (!missing) {
+    const parsed: unknown = JSON.parse(raw!);
+    try {
+      doc = HelpDocSchema.parse(parsed);
+    } catch (err) {
+      // A present-but-invalid file is a committed defect that must not deploy:
+      // let it fail the build. Wrap with the filename so the error is
+      // actionable (ENOENT was already handled above — only validation /
+      // malformed-JSON errors reach here).
+      const detail = err instanceof Error ? err.message : String(err);
+      throw new Error(
+        `Invalid help document at ${helpPath} — does not match HelpDocSchema:\n${detail}`,
+      );
+    }
+  }
+}
+---
+
+{
+  node ? (
+    // ── Recursive subcommand entry ──────────────────────────────────────
+    <details class="cmd-node">
+      <summary class="cmd-summary">
+        <span class="cmd-path">{node.path}</span>
+        <span class="cmd-short">{node.short}</span>
+      </summary>
+      <pre class="cmd-text">{node.text}</pre>
+      {node.commands.length > 0 && (
+        <div class="cmd-children">
+          {node.commands.map((child) => (
+            <Astro.self node={child} />
+          ))}
+        </div>
+      )}
+    </details>
+  ) : missing ? (
+    // ── Missing data → neutral placeholder (build succeeds) ─────────────
+    <div class="cmd-reference not-content cmd-placeholder">
+      <p>
+        Command reference not generated yet — see the{' '}
+        <a href={githubUrl}>GitHub README</a>.
+      </p>
+    </div>
+  ) : (
+    // ── Present data → render the tree from doc.root ────────────────────
+    <div class="cmd-reference not-content">
+      <pre class="cmd-text cmd-root-text">{doc!.root.text}</pre>
+      {doc!.root.commands.length > 0 && (
+        <div class="cmd-children cmd-root-children">
+          {doc!.root.commands.map((child) => (
+            <Astro.self node={child} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+<style>
+  /* Terminal-styled command reference. Colors come from the site's --c-* tokens
+     (src/styles/terminal.css), which flip with Starlight's data-theme, so dark-
+     mode parity is automatic — no per-component theme script. */
+
+  .cmd-reference {
+    font-family: var(--sl-font-mono);
+    font-size: 0.9rem;
+    color: var(--c-fg);
+    margin: 1.25rem 0;
+  }
+
+  .cmd-placeholder p {
+    color: var(--c-fg-dim);
+    border: 1px dashed var(--c-border);
+    border-radius: 4px;
+    padding: 0.75rem 1rem;
+    margin: 0;
+  }
+  .cmd-placeholder a {
+    color: var(--c-accent);
+    border-bottom: 1px dotted var(--c-accent);
+    text-decoration: none;
+  }
+  .cmd-placeholder a:hover,
+  .cmd-placeholder a:focus-visible {
+    border-bottom-style: solid;
+    background: var(--c-surface-2);
+    outline: none;
+  }
+
+  /* Raw -h output: preserve every byte (whitespace, alignment, newlines). */
+  .cmd-text {
+    white-space: pre;
+    overflow-x: auto;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 4px;
+    padding: 0.75rem 1rem;
+    margin: 0;
+    color: var(--c-fg);
+    line-height: 1.5;
+  }
+
+  .cmd-root-text {
+    margin-bottom: 1rem;
+  }
+
+  /* Nested subcommands indent under their parent so tree depth reads visually. */
+  .cmd-children {
+    margin-top: 0.5rem;
+  }
+  .cmd-root-children > .cmd-node + .cmd-node {
+    margin-top: 0.375rem;
+  }
+  /* A nested level indents and gets a guide rule. */
+  .cmd-node .cmd-children {
+    margin-inline-start: 1rem;
+    padding-inline-start: 0.75rem;
+    border-inline-start: 1px solid var(--c-border);
+  }
+
+  .cmd-node {
+    border: 1px solid var(--c-border);
+    border-radius: 4px;
+    background: var(--c-surface);
+    overflow: hidden;
+  }
+
+  .cmd-summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem 0.75rem;
+    color: var(--c-fg);
+  }
+  /* Replace the default disclosure triangle with a shell-style +/- marker. */
+  .cmd-summary::-webkit-details-marker {
+    display: none;
+  }
+  .cmd-summary::before {
+    content: '+';
+    color: var(--c-fg-faint);
+    font-weight: 600;
+    width: 1ch;
+    flex: none;
+  }
+  .cmd-node[open] > .cmd-summary::before {
+    content: '-';
+  }
+  .cmd-summary:hover {
+    background: var(--c-surface-2);
+  }
+  /* Visible focus state for keyboard users (Constitution Accessibility). */
+  .cmd-summary:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: -2px;
+  }
+
+  .cmd-path {
+    color: var(--c-accent);
+    font-weight: 600;
+  }
+  .cmd-short {
+    color: var(--c-fg-dim);
+  }
+
+  /* The text block inside an expanded node sits flush below the summary. */
+  .cmd-node > .cmd-text {
+    border: 0;
+    border-top: 1px solid var(--c-border);
+    border-radius: 0;
+    background: var(--c-bg);
+  }
+
+  .cmd-node ::selection {
+    background: var(--c-fg);
+    color: var(--c-bg);
+  }
+</style>
