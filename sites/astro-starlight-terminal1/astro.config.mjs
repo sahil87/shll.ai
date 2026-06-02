@@ -88,7 +88,10 @@ export default defineConfig({
             {
               label: 'hop',
               collapsed: true,
-              items: [{ label: 'Overview', slug: 'tools/hop/overview' }],
+              items: [
+                { label: 'Overview', slug: 'tools/hop/overview' },
+                { label: 'Commands', slug: 'tools/hop/commands' },
+              ],
             },
             {
               label: 'fab-kit',
@@ -103,22 +106,34 @@ export default defineConfig({
             {
               label: 'wt',
               collapsed: true,
-              items: [{ label: 'Overview', slug: 'tools/wt/overview' }],
+              items: [
+                { label: 'Overview', slug: 'tools/wt/overview' },
+                { label: 'Commands', slug: 'tools/wt/commands' },
+              ],
             },
             {
               label: 'run-kit',
               collapsed: true,
-              items: [{ label: 'Overview', slug: 'tools/run-kit/overview' }],
+              items: [
+                { label: 'Overview', slug: 'tools/run-kit/overview' },
+                { label: 'Commands', slug: 'tools/run-kit/commands' },
+              ],
             },
             {
               label: 'tu',
               collapsed: true,
-              items: [{ label: 'Overview', slug: 'tools/tu/overview' }],
+              items: [
+                { label: 'Overview', slug: 'tools/tu/overview' },
+                { label: 'Commands', slug: 'tools/tu/commands' },
+              ],
             },
             {
               label: 'shll',
               collapsed: true,
-              items: [{ label: 'Overview', slug: 'tools/shll/overview' }],
+              items: [
+                { label: 'Overview', slug: 'tools/shll/overview' },
+                { label: 'Commands', slug: 'tools/shll/commands' },
+              ],
             },
           ],
         },
