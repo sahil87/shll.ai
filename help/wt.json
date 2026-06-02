@@ -1,0 +1,71 @@
+{
+  "tool": "wt",
+  "version": "1.4.2",
+  "captured_at": "2026-06-02T00:00:00Z",
+  "schema_version": 1,
+  "root": {
+    "name": "wt",
+    "path": "wt",
+    "short": "Git worktree management — create, list, open, delete worktrees.",
+    "usage": "wt [command]",
+    "text": "Git worktree management — create, list, open, delete worktrees.\n\nShell wrapper (recommended):\n  To enable the \"Open here\" menu option (cd into a worktree in the current\n  shell), add this to your shell profile (~/.bashrc or ~/.zshrc):\n\n    eval \"$(wt shell-init)\"\n\nUsage:\n  wt [command]\n\nAvailable Commands:\n  create      Create a git worktree\n  delete      Delete a git worktree\n  init        Run worktree init script\n  list        List all git worktrees\n  open        Open a directory or worktree in an application\n  shell-init  Output shell wrapper function for eval\n  update      self-update the wt binary via Homebrew\n\nFlags:\n  -h, --help      help for wt\n  -v, --version   version for wt\n\nUse \"wt [command] --help\" for more information about a command.",
+    "commands": [
+      {
+        "name": "create",
+        "path": "wt create",
+        "short": "Create a git worktree",
+        "usage": "wt create [branch] [flags]",
+        "text": "Create a git worktree for parallel development.\n\nWhen BRANCH is omitted, creates an exploratory worktree with a random name.\nWhen BRANCH is provided, checks out that branch (fetching from remote if needed)\nor creates a new branch.\n\nUsage:\n  wt create [branch] [flags]\n\nFlags:\n      --base string            Git ref (branch, tag, SHA) to use as start-point for new branch\n  -h, --help                   help for create\n      --non-interactive        No prompts, porcelain output\n      --reuse                  Reuse existing worktree if name collides (requires --worktree-name)\n      --worktree-init string   Run worktree init script: true (default) or false\n      --worktree-name string   Set worktree name (skips name prompt)\n      --worktree-open string   Open in app after creation, or 'skip'",
+        "commands": []
+      },
+      {
+        "name": "delete",
+        "path": "wt delete",
+        "short": "Delete a git worktree",
+        "usage": "wt delete [worktree-names...] [flags]",
+        "text": "Delete one or more git worktrees with optional branch cleanup.\n\nPositional arguments are interpreted as worktree names to delete.\nResolution order: --delete-all, positional args, --worktree-name (deprecated), current worktree, interactive selection.\n\nUsage:\n  wt delete [worktree-names...] [flags]\n\nFlags:\n      --delete-all             Delete all worktrees\n      --delete-branch string   Delete associated branch: true, false, or auto (default: auto — deletes only when branch matches worktree name)\n      --delete-remote string   Delete remote branch: true (default) or false\n  -h, --help                   help for delete\n      --non-interactive        No prompts, use defaults\n  -s, --stash                  Stash uncommitted changes before deleting",
+        "commands": []
+      },
+      {
+        "name": "init",
+        "path": "wt init",
+        "short": "Run worktree init script",
+        "usage": "wt init [flags]",
+        "text": "Run the worktree init script for the current repository.\nIf the init script doesn't exist, exits with guidance.\n\nUsage:\n  wt init [flags]\n\nFlags:\n  -h, --help   help for init",
+        "commands": []
+      },
+      {
+        "name": "list",
+        "path": "wt list",
+        "short": "List all git worktrees",
+        "usage": "wt list [flags]",
+        "text": "List all git worktrees for the current repository.\n\nThe current worktree is marked with a green asterisk (*).\n\nBy default, output shows Name, Branch, and Path only — no per-worktree git\ninvocations occur, so the command is O(1) regardless of worktree count. Pass\n--status to enable dirty/unpushed enrichment; this is the slower mode because\nit forks 2 git subprocesses per worktree (parallelized).\n\nUsage:\n  wt list [flags]\n\nFlags:\n  -h, --help              help for list\n      --json              Output worktree data as a JSON array\n      --non-interactive   Use stable (name) default ordering for scripts\n      --path string       Output just the absolute path for a named worktree\n      --sort string       Order non-main worktrees by: recent, name, or branch\n      --status            Show dirty/unpushed status for each worktree (slower)",
+        "commands": []
+      },
+      {
+        "name": "open",
+        "path": "wt open",
+        "short": "Open a directory or worktree in an application",
+        "usage": "wt open [name|path] [flags]",
+        "text": "Open a directory in a detected application (editor, terminal, file manager).\n\nWhen called without arguments from a worktree, opens the current worktree.\nWhen called without arguments from the main repo, shows a worktree-selection menu.\nWhen called without arguments from a non-git directory, opens the current working directory.\n\nPath arguments are accepted regardless of git context. Worktree-name resolution\nrequires a git repository.\n\nUsage:\n  wt open [name|path] [flags]\n\nFlags:\n      --app string   Open in specified app, skipping the menu\n  -h, --help         help for open",
+        "commands": []
+      },
+      {
+        "name": "shell-init",
+        "path": "wt shell-init",
+        "short": "Output shell wrapper function for eval",
+        "usage": "wt shell-init [shell] [flags]",
+        "text": "Output a shell wrapper function suitable for eval in your shell profile.\n\nUsage:\n  eval \"$(wt shell-init)\"        # infer shell from $SHELL\n  eval \"$(wt shell-init zsh)\"    # explicit shell name\n\nAdd the above line to your ~/.bashrc or ~/.zshrc to enable the \"Open here\"\nmenu option, which changes the current shell's working directory to the\nselected worktree.\n\nUsage:\n  wt shell-init [shell] [flags]\n\nFlags:\n  -h, --help   help for shell-init",
+        "commands": []
+      },
+      {
+        "name": "update",
+        "path": "wt update",
+        "short": "self-update the wt binary via Homebrew",
+        "usage": "wt update [flags]",
+        "text": "self-update the wt binary via Homebrew\n\nUsage:\n  wt update [flags]\n\nFlags:\n  -h, --help                           help for update\n      --skip-brew-update brew update   skip the internal brew update tap-metadata refresh (version check and upgrade still run)",
+        "commands": []
+      }
+    ]
+  }
+}
