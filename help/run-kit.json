@@ -1,0 +1,128 @@
+{
+  "tool": "rk",
+  "version": "v2.1.9",
+  "captured_at": "2026-06-02T19:34:54Z",
+  "schema_version": 1,
+  "root": {
+    "name": "rk",
+    "path": "rk",
+    "short": "rk — tmux session manager with web UI",
+    "usage": "rk",
+    "text": "Usage:\n  rk\n  rk [command]\n\nAvailable Commands:\n  completion  Generate the autocompletion script for the specified shell\n  context     Show agent-optimized environment info\n  daemon      Manage the background rk daemon (tmux-managed rk serve)\n  doctor      Check runtime dependencies\n  help        Help about any command\n  init-conf   Scaffold default tmux.conf and tmux.d/ drop-in directory to ~/.rk/\n  reaper      Reap leaked test tmux servers and stale sockets by prefix\n  riff        Create a worktree, tmux window, and Claude Code session\n  serve       Start the HTTP server (foreground)\n  shell-init  emit shell integration (completion) for zsh or bash\n  status      Show tmux session summary\n  update      Update rk to the latest version\n\nUse \"rk [command] --help\" for more information about a command.\n",
+    "commands": [
+      {
+        "name": "context",
+        "path": "rk context",
+        "short": "Show agent-optimized environment info",
+        "usage": "rk context",
+        "text": "Usage:\n  rk context\n",
+        "commands": []
+      },
+      {
+        "name": "daemon",
+        "path": "rk daemon",
+        "short": "Manage the background rk daemon (tmux-managed rk serve)",
+        "usage": "rk daemon",
+        "text": "Usage:\n  rk daemon [command]\n\nAvailable Commands:\n  restart     Restart the rk daemon\n  start       Start the rk daemon\n  status      Show rk daemon state and current port owner\n  stop        Stop the rk daemon\n\nUse \"rk daemon [command] --help\" for more information about a command.\n",
+        "commands": [
+          {
+            "name": "restart",
+            "path": "rk daemon restart",
+            "short": "Restart the rk daemon",
+            "usage": "rk daemon restart [flags]",
+            "text": "Usage:\n  rk daemon restart [flags]\n\nFlags:\n  -f, --force   SIGTERM a non-daemon port holder between stop and start\n",
+            "commands": []
+          },
+          {
+            "name": "start",
+            "path": "rk daemon start",
+            "short": "Start the rk daemon",
+            "usage": "rk daemon start [flags]",
+            "text": "Usage:\n  rk daemon start [flags]\n\nFlags:\n  -f, --force   SIGTERM a non-daemon port owner before starting\n",
+            "commands": []
+          },
+          {
+            "name": "status",
+            "path": "rk daemon status",
+            "short": "Show rk daemon state and current port owner",
+            "usage": "rk daemon status [flags]",
+            "text": "Usage:\n  rk daemon status [flags]\n\nFlags:\n      --json   Emit a machine-readable JSON object\n",
+            "commands": []
+          },
+          {
+            "name": "stop",
+            "path": "rk daemon stop",
+            "short": "Stop the rk daemon",
+            "usage": "rk daemon stop [flags]",
+            "text": "Usage:\n  rk daemon stop [flags]\n\nFlags:\n  -f, --force   SIGTERM any non-daemon port holder after stopping\n",
+            "commands": []
+          }
+        ]
+      },
+      {
+        "name": "doctor",
+        "path": "rk doctor",
+        "short": "Check runtime dependencies",
+        "usage": "rk doctor",
+        "text": "Usage:\n  rk doctor\n",
+        "commands": []
+      },
+      {
+        "name": "init-conf",
+        "path": "rk init-conf",
+        "short": "Scaffold default tmux.conf and tmux.d/ drop-in directory to ~/.rk/",
+        "usage": "rk init-conf [flags]",
+        "text": "Usage:\n  rk init-conf [flags]\n\nFlags:\n      --force   Overwrite existing config\n",
+        "commands": []
+      },
+      {
+        "name": "reaper",
+        "path": "rk reaper",
+        "short": "Reap leaked test tmux servers and stale sockets by prefix",
+        "usage": "rk reaper [flags]",
+        "text": "Usage:\n  rk reaper [flags]\n\nFlags:\n      --dry-run         explicit alias for the default preview-only behavior\n      --force           act, and bypass the dangerous-prefix guard (empty or ≤3-char prefix)\n      --prefix string   socket-name prefix to match (bare reaper ≡ --prefix rk-test) (default \"rk-test\")\n      --yes             actually reap matched servers/sockets (default is dry-run preview)\n",
+        "commands": []
+      },
+      {
+        "name": "riff",
+        "path": "rk riff",
+        "short": "Create a worktree, tmux window, and Claude Code session",
+        "usage": "rk riff [preset] [--skill \u003cskill\u003e...] [--cmd \u003ccmd\u003e...] [--layout \u003cname\u003e] [--count \u003cN\u003e] [--preset \u003cname\u003e] [--list-presets] [-- \u003cwt-flags\u003e...] [flags]",
+        "text": "Usage:\n  rk riff [preset] [--skill \u003cskill\u003e...] [--cmd \u003ccmd\u003e...] [--layout \u003cname\u003e] [--count \u003cN\u003e] [--preset \u003cname\u003e] [--list-presets] [-- \u003cwt-flags\u003e...] [flags]\n\nFlags:\n      --cmd cmd[=__rk_riff_pane_bare__]       Shell command for a pane (repeatable; bare form drops into $SHELL)\n  -N, --count int                             Spawn N worktree/window pairs in parallel (N \u003e= 1) (default 1)\n      --layout string                         Pane layout (default \"auto\"). layout name (canonical + shortform):\n                                                a, auto             — pane-count-based:\n                                                                      1 pane = no layout\n                                                                      2 panes = even-horizontal\n                                                                      3+ panes = tiled\n                                                t, tiled            — grid\n                                                                      ┌───┬───┐\n                                                                      │ 0 │ 1 │\n                                                                      ├───┼───┤\n                                                                      │ 2 │ 3 │\n                                                                      └───┴───┘\n                                                h, even-horizontal  — side-by-side\n                                                                      ┌───┬───┬───┐\n                                                                      │ 0 │ 1 │ 2 │\n                                                                      └───┴───┴───┘\n                                                v, even-vertical    — stacked\n                                                                      ┌───────────┐\n                                                                      │     0     │\n                                                                      ├───────────┤\n                                                                      │     1     │\n                                                                      ├───────────┤\n                                                                      │     2     │\n                                                                      └───────────┘\n                                                deck-h, main-horizontal — main on top, deck below\n                                                                      ┌───────────┐\n                                                                      │     0     │\n                                                                      ├───┬───┬───┤\n                                                                      │ 1 │ 2 │ 3 │\n                                                                      └───┴───┴───┘\n                                                deck-v, main-vertical   — main on left, deck right\n                                                                      ┌───────┬───┐\n                                                                      │       │ 1 │\n                                                                      │   0   ├───┤\n                                                                      │       │ 2 │\n                                                                      │       ├───┤\n                                                                      │       │ 3 │\n                                                                      └───────┴───┘\n                                               (default \"auto\")\n      --list-presets                          List defined presets and exit\n      --preset string                         Named preset from fab/project/config.yaml (riff.presets.\u003cname\u003e)\n      --skill skill[=__rk_riff_pane_bare__]   Claude Code skill/slash-command for a pane (repeatable; bare form launches a blank Claude session)\n",
+        "commands": []
+      },
+      {
+        "name": "serve",
+        "path": "rk serve",
+        "short": "Start the HTTP server (foreground)",
+        "usage": "rk serve",
+        "text": "Usage:\n  rk serve\n",
+        "commands": []
+      },
+      {
+        "name": "shell-init",
+        "path": "rk shell-init",
+        "short": "emit shell integration (completion) for zsh or bash",
+        "usage": "rk shell-init \u003cshell\u003e",
+        "text": "Usage:\n  rk shell-init \u003cshell\u003e\n",
+        "commands": []
+      },
+      {
+        "name": "status",
+        "path": "rk status",
+        "short": "Show tmux session summary",
+        "usage": "rk status",
+        "text": "Usage:\n  rk status\n",
+        "commands": []
+      },
+      {
+        "name": "update",
+        "path": "rk update",
+        "short": "Update rk to the latest version",
+        "usage": "rk update [flags]",
+        "text": "Usage:\n  rk update [flags]\n\nAliases:\n  update, upgrade\n\nFlags:\n      --skip-brew-update   Skip the internal 'brew update' tap-metadata refresh (still runs brew info/upgrade and restarts the daemon)\n",
+        "commands": []
+      }
+    ]
+  }
+}
