@@ -1,0 +1,87 @@
+{
+  "tool": "idea",
+  "version": "v0.0.5",
+  "captured_at": "2026-06-02T19:23:07Z",
+  "schema_version": 1,
+  "root": {
+    "name": "idea",
+    "path": "idea",
+    "short": "Backlog idea management (current worktree; use --main for main worktree)",
+    "usage": "idea [text] [flags]",
+    "text": "Backlog idea management (current worktree; use --main for main worktree).\n\nShorthand: \"idea \u003ctext\u003e\" is equivalent to \"idea add \u003ctext\u003e\".\n\nUsage:\n  idea [text] [flags]\n  idea [command]\n\nAvailable Commands:\n  add         Add a new idea to the backlog\n  completion  Generate the autocompletion script for the specified shell\n  done        Mark an idea as done\n  edit        Modify an idea's text\n  help        Help about any command\n  list        List ideas from the backlog\n  reopen      Reopen a completed idea\n  rm          Delete an idea from the backlog\n  shell-init  Emit shell-eval-safe completion snippet for the given shell\n  show        Show a single idea\n  update      self-update the idea binary via Homebrew\n\nFlags:\n      --file string   Override backlog file path (relative to git root)\n  -h, --help          help for idea\n      --main          Operate on the main worktree's backlog instead of the current worktree\n  -v, --version       version for idea\n\nUse \"idea [command] --help\" for more information about a command.\n",
+    "commands": [
+      {
+        "name": "add",
+        "path": "idea add",
+        "short": "Add a new idea to the backlog",
+        "usage": "idea add \u003ctext\u003e [flags]",
+        "text": "Add a new idea to the current worktree's backlog (fab/backlog.md).\n\nThe idea is appended as a Markdown checklist line with a generated 4-char ID\nand today's date. Use --id and --date to override those generated values\n(handy when importing or backdating). By default the command writes the\ncurrent worktree's backlog; --main targets the main worktree's backlog, and\n--file / IDEAS_FILE point at a different file (see \"idea --help\").\n\n  idea add \"wire up dark mode\"\n  idea add --id a7k2 --date 2026-06-01 \"backdated idea\"\n\nUsage:\n  idea add \u003ctext\u003e [flags]\n\nFlags:\n      --date string   Custom date (YYYY-MM-DD)\n  -h, --help          help for add\n      --id string     Custom 4-char ID\n\nGlobal Flags:\n      --file string   Override backlog file path (relative to git root)\n      --main          Operate on the main worktree's backlog instead of the current worktree\n",
+        "commands": []
+      },
+      {
+        "name": "done",
+        "path": "idea done",
+        "short": "Mark an idea as done",
+        "usage": "idea done \u003cquery\u003e [flags]",
+        "text": "Mark a matching open idea as done in the current worktree's backlog.\n\n\u003cquery\u003e matches an open idea by its ID or by a case-insensitive substring of\nits text. If the query matches more than one open idea it is refused and the\nambiguous matches are listed, so you can be more specific or use the exact ID.\n--main targets the main worktree's backlog and --file / IDEAS_FILE point\nelsewhere (see \"idea --help\").\n\n  idea done a7k2\n  idea done \"dark mode\"\n\nUsage:\n  idea done \u003cquery\u003e [flags]\n\nFlags:\n  -h, --help   help for done\n\nGlobal Flags:\n      --file string   Override backlog file path (relative to git root)\n      --main          Operate on the main worktree's backlog instead of the current worktree\n",
+        "commands": []
+      },
+      {
+        "name": "edit",
+        "path": "idea edit",
+        "short": "Modify an idea's text",
+        "usage": "idea edit \u003cquery\u003e \u003cnew-text\u003e [flags]",
+        "text": "Replace a matching idea's text in the current worktree's backlog.\n\n\u003cquery\u003e matches an idea (open or done) by its ID or by a case-insensitive\nsubstring of its text. If it matches more than one idea it is refused and the\nambiguous matches are listed, so you can be more specific or use the exact ID.\n--id and --date additionally change the matched idea's ID or date. --main\ntargets the main worktree's backlog and --file / IDEAS_FILE point elsewhere\n(see \"idea --help\").\n\n  idea edit a7k2 \"wire up dark mode toggle\"\n  idea edit a7k2 --date 2026-06-01 \"backdated rewrite\"\n\nUsage:\n  idea edit \u003cquery\u003e \u003cnew-text\u003e [flags]\n\nFlags:\n      --date string   Change the idea's date\n  -h, --help          help for edit\n      --id string     Change the idea's ID\n\nGlobal Flags:\n      --file string   Override backlog file path (relative to git root)\n      --main          Operate on the main worktree's backlog instead of the current worktree\n",
+        "commands": []
+      },
+      {
+        "name": "list",
+        "path": "idea list",
+        "short": "List ideas from the backlog",
+        "usage": "idea list [flags]",
+        "text": "List ideas from the current worktree's backlog (fab/backlog.md).\n\nOpen ideas are shown by default. Use --all/-a to include done ideas, or --done\nto show only completed ones. --json emits the structured records (id, date,\nstatus, text) for piping into other tools. --sort accepts \"date\" (default) or\n\"id\", and --reverse flips the order. As with every backlog command, --main\ntargets the main worktree's backlog and --file / IDEAS_FILE point elsewhere\n(see \"idea --help\").\n\n  idea list\n  idea list --all --sort id\n  idea list --json\n\nUsage:\n  idea list [flags]\n\nFlags:\n  -a, --all           Show all ideas (open + done)\n      --done          Show only done ideas\n  -h, --help          help for list\n      --json          Output as JSON\n      --reverse       Reverse sort order\n      --sort string   Sort by field (id or date) (default \"date\")\n\nGlobal Flags:\n      --file string   Override backlog file path (relative to git root)\n      --main          Operate on the main worktree's backlog instead of the current worktree\n",
+        "commands": []
+      },
+      {
+        "name": "reopen",
+        "path": "idea reopen",
+        "short": "Reopen a completed idea",
+        "usage": "idea reopen \u003cquery\u003e [flags]",
+        "text": "Reopen a matching done idea in the current worktree's backlog.\n\n\u003cquery\u003e matches a done idea by its ID or by a case-insensitive substring of\nits text. If the query matches more than one done idea it is refused and the\nambiguous matches are listed, so you can be more specific or use the exact ID.\n--main targets the main worktree's backlog and --file / IDEAS_FILE point\nelsewhere (see \"idea --help\").\n\n  idea reopen a7k2\n  idea reopen \"dark mode\"\n\nUsage:\n  idea reopen \u003cquery\u003e [flags]\n\nFlags:\n  -h, --help   help for reopen\n\nGlobal Flags:\n      --file string   Override backlog file path (relative to git root)\n      --main          Operate on the main worktree's backlog instead of the current worktree\n",
+        "commands": []
+      },
+      {
+        "name": "rm",
+        "path": "idea rm",
+        "short": "Delete an idea from the backlog",
+        "usage": "idea rm \u003cquery\u003e [flags]",
+        "text": "Delete a matching idea from the current worktree's backlog.\n\n\u003cquery\u003e matches an idea (open or done) by its ID or by a case-insensitive\nsubstring of its text. If it matches more than one idea it is refused and the\nambiguous matches are listed, so you can be more specific or use the exact ID.\n--force is required to confirm the deletion; without it the command refuses to\nremove anything. --main targets the main worktree's backlog, and\n--file / IDEAS_FILE point elsewhere (see \"idea --help\").\n\n  idea rm a7k2 --force\n\nUsage:\n  idea rm \u003cquery\u003e [flags]\n\nFlags:\n      --force   Confirm deletion\n  -h, --help    help for rm\n\nGlobal Flags:\n      --file string   Override backlog file path (relative to git root)\n      --main          Operate on the main worktree's backlog instead of the current worktree\n",
+        "commands": []
+      },
+      {
+        "name": "shell-init",
+        "path": "idea shell-init",
+        "short": "Emit shell-eval-safe completion snippet for the given shell",
+        "usage": "idea shell-init \u003cshell\u003e [flags]",
+        "text": "Emit a shell-eval-safe completion snippet for the given shell.\n\nIntended to be wired into shell rc files via:\n\n  echo 'eval \"$(idea shell-init zsh)\"' \u003e\u003e ~/.zshrc\n  echo 'eval \"$(idea shell-init bash)\"' \u003e\u003e ~/.bashrc\n\nUnlike \"idea completion \u003cshell\u003e\", the output is wrapped with a banner comment\nand (for zsh) lazy-loads compinit so the snippet is safe to drop into an rc\nfile even before the user has initialised the completion system. The\nunderlying completion function is generated by cobra and is identical in\nbehavior to \"idea completion \u003cshell\u003e\".\n\nSupported shells: zsh, bash, fish, powershell.\n\nUsage:\n  idea shell-init \u003cshell\u003e [flags]\n\nFlags:\n  -h, --help   help for shell-init\n\nGlobal Flags:\n      --file string   Override backlog file path (relative to git root)\n      --main          Operate on the main worktree's backlog instead of the current worktree\n",
+        "commands": []
+      },
+      {
+        "name": "show",
+        "path": "idea show",
+        "short": "Show a single idea",
+        "usage": "idea show \u003cquery\u003e [flags]",
+        "text": "Show a single matching idea from the current worktree's backlog.\n\n\u003cquery\u003e matches an idea (open or done) by its ID or by a case-insensitive\nsubstring of its text. If it matches more than one idea it is refused and the\nambiguous matches are listed, so you can be more specific or use the exact ID.\n--json emits the structured record (id, date, status, text) instead of the\nformatted line. --main targets the main worktree's backlog, and\n--file / IDEAS_FILE point elsewhere (see \"idea --help\").\n\n  idea show a7k2\n  idea show \"dark mode\" --json\n\nUsage:\n  idea show \u003cquery\u003e [flags]\n\nFlags:\n  -h, --help   help for show\n      --json   Output as JSON\n\nGlobal Flags:\n      --file string   Override backlog file path (relative to git root)\n      --main          Operate on the main worktree's backlog instead of the current worktree\n",
+        "commands": []
+      },
+      {
+        "name": "update",
+        "path": "idea update",
+        "short": "self-update the idea binary via Homebrew",
+        "usage": "idea update [flags]",
+        "text": "Self-update the idea binary via Homebrew.\n\nChecks the installed idea formula against the latest published release and runs\n\"brew upgrade\" only when a newer version exists; if the binary is already\ncurrent it prints \"Already up to date\" and exits without upgrading. The tap\nmetadata is refreshed first (via an internal \"brew update\") so a just-published\nrelease is visible. Pass --skip-brew-update to skip only that tap-metadata\nrefresh (faster, but may miss a just-published version) — the version check and\nany needed upgrade still run. If idea was not installed via Homebrew, the\ncommand explains how to update manually instead.\n\n  idea update\n  idea update --skip-brew-update\n\nUsage:\n  idea update [flags]\n\nFlags:\n  -h, --help                           help for update\n      --skip-brew-update brew update   Skip the internal brew update tap-metadata refresh\n\nGlobal Flags:\n      --file string   Override backlog file path (relative to git root)\n      --main          Operate on the main worktree's backlog instead of the current worktree\n",
+        "commands": []
+      }
+    ]
+  }
+}
