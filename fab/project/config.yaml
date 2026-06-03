@@ -1,40 +1,21 @@
-fab_version: 1.9.5
-
-project:
-  name: "ai.shll.in"
-  description: "Landing page for the shll AI coding toolkit — multi-site repo (live build under sites/, experiments in sites/_playground/)"
-
-# Directories containing implementation code for the LIVE site only. Experiments
-# under sites/_playground/ are intentionally excluded from fab's source scope.
-source_paths:
-  - sites/astro-starlight-terminal1/src/
-
-# Pathspec exclusions used by /git-pr to compute the "true impact" line counts
-# in the PR body (lines added/deleted excluding noise directories like fab/ and
-# docs/). Optional — when absent or empty, the impact block is omitted.
-true_impact_exclude: [fab/, docs/, sites/_playground/]
-
-# The review stage validates code against the plan.md ## Acceptance section.
-# Built-in categories: functional_completeness, behavioral_correctness,
-# scenario_coverage, edge_cases, security.
-# Add your own — each becomes an extra subsection under plan.md ## Acceptance.
-# Example: [accessibility, performance, i18n]
-# (Config key remains `checklist.extra_categories` for backward compatibility.)
-checklist:
-  extra_categories: []
-
-# Extra instructions the agent follows when generating each stage's artifact.
-# Add directives to shape how the agent writes specs, plans (apply entry), code, etc.
-stage_directives:
-  intake: []
-  spec:
-    - Use GIVEN/WHEN/THEN for scenarios
-    - "Mark ambiguities with [NEEDS CLARIFICATION]"
-  apply: []
-  review: []
-  hydrate: []
-
 agent:
-  # Base command for spawning agent sessions in scripts and operators.
-  # Shell expansions (e.g., $(basename "$(pwd)")) expand at invocation time.
-  spawn_command: 'claude --dangerously-skip-permissions --effort xhigh -n "$(basename "$(pwd)")"'
+    spawn_command: claude --dangerously-skip-permissions --effort xhigh -n "$(basename "$(pwd)")"
+checklist:
+    extra_categories: []
+fab_version: 2.0.3
+project:
+    description: Landing page for the shll AI coding toolkit — multi-site repo (live build under sites/, experiments in sites/_playground/)
+    name: ai.shll.in
+source_paths:
+    - sites/astro-starlight-terminal1/src/
+stage_directives:
+    apply:
+        - Use GIVEN/WHEN/THEN for scenarios
+        - Mark ambiguities with [NEEDS CLARIFICATION]
+    hydrate: []
+    intake: []
+    review: []
+true_impact_exclude:
+    - fab/
+    - docs/
+    - sites/_playground/

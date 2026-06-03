@@ -469,3 +469,5 @@ Beyond `@fontsource/jetbrains-mono`, this change SHALL NOT introduce any new Ast
 | 22 | Confident | The blinking cursor blink rate is ≈1Hz (matches mockup's `animation: blink 1.1s steps(2, start) infinite`). | Mockup-defined value; minor variance is fine. | S:70 R:95 A:90 D:80 |
 
 22 assumptions (17 certain, 5 confident, 0 tentative, 0 unresolved).
+
+<!-- Merged into plan.md ## Requirements on 2026-06-03 — safe to delete. -->

@@ -6,7 +6,6 @@ change_type: refactor
 issues: []
 progress:
     intake: done
-    spec: done
     apply: done
     review: done
     hydrate: done
@@ -16,7 +15,7 @@ plan:
     generated: true
     task_count: 11
     acceptance_count: 43
-    acceptance_completed: 41
+    acceptance_completed: 43
 confidence:
     certain: 17
     confident: 5
@@ -31,7 +30,6 @@ confidence:
         disambiguation: 87.0
 stage_metrics:
     intake: {started_at: "2026-05-17T06:29:29Z", driver: fab-new, iterations: 1, completed_at: "2026-05-17T06:33:16Z"}
-    spec: {started_at: "2026-05-17T06:33:16Z", driver: fab-continue, iterations: 1, completed_at: "2026-05-17T06:37:18Z"}
     apply: {started_at: "2026-05-17T06:53:54Z", driver: fab-fff, iterations: 2, completed_at: "2026-05-17T06:59:05Z"}
     review: {started_at: "2026-05-17T06:59:05Z", driver: fab-fff, iterations: 1, completed_at: "2026-05-17T07:04:22Z"}
     hydrate: {started_at: "2026-05-17T07:04:22Z", driver: fab-fff, iterations: 1, completed_at: "2026-05-17T07:08:40Z"}
@@ -50,4 +48,4 @@ true_impact:
     computed_at: "2026-05-17T07:08:40Z"
     computed_at_stage: hydrate
 # true_impact: lazily created on first apply-finish (no placeholder here).
-last_updated: 2026-05-17T07:13:58Z
+last_updated: 2026-06-03T05:11:37Z

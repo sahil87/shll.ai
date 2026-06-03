@@ -217,3 +217,5 @@ The Starlight sidebar in `sites/astro-starlight-terminal1/astro.config.mjs` SHAL
 | 12 | Certain | idea/fab-kit hand-written commands.md is removed/replaced (not left as a second .md alongside .mdx) | Clarified — Starlight resolves `tools/<tool>/commands` to a single slug; a `.md` and `.mdx` with the same slug would collide/duplicate, so the `.md` MUST be removed. <!-- clarified: .md removed, not left alongside .mdx (slug collision) --> | S:95 R:72 A:80 D:78 |
 
 12 assumptions (12 certain, 0 confident, 0 tentative, 0 unresolved).
+
+<!-- Merged into plan.md ## Requirements on 2026-06-03 — safe to delete. -->

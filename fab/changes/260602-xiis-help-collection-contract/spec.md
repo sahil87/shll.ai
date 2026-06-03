@@ -260,3 +260,5 @@ A new memory file `docs/memory/conventions/help-collection.md` SHALL document: t
 | 18 | Certain | Auto-merge workflow MUST apply a content guard (help/-only) + schema-validation gate, with an actor guard as defense-in-depth — a path trigger filter alone is insufficient | Rework after review FAIL: public repo + unprotected main + auto-deploy means a mixed PR (help/** plus other paths) or schema-invalid file could auto-merge and ship; outward review must-fix, verified against live repo settings | S:92 R:55 A:82 D:85 |
 
 18 assumptions (16 certain, 2 confident, 0 tentative, 0 unresolved).
+
+<!-- Merged into plan.md ## Requirements on 2026-06-03 — safe to delete. -->
