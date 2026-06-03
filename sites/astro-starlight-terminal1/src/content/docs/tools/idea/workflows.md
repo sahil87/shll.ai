@@ -34,7 +34,7 @@ idea list
 # [qu1d] refactor auth middleware to use JWT
 # [4xt2] add CSV export to reports page
 
-fab change new --slug auth-middleware-jwt --from-idea qu1d
+fab change new --slug auth-middleware-jwt
 ```
 
 `fab-kit` reads the backlog entry as the seed for the intake stage. After the change ships, `idea done qu1d` closes the loop.
@@ -72,5 +72,5 @@ Common tags from my own use:
 - `#docs` — docs-only
 
 ```bash
-idea list --tag bug
+idea list | grep '#bug'   # tags are plain text — filter with grep
 ```

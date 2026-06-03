@@ -3,7 +3,7 @@ title: Start a new change
 description: The cleanest path from backlog item to active worktree with an agent.
 ---
 
-Five commands, one minute, end-to-end.
+A handful of commands, one minute, end-to-end.
 
 ## The flow
 
@@ -14,10 +14,11 @@ idea "add CSV export to reports page"
 idea list
 # [k3m1] add CSV export to reports page
 
-wt create csv-export --from-idea k3m1
-# new worktree, branch, and fab change folder
+wt create csv-export
+# new worktree + branch at ../<repo>.worktrees/csv-export/
 
 cd ../<repo>.worktrees/csv-export
+fab change new --slug csv-export   # seed the fab change from the [k3m1] idea
 rk riff --skill /fab-fff
 ```
 
@@ -26,12 +27,12 @@ That's it. The agent is now driving the pipeline; you watch in the dashboard.
 ## What just happened, in detail
 
 1. `idea "..."` appends an item to `fab/backlog.md` with a generated ID `[k3m1]`.
-2. `wt create csv-export --from-idea k3m1`:
+2. `wt create csv-export`:
    - Creates a git worktree at `../<repo>.worktrees/csv-export/`
-   - Creates a git branch `<YYMMDD>-<XXXX>-csv-export`
-   - Runs the per-worktree init script (default: `fab change new --slug csv-export --from-idea k3m1`)
-   - The init script creates `fab/changes/<YYMMDD>-<XXXX>-csv-export/intake.md` seeded from the backlog item
-3. `rk riff --skill /fab-fff`:
+   - Creates a git branch `csv-export`
+   - Runs the per-worktree init script you've configured (e.g. to sync `.claude/` skills into the new worktree)
+3. `fab change new --slug csv-export` creates `fab/changes/<YYMMDD>-<XXXX>-csv-export/intake.md`, ready for the pipeline to fill in from the `[k3m1]` backlog item.
+4. `rk riff --skill /fab-fff`:
    - Spawns a Claude Code agent in a new tmux pane
    - Sends `/fab-fff` as the first input
    - Agent runs the full pipeline autonomously
@@ -40,7 +41,7 @@ That's it. The agent is now driving the pipeline; you watch in the dashboard.
 
 ```bash
 idea "add CSV export to reports page"
-fab change new --slug csv-export --from-idea k3m1
+fab change new --slug csv-export
 git checkout -b $(fab resolve --folder)
 # then: /fab-fff in your agent
 ```
@@ -66,4 +67,4 @@ fab change new --slug csv-export
 # then: /fab-new "add CSV export to reports page"   (or just /fab-fff)
 ```
 
-`fab change new` without `--from-idea` produces an empty intake; the slash command's first prompt fills it in.
+`fab change new --slug <slug>` produces an empty intake; the slash command's first prompt fills it in.

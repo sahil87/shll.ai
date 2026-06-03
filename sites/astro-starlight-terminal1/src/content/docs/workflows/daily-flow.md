@@ -16,19 +16,18 @@ idea list           # what's on the docket today
 ## Pick a change
 
 ```bash
-idea list --tag bug
-# [a7q2] flaky timezone test in user-profile.tsx
+idea list            # tags are #word substrings — grep for the ones you care about
+# [a7q2] flaky timezone #bug in user-profile.tsx
 
-wt create flaky-tz-test --from-idea a7q2
-# new worktree at ../<repo>.worktrees/flaky-tz-test/
-# fab change folder pre-created via the worktree init script
+wt create flaky-tz-test          # new worktree at ../<repo>.worktrees/flaky-tz-test/
+cd ../<repo>.worktrees/flaky-tz-test
+fab change new --slug flaky-tz-test   # seed the fab change from the idea above
 ```
 
 ## Drive the change with fab-kit
 
 ```bash
-cd ../<repo>.worktrees/flaky-tz-test
-rk riff --skill /fab-fff       # spawns Claude Code in this worktree, runs the pipeline
+rk riff --skill /fab-fff       # in the worktree: spawns Claude Code, runs the pipeline
 ```
 
 `/fab-fff` runs intake → spec → apply → review → hydrate → ship. You watch in `rk`'s browser dashboard; intervene only at gates.

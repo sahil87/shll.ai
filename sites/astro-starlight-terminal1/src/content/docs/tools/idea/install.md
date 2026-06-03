@@ -16,7 +16,7 @@ That's the whole install. No shell-init step, no daemon, no config file.
 If you've already run `shll install`, `idea` is already installed.
 
 ```bash
-shll doctor              # verifies idea is wired correctly
+shll version             # lists idea (and every tool) with its installed version
 idea --version
 ```
 

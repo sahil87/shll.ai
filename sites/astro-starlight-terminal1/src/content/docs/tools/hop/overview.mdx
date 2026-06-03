@@ -3,6 +3,10 @@ title: hop
 description: Fuzzy-nav, batch-git, and run-anything-inside-any-repo from one hop.yaml config.
 ---
 
+import GithubButton from '../../../../components/GithubButton.astro';
+
+<GithubButton tool="hop" />
+
 `hop` turns one config file into a personal directory of all your git repos — navigate, clone, run commands, and batch-update them from anywhere.
 
 ## Install
@@ -30,6 +34,6 @@ hop config scan ~/code  # bootstrap hop.yaml from your existing clones
 
 ---
 
-**Install**, **commands**, and **workflows** pages coming soon. For now, the full README — grammar, config schema, every subcommand — lives on GitHub:
+See the [commands reference](./commands/) for every subcommand. Dedicated install and workflows pages are still pending — until then, the full README (grammar, config schema, end-to-end recipes) is the deepest reference:
 
 **→ [github.com/sahil87/hop](https://github.com/sahil87/hop)**

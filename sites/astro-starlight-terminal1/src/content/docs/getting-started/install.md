@@ -4,9 +4,10 @@ description: One brew tap, one install command, the whole toolkit.
 ---
 
 ```bash
-brew install sahil87/tap/shll
-shll install              # installs idea, hop, fab-kit, wt, run-kit, tu
-eval "$(shll shell-init zsh)"
+brew install sahil87/tap/shll       # or: brew install sahil87/tap/all
+shll install                        # brew-installs every roster tool you're missing
+shll shell-setup --trust-tap        # wire your shell + record trust for sahil87/tap
+exec $SHELL                          # reload so the shell integration takes effect
 ```
 
 That's it. `shll install` is idempotent and safe to re-run; it will only update tools that have moved.
@@ -14,10 +15,10 @@ That's it. `shll install` is idempotent and safe to re-run; it will only update 
 ## Verify
 
 ```bash
-shll doctor
+shll version
 ```
 
-`doctor` checks each tool's binary, version, and shell wiring. Any red lines are actionable — follow the suggestion next to each.
+`version` prints a paste-friendly dump of every installed tool and its version — handy for confirming the install worked and for bug reports.
 
 ## Per-tool install
 
