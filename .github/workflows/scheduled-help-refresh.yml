@@ -77,17 +77,23 @@ jobs:
           echo "HOMEBREW_CELLAR=$HOMEBREW_CELLAR" >> "$GITHUB_ENV"
           echo "HOMEBREW_REPOSITORY=$HOMEBREW_REPOSITORY" >> "$GITHUB_ENV"
 
-      # Capture each tool independently. The slug names the FILE; the binary name
-      # is carried inside the `tool` field of the JSON. Mapping (verified against
-      # the committed help/*.json `tool` fields):
-      #   slug      binary
-      #   idea   -> idea
-      #   hop    -> hop
-      #   fab-kit-> fab
-      #   wt     -> wt
-      #   run-kit-> rk
-      #   tu     -> tu   (help-dump in progress; may be absent — not a failure)
-      #   shll   -> shll
+      # Capture each tool independently. THREE distinct names per tool, which are
+      # NOT always equal — conflating them is a real bug (run-kit's formula is
+      # `rk`, not `run-kit`):
+      #   - file slug     → names the output file help/<slug>.json
+      #   - formula name  → the Homebrew formula to `brew install sahil87/tap/<formula>`
+      #   - binary name   → the executable to invoke `<binary> help-dump`
+      #                     (also carried inside the JSON's `tool` field)
+      # Mapping (verified against the committed help/*.json `tool` fields and the
+      # `sahil87/tap` formula names):
+      #   slug       formula   binary
+      #   idea    -> idea   -> idea
+      #   hop     -> hop    -> hop
+      #   fab-kit -> fab-kit-> fab
+      #   wt      -> wt     -> wt
+      #   run-kit -> rk     -> rk     (formula is `rk`, NOT `run-kit`)
+      #   tu      -> tu     -> tu     (help-dump in progress; may be absent — not a failure)
+      #   shll    -> shll   -> shll
       #
       # Per-tool isolation: brew-install + run help-dump into a TEMP file; only on
       # exit 0 AND parseable non-empty JSON do we stamp captured_at and overwrite
@@ -97,15 +103,18 @@ jobs:
         run: |
           set -uo pipefail
 
-          # slug:binary pairs (file slug -> invoked binary name)
+          # slug:formula:binary triples
+          #   slug    → output file help/<slug>.json
+          #   formula → `brew install sahil87/tap/<formula>`
+          #   binary  → `<binary> help-dump`
           tools=(
-            "idea:idea"
-            "hop:hop"
-            "fab-kit:fab"
-            "wt:wt"
-            "run-kit:rk"
-            "tu:tu"
-            "shll:shll"
+            "idea:idea:idea"
+            "hop:hop:hop"
+            "fab-kit:fab-kit:fab"
+            "wt:wt:wt"
+            "run-kit:rk:rk"
+            "tu:tu:tu"
+            "shll:shll:shll"
           )
 
           # Single capture timestamp for the whole run (shll.ai-owned field —
@@ -116,14 +125,13 @@ jobs:
           tmpdir="$(mktemp -d)"
           failed=()
 
-          for pair in "${tools[@]}"; do
-            slug="${pair%%:*}"
-            binary="${pair##*:}"
-            echo "::group::$slug (binary: $binary)"
+          for triple in "${tools[@]}"; do
+            IFS=: read -r slug formula binary <<<"$triple"
+            echo "::group::$slug (formula: $formula, binary: $binary)"
 
-            # Install the tool. A failed install is isolated to this tool.
-            if ! brew install "sahil87/tap/$slug"; then
-              echo "::warning::brew install sahil87/tap/$slug failed — keeping last-good help/$slug.json"
+            # Install the tool by FORMULA name. A failed install is isolated to this tool.
+            if ! brew install "sahil87/tap/$formula"; then
+              echo "::warning::brew install sahil87/tap/$formula failed — keeping last-good help/$slug.json"
               failed+=("$slug")
               echo "::endgroup::"
               continue
