@@ -155,9 +155,15 @@ This teardown is **only actionable because the shll.ai puller is already live an
 
 > **Scope note.** The actual 7-repo teardown is **tool-repo work and OUT OF SCOPE** for change `oa63`. This section documents *the instruction and its precondition* only; `oa63` executes none of it.
 
-### The tool author never needs the slug↔binary mapping
+### The tool author never needs the slug/formula/binary mapping
 
-The file slug (`run-kit`, `fab-kit`) differs from the invoked binary (`rk`, `fab`) for some tools, but **that mapping lives entirely in shll.ai's scheduled job** (the `slug:binary` table in `.github/workflows/scheduled-help-refresh.yml`). shll.ai decides which file to write (`help/<slug>.json`) and which binary to run (`<binary> help-dump`); the binary name is also carried in the JSON's own `tool` field, emitted by the tool. **A tool author therefore never reasons about the slug** — not to find their old producer (they grep for their push *wiring* / `SHLLAI_TOKEN`, no slug needed), and not for anything in `help-dump` (it just emits to stdout). The teardown directive below is written without any `<slug>` reference for this reason.
+There are **three** distinct names per tool, which are not always equal:
+
+- **file slug** — names the output file `help/<slug>.json` (e.g. `run-kit`, `fab-kit`).
+- **formula name** — the Homebrew formula shll.ai installs (`brew install sahil87/tap/<formula>`).
+- **binary name** — the executable shll.ai invokes (`<binary> help-dump`), also carried in the JSON's `tool` field.
+
+For most tools all three match; for some they diverge — e.g. `run-kit` → file slug `run-kit`, **formula `rk`**, binary `rk` (the formula is `rk`, **not** `run-kit`); `fab-kit` → slug `fab-kit`, formula `fab-kit`, binary `fab`. **This mapping lives entirely in shll.ai's scheduled job** (the `slug:formula:binary` table in `.github/workflows/scheduled-help-refresh.yml`) — conflating the three is a real bug (using the slug as the formula name makes `brew install` fail for `run-kit`). **A tool author therefore never reasons about any of these** — not to find their old producer (they grep for their push *wiring* / `SHLLAI_TOKEN`), and not for anything in `help-dump` (it just emits to stdout). The teardown directive below is written without any `<slug>`/`<formula>` reference for this reason.
 
 ### Teardown directive (paste to a tool-repo agent)
 
@@ -194,7 +200,7 @@ Make these changes:
 
 - **Teardown list is explicit and gated** — GIVEN a tool-repo author reading this section; WHEN deciding what to remove; THEN the four deletable items are listed (producer CI, PR-opening, auto-merge, `SHLLAI_TOKEN`), AND the section states teardown is only safe once the shll.ai puller is live and proven.
 - **Teardown precondition honored** — GIVEN the puller is not yet live/proven; WHEN a tool-repo author considers tearing out their producer; THEN the documented precondition blocks them — avoiding the stale-help gap.
-- **Directive is paste-ready and slug-free** — GIVEN a maintainer dispatching the teardown to a tool-repo agent; WHEN they copy the Teardown directive block; THEN it is self-contained (no shll.ai context assumed), instructs the removal as a single PR, names the `help-dump` invariant to preserve, and references only `<tool>` (binary) — never the file slug, because the slug↔binary mapping is shll.ai's concern, not the tool's.
+- **Directive is paste-ready and slug-free** — GIVEN a maintainer dispatching the teardown to a tool-repo agent; WHEN they copy the Teardown directive block; THEN it is self-contained (no shll.ai context assumed), instructs the removal as a single PR, names the `help-dump` invariant to preserve, and references only `<tool>` (binary) — never the file slug or formula name, because the slug/formula/binary mapping is shll.ai's concern, not the tool's.
 
 ## §Schema reference
 
