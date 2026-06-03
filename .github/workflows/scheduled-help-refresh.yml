@@ -55,8 +55,14 @@ jobs:
   refresh:
     runs-on: ubuntu-latest
     steps:
+      # Always operate on main. workflow_dispatch can be triggered from any
+      # branch, but this is a direct-commit-to-main workflow — pin the checkout
+      # (and therefore the later `git push`) to main so a manual dispatch from a
+      # feature branch can never refresh/commit help onto that branch by mistake.
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: main
 
       # Homebrew ships preinstalled on ubuntu-latest but not on PATH. Load its
       # environment so `brew` (and brew-installed binaries) resolve in every
@@ -141,11 +147,29 @@ jobs:
               continue
             fi
 
+            # Contract §1: stderr MUST be empty on success. A non-empty stderr on
+            # an otherwise-successful (exit 0, non-empty stdout) capture is
+            # contract drift — surface it as a warning to catch early, but do NOT
+            # fail the capture (the JSON on stdout is still authoritative).
+            if [ -s "$tmpdir/$slug.err" ]; then
+              echo "::warning::$binary help-dump exited 0 but wrote to stderr (contract §1 says stderr is empty on success):"
+              cat "$tmpdir/$slug.err" || true
+            fi
+
             # Stamp captured_at (the shll.ai-owned field) into the tool-emitted
-            # envelope. jq -e fails on non-JSON, so malformed output cannot reach
+            # envelope. Insert it in its CONTRACT position (after `version`,
+            # before `schema_version` — see §3 of help-dump-contract.md and the
+            # committed help/*.json key order) so the first refresh does not churn
+            # the whole file with a reordered key. Build the object explicitly:
+            # {tool, version} + {captured_at} + (everything else, original order
+            # preserved) — this keeps schema_version/root after captured_at AND
+            # carries through any future optional fields the tool may add.
+            # jq -e fails on non-JSON, so malformed output cannot reach
             # help/<slug>.json. Output is written atomically (tmp then mv).
             stamped="$tmpdir/$slug.json"
-            if jq -e --arg ts "$captured_at" '. + {captured_at: $ts}' "$raw" >"$stamped"; then
+            if jq -e --arg ts "$captured_at" \
+              '{tool, version} + {captured_at: $ts} + (del(.tool, .version, .captured_at))' \
+              "$raw" >"$stamped"; then
               mv "$stamped" "help/$slug.json"
               echo "captured help/$slug.json"
             else
