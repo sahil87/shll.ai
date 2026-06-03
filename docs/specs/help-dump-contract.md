@@ -155,10 +155,46 @@ This teardown is **only actionable because the shll.ai puller is already live an
 
 > **Scope note.** The actual 7-repo teardown is **tool-repo work and OUT OF SCOPE** for change `oa63`. This section documents *the instruction and its precondition* only; `oa63` executes none of it.
 
+### The tool author never needs the slug↔binary mapping
+
+The file slug (`run-kit`, `fab-kit`) differs from the invoked binary (`rk`, `fab`) for some tools, but **that mapping lives entirely in shll.ai's scheduled job** (the `slug:binary` table in `.github/workflows/scheduled-help-refresh.yml`). shll.ai decides which file to write (`help/<slug>.json`) and which binary to run (`<binary> help-dump`); the binary name is also carried in the JSON's own `tool` field, emitted by the tool. **A tool author therefore never reasons about the slug** — not to find their old producer (they grep for their push *wiring* / `SHLLAI_TOKEN`, no slug needed), and not for anything in `help-dump` (it just emits to stdout). The teardown directive below is written without any `<slug>` reference for this reason.
+
+### Teardown directive (paste to a tool-repo agent)
+
+The block below is a ready-to-hand-to-an-agent task that performs the teardown as a **single change**. Replace `<tool>` with the binary name (e.g. `wt`, `rk`, `fab`). It assumes the precondition above is satisfied (puller live and proven); if the puller is not yet live, do **not** dispatch it.
+
+---
+
+**Task: Remove the help-collection push wiring (shll.ai now pulls)**
+
+shll.ai (the toolkit landing page) has inverted how it collects command-reference JSON. It used to receive your tool's data via a **push**: this repo's CI walked the Cobra tree, wrote a `help/*.json` file, and opened an auto-merged PR into `sahil87/shll.ai` using the `SHLLAI_TOKEN` secret.
+
+shll.ai now **pulls** the data itself — a scheduled job there `brew install`s the tool, runs `<tool> help-dump`, and commits the captured JSON. **This repo no longer pushes anything.** Your job in this change is to remove the now-dead push wiring, in a single PR.
+
+Make these changes:
+
+1. **Delete the producer CI** — the workflow step(s)/job that walk the command tree and write the `help/*.json` file.
+2. **Delete the PR-opening step** that opened a pull request into `sahil87/shll.ai`.
+3. **Delete the auto-merge wiring** for that PR.
+4. **Remove `SHLLAI_TOKEN` usage** from the workflows. Then remove the `SHLLAI_TOKEN` repo secret itself **only after confirming it is not used anywhere else** (grep the whole repo for `SHLLAI_TOKEN` first; if anything other than the help-push wiring references it, leave the secret in place and flag it).
+5. If deleting the above leaves a whole workflow file with no remaining purpose, delete the file; if the help-push was one job inside a larger workflow, remove just that job and leave the rest intact.
+
+**Critical invariant — do NOT touch the `help-dump` command.** The `<tool> help-dump` subcommand is now the single contract surface shll.ai depends on. Keep it working exactly as-is — this change removes only the *transport* (the CI that pushed the output), never the command that *produces* it. After your change, `<tool> help-dump` must still emit valid JSON to stdout per `docs/specs/help-dump-contract.md` in `sahil87/shll.ai`: `Hidden: true` (not in normal `-h`, self-filtering); envelope `{tool, version, schema_version, root}` to **stdout** — **do not emit `captured_at`** (shll.ai stamps it); `schema_version: 1`; `version` from the built binary; exit 0 with empty stderr on success. If you have a test exercising `help-dump`, keep it; if not, add a minimal one (exit 0, valid JSON, expected `tool`/`schema_version`) so the contract surface stays protected now that the push CI no longer implicitly exercises it.
+
+**Verify before opening the PR:**
+- `<tool> help-dump` still runs and emits valid JSON (exit 0, stdout only).
+- No live push path to shll.ai remains in any active workflow (grep for `SHLLAI_TOKEN` / `shll.ai` returns only docs, if anything).
+- The rest of CI (build, test, release) is unaffected.
+
+**Why this is safe now:** shll.ai's pull workflow is live, so retiring the push side does not leave a gap — shll.ai refreshes this tool's help on its own schedule (and on-demand via `workflow_dispatch`). A separate, future shll.ai change will *enrich* the `help-dump` schema with new **optional** fields; that is not part of this work — keep emitting `schema_version: 1` as today.
+
+---
+
 ### GIVEN/WHEN/THEN
 
 - **Teardown list is explicit and gated** — GIVEN a tool-repo author reading this section; WHEN deciding what to remove; THEN the four deletable items are listed (producer CI, PR-opening, auto-merge, `SHLLAI_TOKEN`), AND the section states teardown is only safe once the shll.ai puller is live and proven.
 - **Teardown precondition honored** — GIVEN the puller is not yet live/proven; WHEN a tool-repo author considers tearing out their producer; THEN the documented precondition blocks them — avoiding the stale-help gap.
+- **Directive is paste-ready and slug-free** — GIVEN a maintainer dispatching the teardown to a tool-repo agent; WHEN they copy the Teardown directive block; THEN it is self-contained (no shll.ai context assumed), instructs the removal as a single PR, names the `help-dump` invariant to preserve, and references only `<tool>` (binary) — never the file slug, because the slug↔binary mapping is shll.ai's concern, not the tool's.
 
 ## §Schema reference
 
@@ -177,4 +213,5 @@ The single **machine-checkable** anchor for this contract is:
 
 | Date | Change |
 |------|--------|
+| 2026-06-03 | Added (change `oa63`): a paste-ready **Teardown directive** to the §Pull model section — a self-contained, single-PR task block for a tool-repo agent to remove the push wiring (producer CI, PR-opening, auto-merge, `SHLLAI_TOKEN`) while preserving the `help-dump` command. Clarified that the slug↔binary mapping is shll.ai's concern (lives in the scheduled job), so the directive is slug-free and a tool author never reasons about it. |
 | 2026-06-03 | Created (change `oa63`): forward contract for `help-dump` output. §1 Invocation (STDOUT JSON envelope, stderr-empty/exit-0, non-zero = failed capture), §2 Hidden + self-filtering, §3 schema (envelope + recursive Node, the `captured_at` shll.ai-owned asymmetry), §4 filter rules (`completion`/`help`/`Hidden`), §5 programmatic discovery & full recursion (never regex `-h`), §6 version from the built binary, §7 the `tu` Node/TS flat-tree exception (`help/tu.json` may be MISSING during rollout), §8 schema evolution (frozen at `1`, future fields OPTIONAL). Bounded dated §Pull model migration section (push retired; lists the four deletable items per tool repo; teardown gated on the puller being live + proven). §Schema reference cross-links `sites/astro-starlight-terminal1/src/lib/schemas.ts` both ways. |
