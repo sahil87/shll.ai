@@ -3,6 +3,10 @@ title: run-kit
 description: Browser dashboard for tmux + Claude Code workspaces. Mobile-friendly via Tailscale.
 ---
 
+import GithubButton from '../../../../components/GithubButton.astro';
+
+<GithubButton tool="run-kit" />
+
 `rk riff` spawns AI coding agents in parallel git worktrees. `rk serve` is a browser dashboard that lets you watch them all — from your desk or your phone.
 
 ## Install
@@ -34,6 +38,6 @@ HTTPS over Tailscale: `tailscale serve --bg http://localhost:3000`, open `https:
 
 ---
 
-**Install**, **commands**, and **workflows** pages coming soon. For now, the full README — riff guide, boards, Tailscale setup, architecture — lives on GitHub:
+See the [commands reference](./commands/) for every subcommand. Dedicated install and workflows pages are still pending — until then, the full README (riff guide, boards, Tailscale setup, architecture) is the deepest reference:
 
 **→ [github.com/sahil87/run-kit](https://github.com/sahil87/run-kit)**

@@ -59,6 +59,7 @@ export default defineConfig({
       logo: { src: './src/assets/prompt.svg', replacesTitle: false },
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/sahil87' },
+        { icon: 'discord', label: 'Discord', href: 'https://discord.gg/32XHh5mJYn' },
       ],
       pagination: true,
       lastUpdated: false,

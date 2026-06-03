@@ -1,0 +1,86 @@
+---
+/**
+ * GithubButton — a small, labeled "go to the repo" affordance for tool pages.
+ *
+ * Renders a build-time anchor to `https://github.com/sahil87/<tool>` (no
+ * client-side JS — Constitution I). Colors come from the site's --c-* tokens
+ * (src/styles/terminal.css), which flip with Starlight's data-theme, so dark-
+ * mode parity is automatic (Constitution V). A visible :focus-visible ring
+ * keeps it keyboard-navigable (Constitution Accessibility).
+ *
+ * Placement convention: rendered near the top of every tool overview page,
+ * just under the H1. See docs/memory/conventions/tool-page-rubric.
+ */
+interface Props {
+  /** Tool slug — names the repo at `github.com/sahil87/<tool>`. */
+  tool: string;
+}
+
+const { tool } = Astro.props as Props;
+
+// A missing slug is a page-author error (the prop was forgotten) — fail the
+// build loudly rather than silently linking to a broken `sahil87/` URL,
+// mirroring CommandReference's top-level guard.
+if (!tool) {
+  throw new Error('GithubButton: a `tool` slug prop is required.');
+}
+
+const href = `https://github.com/sahil87/${tool}`;
+---
+
+<div class="gh-button not-content">
+  <a class="gh-link" href={href}>
+    <span class="gh-label">View on GitHub</span>
+    <span class="gh-slug">github.com/sahil87/{tool}</span>
+    <span class="gh-arrow" aria-hidden="true">↗</span>
+  </a>
+</div>
+
+<style>
+  .gh-button {
+    margin: 0.75rem 0 1.25rem;
+    font-family: var(--sl-font-mono);
+    font-size: 0.85rem;
+  }
+
+  .gh-link {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.4rem 0.75rem;
+    color: var(--c-fg);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 4px;
+    text-decoration: none;
+    transition:
+      border-color 0.12s ease,
+      background 0.12s ease;
+  }
+  .gh-link:hover {
+    border-color: var(--c-accent);
+    background: var(--c-surface-2);
+  }
+  /* Visible focus state for keyboard users (Constitution Accessibility). */
+  .gh-link:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 2px;
+  }
+
+  .gh-label {
+    color: var(--c-fg);
+    font-weight: 600;
+  }
+  .gh-slug {
+    color: var(--c-fg-dim);
+  }
+  .gh-arrow {
+    color: var(--c-accent);
+    font-weight: 600;
+  }
+
+  .gh-link ::selection {
+    background: var(--c-fg);
+    color: var(--c-bg);
+  }
+</style>

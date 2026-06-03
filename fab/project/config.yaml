@@ -7,7 +7,7 @@ project:
 # Directories containing implementation code for the LIVE site only. Experiments
 # under sites/_playground/ are intentionally excluded from fab's source scope.
 source_paths:
-  - sites/astro-tailwind-terminal1/src/
+  - sites/astro-starlight-terminal1/src/
 
 # Pathspec exclusions used by /git-pr to compute the "true impact" line counts
 # in the PR body (lines added/deleted excluding noise directories like fab/ and
