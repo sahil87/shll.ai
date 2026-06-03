@@ -1,0 +1,543 @@
+{
+  "tool": "fab",
+  "version": "2.0.3",
+  "captured_at": "2026-06-03T03:56:08Z",
+  "schema_version": 1,
+  "root": {
+    "name": "fab",
+    "path": "fab",
+    "short": "Fab workflow engine — single binary replacement for kit shell scripts",
+    "usage": "fab",
+    "text": "Usage:\n  fab [command]\n\nAvailable Commands:\n  batch       Multi-target batch operations\n  change      Change lifecycle management\n  completion  Generate the autocompletion script for the specified shell\n  fab-help    Show fab workflow overview and available commands\n  help        Help about any command\n  hook        Claude Code hook subcommands\n  impact      Compute git diff line counts (added/deleted/net) between two refs\n  kit-path    Print the resolved kit directory path\n  log         Append-only JSON logging to .history.jsonl\n  operator    Launch operator in a dedicated tmux tab (singleton)\n  pane        Tmux pane operations\n  preflight   Validate project state and output structured YAML\n  resolve     Resolve a change reference to a canonical output\n  score       Compute confidence score from Assumptions table\n  shell-init  Emit shell completion script for sourcing (alias for 'completion <shell>')\n  status      Manage workflow stages, states, and .status.yaml\n\nUse \"fab [command] --help\" for more information about a command.\n",
+    "commands": [
+      {
+        "name": "batch",
+        "path": "fab batch",
+        "short": "Multi-target batch operations",
+        "usage": "fab batch",
+        "text": "Usage:\n  fab batch [command]\n\nAvailable Commands:\n  archive     Archive multiple completed changes in one pass\n  new         Create worktree tabs from backlog items\n  switch      Open tmux tabs in worktrees for one or more changes\n\nUse \"fab batch [command] --help\" for more information about a command.\n",
+        "commands": [
+          {
+            "name": "archive",
+            "path": "fab batch archive",
+            "short": "Archive multiple completed changes in one pass",
+            "usage": "fab batch archive [change...] [flags]",
+            "text": "Usage:\n  fab batch archive [change...] [flags]\n\nFlags:\n      --all    Archive all archivable changes\n      --list   Show archivable changes without archiving\n",
+            "commands": []
+          },
+          {
+            "name": "new",
+            "path": "fab batch new",
+            "short": "Create worktree tabs from backlog items",
+            "usage": "fab batch new [backlog-id...] [flags]",
+            "text": "Usage:\n  fab batch new [backlog-id...] [flags]\n\nFlags:\n      --all    Open tabs for all pending backlog items\n      --list   Show pending backlog items and their IDs\n",
+            "commands": []
+          },
+          {
+            "name": "switch",
+            "path": "fab batch switch",
+            "short": "Open tmux tabs in worktrees for one or more changes",
+            "usage": "fab batch switch [change...] [flags]",
+            "text": "Usage:\n  fab batch switch [change...] [flags]\n\nFlags:\n      --all    Open tabs for all changes\n      --list   Show available changes\n",
+            "commands": []
+          }
+        ]
+      },
+      {
+        "name": "change",
+        "path": "fab change",
+        "short": "Change lifecycle management",
+        "usage": "fab change",
+        "text": "Usage:\n  fab change [command]\n\nAvailable Commands:\n  archive      Archive a change\n  archive-list List archived changes\n  list         List changes with stage info\n  new          Create a new change directory\n  rename       Rename a change folder's slug\n  resolve      Resolve a change name\n  restore      Restore an archived change\n  switch       Switch the active change\n\nUse \"fab change [command] --help\" for more information about a command.\n",
+        "commands": [
+          {
+            "name": "archive",
+            "path": "fab change archive",
+            "short": "Archive a change",
+            "usage": "fab change archive <change> [flags]",
+            "text": "Usage:\n  fab change archive <change> [flags]\n\nFlags:\n      --description string   Description for archive index (optional; defaults to intake title)\n",
+            "commands": []
+          },
+          {
+            "name": "archive-list",
+            "path": "fab change archive-list",
+            "short": "List archived changes",
+            "usage": "fab change archive-list",
+            "text": "Usage:\n  fab change archive-list\n",
+            "commands": []
+          },
+          {
+            "name": "list",
+            "path": "fab change list",
+            "short": "List changes with stage info",
+            "usage": "fab change list [flags]",
+            "text": "Usage:\n  fab change list [flags]\n\nFlags:\n      --archive      List archived changes\n      --show-stats   Append true_impact net column\n",
+            "commands": []
+          },
+          {
+            "name": "new",
+            "path": "fab change new",
+            "short": "Create a new change directory",
+            "usage": "fab change new [flags]",
+            "text": "Usage:\n  fab change new [flags]\n\nFlags:\n      --change-id string   Explicit 4-char ID (optional)\n      --log-args string    Description for logman (optional)\n      --slug string        Folder name suffix (required)\n",
+            "commands": []
+          },
+          {
+            "name": "rename",
+            "path": "fab change rename",
+            "short": "Rename a change folder's slug",
+            "usage": "fab change rename [flags]",
+            "text": "Usage:\n  fab change rename [flags]\n\nFlags:\n      --folder string   Current folder name (required)\n      --slug string     New slug (required)\n",
+            "commands": []
+          },
+          {
+            "name": "resolve",
+            "path": "fab change resolve",
+            "short": "Resolve a change name",
+            "usage": "fab change resolve [override]",
+            "text": "Usage:\n  fab change resolve [override]\n",
+            "commands": []
+          },
+          {
+            "name": "restore",
+            "path": "fab change restore",
+            "short": "Restore an archived change",
+            "usage": "fab change restore <change> [flags]",
+            "text": "Usage:\n  fab change restore <change> [flags]\n\nFlags:\n      --switch   Activate the restored change\n",
+            "commands": []
+          },
+          {
+            "name": "switch",
+            "path": "fab change switch",
+            "short": "Switch the active change",
+            "usage": "fab change switch [name] [flags]",
+            "text": "Usage:\n  fab change switch [name] [flags]\n\nFlags:\n      --none   Deactivate the current change\n",
+            "commands": []
+          }
+        ]
+      },
+      {
+        "name": "fab-help",
+        "path": "fab fab-help",
+        "short": "Show fab workflow overview and available commands",
+        "usage": "fab fab-help",
+        "text": "Usage:\n  fab fab-help\n",
+        "commands": []
+      },
+      {
+        "name": "hook",
+        "path": "fab hook",
+        "short": "Claude Code hook subcommands",
+        "usage": "fab hook",
+        "text": "Usage:\n  fab hook [command]\n\nAvailable Commands:\n  artifact-write Artifact bookkeeping on PostToolUse Write/Edit\n  session-start  Delete agent entry on session start\n  stop           Record agent idle entry on stop\n  sync           Register hook commands into .claude/settings.local.json\n  user-prompt    Clear idle_since on user prompt, preserving other entry fields\n\nUse \"fab hook [command] --help\" for more information about a command.\n",
+        "commands": [
+          {
+            "name": "artifact-write",
+            "path": "fab hook artifact-write",
+            "short": "Artifact bookkeeping on PostToolUse Write/Edit",
+            "usage": "fab hook artifact-write",
+            "text": "Usage:\n  fab hook artifact-write\n",
+            "commands": []
+          },
+          {
+            "name": "session-start",
+            "path": "fab hook session-start",
+            "short": "Delete agent entry on session start",
+            "usage": "fab hook session-start",
+            "text": "Usage:\n  fab hook session-start\n",
+            "commands": []
+          },
+          {
+            "name": "stop",
+            "path": "fab hook stop",
+            "short": "Record agent idle entry on stop",
+            "usage": "fab hook stop",
+            "text": "Usage:\n  fab hook stop\n",
+            "commands": []
+          },
+          {
+            "name": "sync",
+            "path": "fab hook sync",
+            "short": "Register hook commands into .claude/settings.local.json",
+            "usage": "fab hook sync",
+            "text": "Usage:\n  fab hook sync\n",
+            "commands": []
+          },
+          {
+            "name": "user-prompt",
+            "path": "fab hook user-prompt",
+            "short": "Clear idle_since on user prompt, preserving other entry fields",
+            "usage": "fab hook user-prompt",
+            "text": "Usage:\n  fab hook user-prompt\n",
+            "commands": []
+          }
+        ]
+      },
+      {
+        "name": "impact",
+        "path": "fab impact",
+        "short": "Compute git diff line counts (added/deleted/net) between two refs",
+        "usage": "fab impact <base> <head>",
+        "text": "Usage:\n  fab impact <base> <head>\n",
+        "commands": []
+      },
+      {
+        "name": "kit-path",
+        "path": "fab kit-path",
+        "short": "Print the resolved kit directory path",
+        "usage": "fab kit-path",
+        "text": "Usage:\n  fab kit-path\n",
+        "commands": []
+      },
+      {
+        "name": "log",
+        "path": "fab log",
+        "short": "Append-only JSON logging to .history.jsonl",
+        "usage": "fab log",
+        "text": "Usage:\n  fab log [command]\n\nAvailable Commands:\n  command     Log a skill invocation\n  confidence  Log a confidence score change\n  review      Log a review outcome\n  transition  Log a stage transition\n\nUse \"fab log [command] --help\" for more information about a command.\n",
+        "commands": [
+          {
+            "name": "command",
+            "path": "fab log command",
+            "short": "Log a skill invocation",
+            "usage": "fab log command <cmd> [change] [args]",
+            "text": "Usage:\n  fab log command <cmd> [change] [args]\n",
+            "commands": []
+          },
+          {
+            "name": "confidence",
+            "path": "fab log confidence",
+            "short": "Log a confidence score change",
+            "usage": "fab log confidence <change> <score> <delta> <trigger>",
+            "text": "Usage:\n  fab log confidence <change> <score> <delta> <trigger>\n",
+            "commands": []
+          },
+          {
+            "name": "review",
+            "path": "fab log review",
+            "short": "Log a review outcome",
+            "usage": "fab log review <change> <result> [rework]",
+            "text": "Usage:\n  fab log review <change> <result> [rework]\n",
+            "commands": []
+          },
+          {
+            "name": "transition",
+            "path": "fab log transition",
+            "short": "Log a stage transition",
+            "usage": "fab log transition <change> <stage> <action> [from] [reason] [driver]",
+            "text": "Usage:\n  fab log transition <change> <stage> <action> [from] [reason] [driver]\n",
+            "commands": []
+          }
+        ]
+      },
+      {
+        "name": "operator",
+        "path": "fab operator",
+        "short": "Launch operator in a dedicated tmux tab (singleton)",
+        "usage": "fab operator",
+        "text": "Usage:\n  fab operator\n  fab operator [command]\n\nAvailable Commands:\n  tick-start  Increment tick_count and record last_tick_at in .fab-operator.yaml\n  time        Print current time and optionally next-tick time\n\nUse \"fab operator [command] --help\" for more information about a command.\n",
+        "commands": [
+          {
+            "name": "tick-start",
+            "path": "fab operator tick-start",
+            "short": "Increment tick_count and record last_tick_at in .fab-operator.yaml",
+            "usage": "fab operator tick-start",
+            "text": "Usage:\n  fab operator tick-start\n",
+            "commands": []
+          },
+          {
+            "name": "time",
+            "path": "fab operator time",
+            "short": "Print current time and optionally next-tick time",
+            "usage": "fab operator time [flags]",
+            "text": "Usage:\n  fab operator time [flags]\n\nFlags:\n      --interval string   Duration until next tick (e.g. 3m). If given, outputs next: HH:MM\n",
+            "commands": []
+          }
+        ]
+      },
+      {
+        "name": "pane",
+        "path": "fab pane",
+        "short": "Tmux pane operations",
+        "usage": "fab pane",
+        "text": "Usage:\n  fab pane [command]\n\nAvailable Commands:\n  capture     Capture terminal content from a tmux pane with fab context enrichment\n  map         Show tmux pane-to-worktree mapping with fab pipeline state\n  process     Detect the process tree running in a tmux pane\n  send        Send keystrokes to a tmux pane with validation\n  window-name Window-name prefix operations\n\nFlags:\n  -L, --server string   Target tmux socket label (passed as 'tmux -L <name>'). Defaults to $TMUX / tmux default socket.\n\nUse \"fab pane [command] --help\" for more information about a command.\n",
+        "commands": [
+          {
+            "name": "capture",
+            "path": "fab pane capture",
+            "short": "Capture terminal content from a tmux pane with fab context enrichment",
+            "usage": "fab pane capture <pane> [flags]",
+            "text": "Usage:\n  fab pane capture <pane> [flags]\n\nFlags:\n      --json        Output as JSON with metadata\n  -l, --lines int   Number of lines to capture (default 50)\n      --raw         Output raw captured text only\n\nGlobal Flags:\n  -L, --server string   Target tmux socket label (passed as 'tmux -L <name>'). Defaults to $TMUX / tmux default socket.\n",
+            "commands": []
+          },
+          {
+            "name": "map",
+            "path": "fab pane map",
+            "short": "Show tmux pane-to-worktree mapping with fab pipeline state",
+            "usage": "fab pane map [flags]",
+            "text": "Usage:\n  fab pane map [flags]\n\nFlags:\n      --all-sessions     Query all tmux sessions\n      --json             Output as JSON array\n      --session string   Target a specific tmux session by name\n\nGlobal Flags:\n  -L, --server string   Target tmux socket label (passed as 'tmux -L <name>'). Defaults to $TMUX / tmux default socket.\n",
+            "commands": []
+          },
+          {
+            "name": "process",
+            "path": "fab pane process",
+            "short": "Detect the process tree running in a tmux pane",
+            "usage": "fab pane process <pane> [flags]",
+            "text": "Usage:\n  fab pane process <pane> [flags]\n\nFlags:\n      --json   Output as JSON\n\nGlobal Flags:\n  -L, --server string   Target tmux socket label (passed as 'tmux -L <name>'). Defaults to $TMUX / tmux default socket.\n",
+            "commands": []
+          },
+          {
+            "name": "send",
+            "path": "fab pane send",
+            "short": "Send keystrokes to a tmux pane with validation",
+            "usage": "fab pane send <pane> <text> [flags]",
+            "text": "Usage:\n  fab pane send <pane> <text> [flags]\n\nFlags:\n      --force      Skip idle validation (still validates pane existence)\n      --no-enter   Don't append Enter keystroke\n\nGlobal Flags:\n  -L, --server string   Target tmux socket label (passed as 'tmux -L <name>'). Defaults to $TMUX / tmux default socket.\n",
+            "commands": []
+          },
+          {
+            "name": "window-name",
+            "path": "fab pane window-name",
+            "short": "Window-name prefix operations",
+            "usage": "fab pane window-name",
+            "text": "Usage:\n  fab pane window-name [command]\n\nAvailable Commands:\n  ensure-prefix  Idempotently prepend <char> to the tmux window name\n  replace-prefix Atomically replace a literal prefix <from> with <to> on the tmux window name\n\nGlobal Flags:\n  -L, --server string   Target tmux socket label (passed as 'tmux -L <name>'). Defaults to $TMUX / tmux default socket.\n\nUse \"fab pane window-name [command] --help\" for more information about a command.\n",
+            "commands": [
+              {
+                "name": "ensure-prefix",
+                "path": "fab pane window-name ensure-prefix",
+                "short": "Idempotently prepend <char> to the tmux window name",
+                "usage": "fab pane window-name ensure-prefix <pane> <char> [flags]",
+                "text": "Usage:\n  fab pane window-name ensure-prefix <pane> <char> [flags]\n\nFlags:\n      --json   Emit structured JSON output\n\nGlobal Flags:\n  -L, --server string   Target tmux socket label (passed as 'tmux -L <name>'). Defaults to $TMUX / tmux default socket.\n",
+                "commands": []
+              },
+              {
+                "name": "replace-prefix",
+                "path": "fab pane window-name replace-prefix",
+                "short": "Atomically replace a literal prefix <from> with <to> on the tmux window name",
+                "usage": "fab pane window-name replace-prefix <pane> <from> <to> [flags]",
+                "text": "Usage:\n  fab pane window-name replace-prefix <pane> <from> <to> [flags]\n\nFlags:\n      --json   Emit structured JSON output\n\nGlobal Flags:\n  -L, --server string   Target tmux socket label (passed as 'tmux -L <name>'). Defaults to $TMUX / tmux default socket.\n",
+                "commands": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "preflight",
+        "path": "fab preflight",
+        "short": "Validate project state and output structured YAML",
+        "usage": "fab preflight [change-name]",
+        "text": "Usage:\n  fab preflight [change-name]\n",
+        "commands": []
+      },
+      {
+        "name": "resolve",
+        "path": "fab resolve",
+        "short": "Resolve a change reference to a canonical output",
+        "usage": "fab resolve [change] [flags]",
+        "text": "Usage:\n  fab resolve [change] [flags]\n\nFlags:\n      --dir      Output directory path\n      --folder   Output full folder name\n      --id       Output 4-char change ID (default)\n      --pane     Output tmux pane ID\n      --status   Output .status.yaml path\n",
+        "commands": []
+      },
+      {
+        "name": "score",
+        "path": "fab score",
+        "short": "Compute confidence score from Assumptions table",
+        "usage": "fab score <change> [flags]",
+        "text": "Usage:\n  fab score <change> [flags]\n\nFlags:\n      --check-gate     Gate check mode (read-only)\n      --stage string   Stage for scoring (intake; spec retired in 1.10.0) (default \"intake\")\n",
+        "commands": []
+      },
+      {
+        "name": "shell-init",
+        "path": "fab shell-init",
+        "short": "Emit shell completion script for sourcing (alias for 'completion <shell>')",
+        "usage": "fab shell-init <bash|zsh|fish>",
+        "text": "Usage:\n  fab shell-init <bash|zsh|fish>\n",
+        "commands": []
+      },
+      {
+        "name": "status",
+        "path": "fab status",
+        "short": "Manage workflow stages, states, and .status.yaml",
+        "usage": "fab status",
+        "text": "Usage:\n  fab status [command]\n\nAvailable Commands:\n  add-issue            Append issue ID (idempotent)\n  add-pr               Append PR URL (idempotent)\n  advance              active → ready\n  all-stages           List all stage IDs in order\n  confidence           Extract confidence fields\n  current-stage        Detect active stage\n  display-stage        Display stage as stage:state\n  fail                 active → failed (review/review-pr only)\n  finish               {active,ready} → done (+auto-activate next)\n  get-issues           List issue IDs\n  get-prs              List PR URLs\n  plan                 Extract plan fields\n  progress-line        Single-line visual progress\n  progress-map         Extract stage:state pairs\n  reset                {done,ready,skipped} → active (+cascade)\n  set-acceptance       Update plan field\n  set-change-type      Set change_type\n  set-confidence       Replace confidence block\n  set-confidence-fuzzy Replace confidence block with dimensions\n  skip                 {pending,active} → skipped (+cascade)\n  start                {pending,failed} → active\n  validate-status-file Validate .status.yaml against schema\n\nUse \"fab status [command] --help\" for more information about a command.\n",
+        "commands": [
+          {
+            "name": "add-issue",
+            "path": "fab status add-issue",
+            "short": "Append issue ID (idempotent)",
+            "usage": "fab status add-issue <change> <id>",
+            "text": "Usage:\n  fab status add-issue <change> <id>\n",
+            "commands": []
+          },
+          {
+            "name": "add-pr",
+            "path": "fab status add-pr",
+            "short": "Append PR URL (idempotent)",
+            "usage": "fab status add-pr <change> <url>",
+            "text": "Usage:\n  fab status add-pr <change> <url>\n",
+            "commands": []
+          },
+          {
+            "name": "advance",
+            "path": "fab status advance",
+            "short": "active → ready",
+            "usage": "fab status advance <change> <stage> [driver]",
+            "text": "Usage:\n  fab status advance <change> <stage> [driver]\n",
+            "commands": []
+          },
+          {
+            "name": "all-stages",
+            "path": "fab status all-stages",
+            "short": "List all stage IDs in order",
+            "usage": "fab status all-stages",
+            "text": "Usage:\n  fab status all-stages\n",
+            "commands": []
+          },
+          {
+            "name": "confidence",
+            "path": "fab status confidence",
+            "short": "Extract confidence fields",
+            "usage": "fab status confidence <change>",
+            "text": "Usage:\n  fab status confidence <change>\n",
+            "commands": []
+          },
+          {
+            "name": "current-stage",
+            "path": "fab status current-stage",
+            "short": "Detect active stage",
+            "usage": "fab status current-stage <change>",
+            "text": "Usage:\n  fab status current-stage <change>\n",
+            "commands": []
+          },
+          {
+            "name": "display-stage",
+            "path": "fab status display-stage",
+            "short": "Display stage as stage:state",
+            "usage": "fab status display-stage <change>",
+            "text": "Usage:\n  fab status display-stage <change>\n",
+            "commands": []
+          },
+          {
+            "name": "fail",
+            "path": "fab status fail",
+            "short": "active → failed (review/review-pr only)",
+            "usage": "fab status fail <change> <stage> [driver] [rework]",
+            "text": "Usage:\n  fab status fail <change> <stage> [driver] [rework]\n",
+            "commands": []
+          },
+          {
+            "name": "finish",
+            "path": "fab status finish",
+            "short": "{active,ready} → done (+auto-activate next)",
+            "usage": "fab status finish <change> <stage> [driver]",
+            "text": "Usage:\n  fab status finish <change> <stage> [driver]\n",
+            "commands": []
+          },
+          {
+            "name": "get-issues",
+            "path": "fab status get-issues",
+            "short": "List issue IDs",
+            "usage": "fab status get-issues <change>",
+            "text": "Usage:\n  fab status get-issues <change>\n",
+            "commands": []
+          },
+          {
+            "name": "get-prs",
+            "path": "fab status get-prs",
+            "short": "List PR URLs",
+            "usage": "fab status get-prs <change>",
+            "text": "Usage:\n  fab status get-prs <change>\n",
+            "commands": []
+          },
+          {
+            "name": "plan",
+            "path": "fab status plan",
+            "short": "Extract plan fields",
+            "usage": "fab status plan <change>",
+            "text": "Usage:\n  fab status plan <change>\n",
+            "commands": []
+          },
+          {
+            "name": "progress-line",
+            "path": "fab status progress-line",
+            "short": "Single-line visual progress",
+            "usage": "fab status progress-line <change>",
+            "text": "Usage:\n  fab status progress-line <change>\n",
+            "commands": []
+          },
+          {
+            "name": "progress-map",
+            "path": "fab status progress-map",
+            "short": "Extract stage:state pairs",
+            "usage": "fab status progress-map <change>",
+            "text": "Usage:\n  fab status progress-map <change>\n",
+            "commands": []
+          },
+          {
+            "name": "reset",
+            "path": "fab status reset",
+            "short": "{done,ready,skipped} → active (+cascade)",
+            "usage": "fab status reset <change> <stage> [driver] [from] [reason]",
+            "text": "Usage:\n  fab status reset <change> <stage> [driver] [from] [reason]\n",
+            "commands": []
+          },
+          {
+            "name": "set-acceptance",
+            "path": "fab status set-acceptance",
+            "short": "Update plan field",
+            "usage": "fab status set-acceptance <change> <field> <value>",
+            "text": "Usage:\n  fab status set-acceptance <change> <field> <value>\n",
+            "commands": []
+          },
+          {
+            "name": "set-change-type",
+            "path": "fab status set-change-type",
+            "short": "Set change_type",
+            "usage": "fab status set-change-type <change> <type>",
+            "text": "Usage:\n  fab status set-change-type <change> <type>\n",
+            "commands": []
+          },
+          {
+            "name": "set-confidence",
+            "path": "fab status set-confidence",
+            "short": "Replace confidence block",
+            "usage": "fab status set-confidence <change> <certain> <confident> <tentative> <unresolved> <score> [flags]",
+            "text": "Usage:\n  fab status set-confidence <change> <certain> <confident> <tentative> <unresolved> <score> [flags]\n\nFlags:\n      --indicative   Deprecated no-op (retained for script back-compat)\n",
+            "commands": []
+          },
+          {
+            "name": "set-confidence-fuzzy",
+            "path": "fab status set-confidence-fuzzy",
+            "short": "Replace confidence block with dimensions",
+            "usage": "fab status set-confidence-fuzzy <change> <certain> <confident> <tentative> <unresolved> <score> <mean_s> <mean_r> <mean_a> <mean_d> [flags]",
+            "text": "Usage:\n  fab status set-confidence-fuzzy <change> <certain> <confident> <tentative> <unresolved> <score> <mean_s> <mean_r> <mean_a> <mean_d> [flags]\n\nFlags:\n      --indicative   Deprecated no-op (retained for script back-compat)\n",
+            "commands": []
+          },
+          {
+            "name": "skip",
+            "path": "fab status skip",
+            "short": "{pending,active} → skipped (+cascade)",
+            "usage": "fab status skip <change> <stage> [driver]",
+            "text": "Usage:\n  fab status skip <change> <stage> [driver]\n",
+            "commands": []
+          },
+          {
+            "name": "start",
+            "path": "fab status start",
+            "short": "{pending,failed} → active",
+            "usage": "fab status start <change> <stage> [driver] [from] [reason]",
+            "text": "Usage:\n  fab status start <change> <stage> [driver] [from] [reason]\n",
+            "commands": []
+          },
+          {
+            "name": "validate-status-file",
+            "path": "fab status validate-status-file",
+            "short": "Validate .status.yaml against schema",
+            "usage": "fab status validate-status-file <change>",
+            "text": "Usage:\n  fab status validate-status-file <change>\n",
+            "commands": []
+          }
+        ]
+      }
+    ]
+  }
+}
