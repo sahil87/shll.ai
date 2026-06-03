@@ -1,0 +1,236 @@
+name: Scheduled help refresh
+
+# The PULL side of the help-collection contract (see
+# docs/memory/conventions/help-collection.md and the forward contract at
+# docs/specs/help-dump-contract.md). Replaces the retired push model
+# (help-automerge.yml). On a daily schedule (and on demand), this workflow
+# brew-installs each of the 7 toolkit CLIs, runs `<tool> help-dump`, stamps the
+# shll.ai-owned captured_at field, validates every help/*.json against the Zod
+# contract, and DIRECT-COMMITS the result to main — gated on validation passing.
+#
+# DESIGN (see Design Decisions in help-collection.md):
+#   - Direct commit to main is sound here because the committer is a SINGLE
+#     trusted cron, not 7 external repos. That dissolves the PR-race and the
+#     three-guard hazard that justified PR + auto-merge under push. No PR, no
+#     auto-merge, no SHLLAI_TOKEN — just the default GITHUB_TOKEN with
+#     contents:write.
+#   - GATED ON VALIDATION: the commit step only runs after validate-help.mjs
+#     passes, so a malformed capture never reaches main (never-commit-a-regression).
+#   - PER-TOOL FAILURE ISOLATION: each tool is captured into a temp file; the
+#     committed help/<slug>.json is only overwritten if that tool's help-dump
+#     exits 0 AND emits parseable JSON. A failing tool keeps its last-good
+#     committed file. A MISSING help/tu.json is the expected interim state
+#     (tu's help-dump is in progress), not a failure.
+#   - OFF THE DEPLOY PATH: this workflow does NOT deploy. When it commits to
+#     main, the EXISTING deploy.yml push-to-main deploy ships the updated help
+#     (Constitution IV) — no new deploy trigger is added here. A flaky brew tap
+#     or a broken tool release therefore breaks the REFRESH, not the deploy:
+#     the site keeps shipping last-good committed help.
+#
+# RUNNER: ubuntu-latest with Linuxbrew. The sahil87/tap is confirmed Linux-capable
+# (ships Linux bottles / source-buildable Linux formulae for all 7 CLIs, including
+# the Node-based tu), so the cheaper/faster Linux runner is used over macos-latest
+# (~10x the CI minutes). Homebrew is preinstalled on ubuntu-latest at
+# /home/linuxbrew/.linuxbrew but is not on PATH by default — the "Set up Homebrew"
+# step below loads `brew shellenv` into $GITHUB_PATH/$GITHUB_ENV for later steps.
+
+on:
+  # Daily off-peak refresh. 07:13 UTC is a quiet hour and an odd minute to avoid
+  # the top-of-hour cron stampede on GitHub's shared schedulers.
+  schedule:
+    - cron: '13 7 * * *'
+  # On-demand: trigger manually after a tool release to refresh immediately.
+  workflow_dispatch:
+
+# Minimal permissions: just enough to commit the refreshed help/*.json to main.
+permissions:
+  contents: write
+
+# Avoid overlapping refreshes racing on a direct commit to main.
+concurrency:
+  group: scheduled-help-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      # Always operate on main. workflow_dispatch can be triggered from any
+      # branch, but this is a direct-commit-to-main workflow — pin the checkout
+      # (and therefore the later `git push`) to main so a manual dispatch from a
+      # feature branch can never refresh/commit help onto that branch by mistake.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      # Homebrew ships preinstalled on ubuntu-latest but not on PATH. Load its
+      # environment so `brew` (and brew-installed binaries) resolve in every
+      # subsequent step.
+      - name: Set up Homebrew
+        run: |
+          set -euo pipefail
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          echo "/home/linuxbrew/.linuxbrew/bin" >> "$GITHUB_PATH"
+          echo "/home/linuxbrew/.linuxbrew/sbin" >> "$GITHUB_PATH"
+          echo "HOMEBREW_PREFIX=$HOMEBREW_PREFIX" >> "$GITHUB_ENV"
+          echo "HOMEBREW_CELLAR=$HOMEBREW_CELLAR" >> "$GITHUB_ENV"
+          echo "HOMEBREW_REPOSITORY=$HOMEBREW_REPOSITORY" >> "$GITHUB_ENV"
+
+      # Capture each tool independently. The slug names the FILE; the binary name
+      # is carried inside the `tool` field of the JSON. Mapping (verified against
+      # the committed help/*.json `tool` fields):
+      #   slug      binary
+      #   idea   -> idea
+      #   hop    -> hop
+      #   fab-kit-> fab
+      #   wt     -> wt
+      #   run-kit-> rk
+      #   tu     -> tu   (help-dump in progress; may be absent — not a failure)
+      #   shll   -> shll
+      #
+      # Per-tool isolation: brew-install + run help-dump into a TEMP file; only on
+      # exit 0 AND parseable non-empty JSON do we stamp captured_at and overwrite
+      # help/<slug>.json. Any failure leaves the last-good committed file intact
+      # and is logged as a warning (the run continues for the other tools).
+      - name: Capture help-dump for each tool
+        run: |
+          set -uo pipefail
+
+          # slug:binary pairs (file slug -> invoked binary name)
+          tools=(
+            "idea:idea"
+            "hop:hop"
+            "fab-kit:fab"
+            "wt:wt"
+            "run-kit:rk"
+            "tu:tu"
+            "shll:shll"
+          )
+
+          # Single capture timestamp for the whole run (shll.ai-owned field —
+          # the tools do NOT emit captured_at; the puller stamps it; §3 asymmetry).
+          captured_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "captured_at = $captured_at"
+
+          tmpdir="$(mktemp -d)"
+          failed=()
+
+          for pair in "${tools[@]}"; do
+            slug="${pair%%:*}"
+            binary="${pair##*:}"
+            echo "::group::$slug (binary: $binary)"
+
+            # Install the tool. A failed install is isolated to this tool.
+            if ! brew install "sahil87/tap/$slug"; then
+              echo "::warning::brew install sahil87/tap/$slug failed — keeping last-good help/$slug.json"
+              failed+=("$slug")
+              echo "::endgroup::"
+              continue
+            fi
+
+            raw="$tmpdir/$slug.raw.json"
+            # Capture STDOUT only. A non-zero exit is a hard capture failure.
+            if ! "$binary" help-dump >"$raw" 2>"$tmpdir/$slug.err"; then
+              echo "::warning::$binary help-dump exited non-zero — keeping last-good help/$slug.json"
+              cat "$tmpdir/$slug.err" || true
+              failed+=("$slug")
+              echo "::endgroup::"
+              continue
+            fi
+
+            # Guard against empty/garbage output before it can clobber last-good.
+            if [ ! -s "$raw" ]; then
+              echo "::warning::$binary help-dump produced empty output — keeping last-good help/$slug.json"
+              failed+=("$slug")
+              echo "::endgroup::"
+              continue
+            fi
+
+            # Contract §1: stderr MUST be empty on success. A non-empty stderr on
+            # an otherwise-successful (exit 0, non-empty stdout) capture is
+            # contract drift — surface it as a warning to catch early, but do NOT
+            # fail the capture (the JSON on stdout is still authoritative).
+            if [ -s "$tmpdir/$slug.err" ]; then
+              echo "::warning::$binary help-dump exited 0 but wrote to stderr (contract §1 says stderr is empty on success):"
+              cat "$tmpdir/$slug.err" || true
+            fi
+
+            # Stamp captured_at (the shll.ai-owned field) into the tool-emitted
+            # envelope. Insert it in its CONTRACT position (after `version`,
+            # before `schema_version` — see §3 of help-dump-contract.md and the
+            # committed help/*.json key order) so the first refresh does not churn
+            # the whole file with a reordered key. Build the object explicitly:
+            # {tool, version} + {captured_at} + (everything else, original order
+            # preserved) — this keeps schema_version/root after captured_at AND
+            # carries through any future optional fields the tool may add.
+            # jq -e fails on non-JSON, so malformed output cannot reach
+            # help/<slug>.json. Output is written atomically (tmp then mv).
+            stamped="$tmpdir/$slug.json"
+            if jq -e --arg ts "$captured_at" \
+              '{tool, version} + {captured_at: $ts} + (del(.tool, .version, .captured_at))' \
+              "$raw" >"$stamped"; then
+              mv "$stamped" "help/$slug.json"
+              echo "captured help/$slug.json"
+            else
+              echo "::warning::$binary help-dump output was not valid JSON — keeping last-good help/$slug.json"
+              failed+=("$slug")
+            fi
+            echo "::endgroup::"
+          done
+
+          if [ "${#failed[@]}" -gt 0 ]; then
+            echo "::notice::tools with no fresh capture this run (last-good preserved): ${failed[*]}"
+          fi
+          # NOTE: we never fail the job here. One bad tool must not poison the
+          # others, and a missing tu.json is expected. The validation gate below
+          # is the real guard before anything is committed.
+
+      # Reuse deploy.yml's exact pnpm + Node setup so the validator runs on the
+      # SAME toolchain that builds the site (pnpm 10, Node 22, pnpm cache keyed on
+      # the live site's lockfile). Keeps versions consistent across workflows.
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: sites/astro-starlight-terminal1/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: sites/astro-starlight-terminal1
+        run: pnpm install --frozen-lockfile
+
+      # VALIDATION GATE: the existing contract validator checks every help/*.json
+      # at the repo root against the Zod schema and exits non-zero on any failure.
+      # If this step fails, the job fails and the commit step below is skipped —
+      # so a malformed capture never reaches main (never-commit-a-regression).
+      - name: Validate captured help files
+        working-directory: sites/astro-starlight-terminal1
+        run: node scripts/validate-help.mjs
+
+      # DIRECT COMMIT to main, reached ONLY when validation passed. Commits the
+      # refreshed help/*.json with the default GITHUB_TOKEN (no PR, no auto-merge,
+      # no SHLLAI_TOKEN). Commits only when there is an actual change. The push to
+      # main then triggers the EXISTING deploy.yml deploy (Constitution IV) — no
+      # deploy logic lives here.
+      - name: Commit refreshed help files
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Stage only help/ — nothing else should change in this workflow.
+          git add help/
+
+          if git diff --cached --quiet; then
+            echo "No help changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore(help): refresh help/*.json via scheduled puller"
+          git push
