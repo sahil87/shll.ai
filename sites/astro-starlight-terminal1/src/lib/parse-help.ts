@@ -62,6 +62,17 @@ export interface ParsedHelp {
 const ANCHOR_RE = /^(Usage|Aliases|Examples|Available Commands|Flags|Global Flags):\s*$/;
 
 /**
+ * Any line that LOOKS like a section header (a short capitalised label ending in
+ * a colon, on its own line) but is NOT one of our known anchors. Hand-written
+ * `Long` blocks use these — e.g. `hop`'s `Notes:` and `Getting started:`. Such a
+ * header TERMINATES the current section: subsequent lines are ignored for
+ * structured extraction (they remain in the verbatim raw `-h`), rather than
+ * bleeding into the previous section (which made `Notes:` render as usage rows).
+ * Constrained to <= ~4 words so it doesn't match ordinary prose ending in a colon.
+ */
+const UNKNOWN_HEADER_RE = /^[A-Z][A-Za-z]*(?: [A-Za-z]+){0,3}:\s*$/;
+
+/**
  * Flag-line grammar (the validated prototype regex, translated to JS named groups):
  *
  *   ^\s*
@@ -195,6 +206,57 @@ export function raggedFlagLines(text: string): string[] {
 }
 
 /**
+ * Find where Cobra's GENERATED section block begins — the index of the first
+ * line of the LAST contiguous run of known anchors.
+ *
+ * Cobra always emits the author's free-form `Long` text FIRST, then its own
+ * generated sections (Usage / Aliases / Examples / Available Commands / Flags /
+ * Global Flags) as one contiguous block at the END. A hand-written `Long` may
+ * itself contain header-looking prose — even lines that read exactly like a
+ * Cobra anchor (`hop`'s old `Long` had its own `Usage:` and `Notes:`). The
+ * robust boundary is therefore not "first anchor" but "start of the final
+ * contiguous anchor run": everything before it is authored prose (→ description,
+ * verbatim), everything from it on is the real generated block (→ structured).
+ *
+ * "Contiguous run" = anchors whose bodies (and the blank lines Cobra puts
+ * between sections) contain no further authored prose. We detect a break in the
+ * run when, scanning upward, the gap between two anchors contains a
+ * header-looking line that is NOT itself a known anchor (e.g. `Notes:`) — that
+ * marks authored prose, so the run starts at the anchor below the break.
+ *
+ * Returns `lines.length` if there are no anchors at all (whole text is prose).
+ */
+function findGeneratedBlockStart(lines: string[]): number {
+  // Indices of every known-anchor line.
+  const anchorIdx: number[] = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    if (ANCHOR_RE.test(lines[i])) anchorIdx.push(i);
+  }
+  if (anchorIdx.length === 0) return lines.length;
+
+  // Walk anchors from the last upward; extend the run while the gap to the
+  // previous anchor is "clean" (no unknown header-like prose between them).
+  let start = anchorIdx[anchorIdx.length - 1];
+  for (let k = anchorIdx.length - 1; k > 0; k -= 1) {
+    const prev = anchorIdx[k - 1];
+    const cur = anchorIdx[k];
+    let proseBetween = false;
+    for (let j = prev + 1; j < cur; j += 1) {
+      const ln = lines[j];
+      // An unknown header-like line (e.g. `Notes:`) between two anchors means the
+      // earlier anchor is authored prose, not part of the generated tail.
+      if (UNKNOWN_HEADER_RE.test(ln) && !ANCHOR_RE.test(ln)) {
+        proseBetween = true;
+        break;
+      }
+    }
+    if (proseBetween) break; // run starts at `cur` (already in `start`)
+    start = prev; // gap is clean — absorb the previous anchor into the run
+  }
+  return start;
+}
+
+/**
  * Decompose a Cobra `-h` blob into its structured parts. Pure and total: any
  * input yields a `ParsedHelp` (missing sections → empty), never throws.
  */
@@ -208,22 +270,26 @@ export function parseHelp(text: string): ParsedHelp {
     flags: [],
     globalFlags: [],
   };
-  // Collect prose / examples line-by-line, then join into their string fields.
-  const descLines: string[] = [];
   const exampleLines: string[] = [];
 
-  // Section state machine. `null` = preamble (description), before the first anchor.
+  // Split at the start of Cobra's generated tail. Everything BEFORE is the
+  // author's free-form Long text — kept verbatim as the description, including
+  // any hand-written `Usage:`/`Notes:`/`Cheat Sheet:` prose. Everything FROM
+  // there is the real generated block, which we structure-parse below.
+  const blockStart = findGeneratedBlockStart(lines);
+  const descLines = lines.slice(0, blockStart);
+
+  // Section state machine over the generated tail only (one clean Cobra block).
   type Section = 'usage' | 'aliases' | 'examples' | 'available' | 'flags' | 'global' | null;
   let section: Section = null;
-  let seenAnchor = false;
   // The flag whose (possibly wrapped) description is still open, so a
   // continuation line folds into it rather than being dropped.
   let lastFlag: ParsedFlag | null = null;
 
-  for (const line of lines) {
+  for (let i = blockStart; i < lines.length; i += 1) {
+    const line = lines[i];
     const anchor = ANCHOR_RE.exec(line);
     if (anchor) {
-      seenAnchor = true;
       lastFlag = null;
       switch (anchor[1]) {
         case 'Usage':
@@ -250,12 +316,6 @@ export function parseHelp(text: string): ParsedHelp {
 
     // Discard the trailing Cobra footer wherever it appears.
     if (FOOTER_RE.test(line)) continue;
-
-    if (!seenAnchor) {
-      // Preamble: verbatim description (never force-parsed).
-      descLines.push(line);
-      continue;
-    }
 
     switch (section) {
       case 'usage':
