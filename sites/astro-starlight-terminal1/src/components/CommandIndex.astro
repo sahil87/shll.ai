@@ -23,28 +23,9 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { HelpDocSchema, type Node } from '../lib/schemas.ts';
 import { parseHelp, type ParsedFlag } from '../lib/parse-help.ts';
-
-// Marker-search ascent to the repo root (see CommandReference.astro for why a
-// fixed `..` depth does not survive `astro build`).
-const MAX_ASCENT = 12;
-function findRepoRoot(startDir: string): string {
-  let dir = startDir;
-  for (let i = 0; i < MAX_ASCENT; i += 1) {
-    const candidate = path.join(dir, 'help');
-    if (fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()) {
-      return dir;
-    }
-    const parent = path.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  throw new Error(
-    `CommandIndex: could not locate a repo-root 'help/' directory by ascending from ${startDir}`,
-  );
-}
+import { repoRootFromModuleUrl } from '../lib/repo-root.ts';
 
 /** Boilerplate flags excluded from the cross-tool index (carried by the note). */
 function isBoilerplateFlag(f: ParsedFlag): boolean {
@@ -80,7 +61,7 @@ interface FlagRow {
 }
 type IndexRow = CommandRow | FlagRow;
 
-const repoRoot = findRepoRoot(path.dirname(fileURLToPath(import.meta.url)));
+const repoRoot = repoRootFromModuleUrl(import.meta.url);
 const helpDir = path.join(repoRoot, 'help');
 const slugs = fs
   .readdirSync(helpDir)
