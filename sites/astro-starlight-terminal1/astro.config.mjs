@@ -64,6 +64,14 @@ export default defineConfig({
       pagination: true,
       lastUpdated: false,
       tableOfContents: { minHeadingLevel: 2, maxHeadingLevel: 3 },
+      // Conditional ToC overrides: on per-tool `commands` pages, fill the right
+      // rail (and mobile dropdown) with the tool's first-level commands; every
+      // other page falls through to Starlight's default ToC. See
+      // src/components/CommandsToc.astro / CommandsMobileToc.astro.
+      components: {
+        TableOfContents: './src/components/CommandsToc.astro',
+        MobileTableOfContents: './src/components/CommandsMobileToc.astro',
+      },
       sidebar: [
         {
           label: 'Getting started',

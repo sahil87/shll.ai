@@ -43,7 +43,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { HelpDocSchema, type Node, type HelpDoc } from '../lib/schemas.ts';
-import { parseHelp, type ParsedFlag } from '../lib/parse-help.ts';
+import { parseHelp, commandSlug, type ParsedFlag } from '../lib/parse-help.ts';
 
 interface Props {
   /** Tool slug — names the help file at `<repo-root>/help/<tool>.json`. */
@@ -173,7 +173,10 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
 {
   node ? (
     // ── Recursive subcommand entry ──────────────────────────────────────
-    <details class="cmd-node" open={open}>
+    // Stable `id` makes each command an anchor target (deep links + the
+    // right-rail Commands ToC jump/scroll-spy). The slug rule is shared via
+    // `commandSlug` so the ToC link and this id never drift.
+    <details class="cmd-node" id={commandSlug(node.path)} open={open}>
       <summary class="cmd-summary">
         <span class="cmd-path">{node.path}</span>
         <span class="cmd-short">{node.short}</span>

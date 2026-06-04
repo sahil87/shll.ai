@@ -1,0 +1,136 @@
+---
+/**
+ * CommandsToc — conditional override of Starlight's right-rail "On this page".
+ *
+ * Starlight builds the native ToC from the MDX file's own heading AST, so it
+ * cannot see the commands rendered by the imported `CommandReference.astro`
+ * (they are <details>/<summary>, not page headings) — the rail would otherwise
+ * just show "Overview". This override fills it with the tool's FIRST-LEVEL
+ * commands on the per-tool `commands` pages, and falls through to Starlight's
+ * default ToC on every other page.
+ *
+ * All work is build-time (Constitution I). The command list is read from the
+ * same `<repo-root>/help/<tool>.json` the page renders, via `parseHelp`'s tree
+ * (display-only). Anchors use the SHARED `commandSlug` so links match the
+ * `id`s `CommandReference` emits on each <details.cmd-node>. A small
+ * progressive-enhancement script highlights the in-view command (our targets
+ * are <details>, not headings, so Starlight's heading-only scroll-spy can't be
+ * reused) and expands a node when its ToC link is clicked.
+ */
+import Default from '@astrojs/starlight/components/TableOfContents.astro';
+import { firstLevelCommands, toolFromRouteId } from '../lib/commands-toc.ts';
+
+const tool = toolFromRouteId(Astro.locals.starlightRoute.id);
+const commands = tool ? firstLevelCommands(tool, import.meta.url) : [];
+const useCustom = commands.length > 0;
+const onThisPage = Astro.locals.t('tableOfContents.onThisPage');
+---
+
+{
+  useCustom ? (
+    // Match Starlight's ToC frame so PageSidebar's :global styles apply: a
+    // labelled <nav> with the "On this page" <h2> and a list of links.
+    <starlight-commands-toc>
+      <nav aria-labelledby="starlight__on-this-page">
+        <h2 id="starlight__on-this-page">{onThisPage}</h2>
+        <ul class="cmd-toc-list">
+          {commands.map((c) => (
+            <li>
+              <a href={`#${c.slug}`} data-cmd-toc-link={c.slug}>
+                <code>{c.path}</code>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </starlight-commands-toc>
+  ) : (
+    <Default />
+  )
+}
+
+<style>
+  .cmd-toc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .cmd-toc-list a {
+    font-family: var(--sl-font-mono, monospace);
+  }
+  /* Active command (in view) — mirror Starlight's aria-current accent. */
+  .cmd-toc-list a[aria-current='true'] {
+    color: var(--sl-color-text-accent);
+  }
+  .cmd-toc-list a[aria-current='true'] code {
+    color: inherit;
+  }
+</style>
+
+<script>
+  // Progressive enhancement only (Constitution I): the static list above is
+  // fully usable without JS. This (a) expands a collapsed command node when its
+  // ToC link is clicked, and (b) highlights the command currently in view.
+  class CommandsTocElement extends HTMLElement {
+    connectedCallback() {
+      const links = Array.from(
+        this.querySelectorAll<HTMLAnchorElement>('a[data-cmd-toc-link]'),
+      );
+      if (links.length === 0) return;
+
+      // Clicking a ToC link opens the target <details> so the jump lands on an
+      // expanded node, not a collapsed summary.
+      for (const link of links) {
+        link.addEventListener('click', () => {
+          const slug = link.dataset.cmdTocLink!;
+          const target = document.getElementById(slug);
+          if (target instanceof HTMLDetailsElement) target.open = true;
+        });
+      }
+
+      // Scroll-spy: mark the link whose command summary is nearest the top of
+      // the viewport. Observe each node's <summary> (the stable header row).
+      const byId = new Map(links.map((l) => [l.dataset.cmdTocLink!, l]));
+      const summaries: HTMLElement[] = [];
+      for (const slug of byId.keys()) {
+        const node = document.getElementById(slug);
+        const summary = node?.querySelector<HTMLElement>(':scope > summary');
+        if (summary) {
+          summary.dataset.cmdTocFor = slug;
+          summaries.push(summary);
+        }
+      }
+      if (summaries.length === 0) return;
+
+      let activeSlug = '';
+      const setActive = (slug: string) => {
+        if (slug === activeSlug) return;
+        activeSlug = slug;
+        for (const [s, l] of byId) {
+          if (s === slug) l.setAttribute('aria-current', 'true');
+          else l.removeAttribute('aria-current');
+        }
+      };
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          // Pick the topmost intersecting summary; if none intersect, keep last.
+          const visible = entries
+            .filter((e) => e.isIntersecting)
+            .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+          if (visible.length > 0) {
+            const slug = (visible[0].target as HTMLElement).dataset.cmdTocFor!;
+            setActive(slug);
+          }
+        },
+        // A band near the top of the viewport so the "current" command is the
+        // one you've just scrolled to.
+        { rootMargin: '0px 0px -75% 0px', threshold: 0 },
+      );
+      for (const s of summaries) observer.observe(s);
+    }
+  }
+  if (!customElements.get('starlight-commands-toc')) {
+    customElements.define('starlight-commands-toc', CommandsTocElement);
+  }
+</script>

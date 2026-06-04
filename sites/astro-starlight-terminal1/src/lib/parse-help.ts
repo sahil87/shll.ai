@@ -58,6 +58,16 @@ export interface ParsedHelp {
   globalFlags: ParsedFlag[];
 }
 
+/**
+ * Stable DOM id / anchor slug for a command path (e.g. "hop clone" → "cmd-hop-clone").
+ * Shared so the per-command `<details>` id (CommandReference) and the
+ * right-rail ToC link (CommandsToc override) agree without drift. Lowercased,
+ * non-alphanumerics collapsed to single hyphens.
+ */
+export function commandSlug(path: string): string {
+  return `cmd-${path.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')}`;
+}
+
 /** Known Cobra section headers we anchor on — matched EXACTLY (header line only). */
 const ANCHOR_RE = /^(Usage|Aliases|Examples|Available Commands|Flags|Global Flags):\s*$/;
 
