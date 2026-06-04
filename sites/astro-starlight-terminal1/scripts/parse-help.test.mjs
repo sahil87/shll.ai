@@ -175,22 +175,37 @@ test('multi-word placeholders captured whole, argtype null', () => {
   }
 });
 
-test('hop root: no Flags section → empty flags, description preserved', () => {
-  const node = findNode(docs.hop, 'hop');
-  const parsed = parseHelp(node.text);
+test('hop root: no Flags section → empty flags', () => {
+  const parsed = parseHelp(findNode(docs.hop, 'hop').text);
   assert.deepEqual(parsed.flags, [], 'prose-only root has no parsed flags');
   assert.deepEqual(parsed.globalFlags, [], 'no global flags either');
-  // The hand-written Long preamble (lede + "Getting started") is preserved
-  // verbatim in the description — everything before the FIRST anchor (the
-  // prose `Usage:` header), per the strict anchor rule. The prose usage table
-  // and "Notes" that follow that header are not force-parsed into structure;
-  // they are simply not surfaced as flags (which is the load-bearing guarantee).
-  assert.ok(parsed.description.includes('Getting started:'), 'Getting started kept');
+});
+
+test('hop root: ALL hand-written Long prose is preserved verbatim in the description', () => {
+  // `hop`'s Long is large and contains header-LOOKING prose ("Getting started:",
+  // "Cheat sheet:", "Notes:"). The boundary is the START of Cobra's GENERATED
+  // tail (the last contiguous run of known anchors), NOT the first anchor — so
+  // ALL of that authored prose, including its bodies, stays in `description`
+  // verbatim rather than being dropped or mis-parsed into sections.
+  const d = parseHelp(findNode(docs.hop, 'hop').text).description;
+  assert.ok(d.includes('locate, open, and operate on repos'), 'lede kept');
+  assert.ok(d.includes('Getting started:'), 'Getting started header kept');
+  assert.ok(d.includes('Cheat sheet:'), 'Cheat sheet header kept');
+  assert.ok(d.includes('cd into the repo'), 'Cheat sheet body kept');
+  assert.ok(d.includes('Notes:'), 'Notes header kept');
+  assert.ok(d.includes('auto-resolve'), 'Notes body kept');
+  assert.ok(d.length > 1000, 'description is the full Long, not truncated');
+});
+
+test("hop root: usage is Cobra's generated block only, not the prose Cheat sheet", () => {
+  // Only the real generated `Usage:` (after the prose) is structured. The Cheat
+  // sheet's invocation list must NOT become copyable usage rows.
+  const parsed = parseHelp(findNode(docs.hop, 'hop').text);
+  assert.deepEqual(parsed.usage, ['hop', 'hop [command]'], 'short Cobra usage only');
   assert.ok(
-    parsed.description.includes('locate, open, and operate on repos'),
-    'lede kept',
+    !parsed.usage.some((l) => /cd into the repo|Notes:|Cheat sheet:/i.test(l)),
+    'no authored prose leaked into usage',
   );
-  assert.ok(parsed.description.length > 100, 'description is substantial, not empty');
 });
 
 test('idea add: Global Flags parsed under their own section', () => {
