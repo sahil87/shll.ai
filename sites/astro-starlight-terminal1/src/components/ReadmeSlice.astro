@@ -158,6 +158,26 @@ if (!missing) {
     margin: 1.25rem 0;
   }
 
+  /* Inline badge-runs (e.g. hop's "General form" grammar diagrams) are written
+     in the README as consecutive space-separated images in a single paragraph,
+     meant to read as one horizontal row. Starlight's prose default forces every
+     markdown image to `display: block`, which stacks each badge on its own line.
+     Restore the intended inline flow for paragraphs whose ONLY content is images
+     (and inter-image whitespace / <br>): lay them out as a wrapping flex row so
+     the group wraps as a unit on narrow viewports instead of per-badge.
+     `:has`/`:not` keep this from touching ordinary prose images (figures), which
+     sit in paragraphs alongside text and so never match. */
+  :global(.readme-slice p:has(> img):not(:has(> :not(img):not(br)))) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: center;
+  }
+  :global(.readme-slice p:has(> img):not(:has(> :not(img):not(br))) > img) {
+    display: inline-block;
+    margin: 0;
+  }
+
   /* The placeholder is the one piece that opts out of prose styling. */
   .readme-placeholder p {
     color: var(--c-fg-dim);
