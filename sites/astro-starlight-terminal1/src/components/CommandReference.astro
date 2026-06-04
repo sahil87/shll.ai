@@ -333,14 +333,27 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
           <code>-h</code>/<code>--help</code> work on every command;{' '}
           <code>-v</code>/<code>--version</code> at the tool root.
         </p>
-        {/* Expand/collapse every command node at once. Pure DOM toggle of the
-            <details open> attribute — no data, no re-render (Constitution I). */}
+        {/* Expand/collapse every command NODE at once (the +/- tree). Pure DOM
+            toggle of the <details open> attribute — no data, no re-render
+            (Constitution I). Independent of the raw-output toggle below. */}
         <div class="cmd-toolbar-actions">
           <button type="button" class="cmd-toolbar-btn" data-cmd-expand-all>
             expand all
           </button>
           <button type="button" class="cmd-toolbar-btn" data-cmd-collapse-all>
             collapse all
+          </button>
+          {/* Page-level toggle for whether the per-command "show raw -h" blocks
+              are present at all. Hidden by default (only once JS marks the page),
+              so the structured view isn't cluttered; raw stays the verbatim
+              authority. Label flips show/hide. Does NOT touch command nodes. */}
+          <button
+            type="button"
+            class="cmd-toolbar-btn"
+            data-cmd-raw-toggle
+            aria-pressed="false"
+          >
+            show raw
           </button>
         </div>
       </div>
@@ -412,13 +425,24 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
     });
   });
 
-  // Expand/collapse all command nodes. Pure DOM: toggles the `open` attribute on
-  // every <details.cmd-node> within the reference. No data, no re-render.
   document.querySelectorAll<HTMLElement>('[data-cmd-reference]').forEach((ref) => {
+    // Expand/collapse all command NODES. Pure DOM: toggles `open` on every
+    // <details.cmd-node>. No data, no re-render. Independent of raw blocks.
     const nodes = Array.from(ref.querySelectorAll<HTMLDetailsElement>('details.cmd-node'));
     const setAll = (open: boolean) => nodes.forEach((d) => { d.open = open; });
     ref.querySelector('[data-cmd-expand-all]')?.addEventListener('click', () => setAll(true));
     ref.querySelector('[data-cmd-collapse-all]')?.addEventListener('click', () => setAll(false));
+
+    // Raw-output toggle. With JS present, hide the "show raw -h" blocks by default
+    // (declutter); the button flips them all on/off page-wide. Without JS the
+    // class is never added, so raw stays visible (verbatim-authority fallback).
+    ref.classList.add('js-raw-hidden');
+    const rawBtn = ref.querySelector<HTMLButtonElement>('[data-cmd-raw-toggle]');
+    rawBtn?.addEventListener('click', () => {
+      const nowHidden = ref.classList.toggle('js-raw-hidden');
+      rawBtn.textContent = nowHidden ? 'show raw' : 'hide raw';
+      rawBtn.setAttribute('aria-pressed', String(!nowHidden));
+    });
   });
 </script>
 
@@ -809,6 +833,13 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
     border: 1px solid var(--c-border);
     border-radius: 4px;
     background: var(--c-surface);
+  }
+  /* Raw blocks are hidden by default ONLY once JS marks the reference as
+     raw-hidden (the `data-cmd-raw-toggle` button flips this class). Without JS
+     the class is never added, so the raw -h fallback stays visible — the
+     verbatim authority is never JS-gated (Constitution I). */
+  .cmd-reference.js-raw-hidden .cmd-raw {
+    display: none;
   }
   .cmd-raw-summary {
     cursor: pointer;
