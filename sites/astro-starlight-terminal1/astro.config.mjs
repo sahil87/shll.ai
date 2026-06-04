@@ -139,6 +139,12 @@ export default defineConfig({
           ],
         },
         {
+          label: 'Reference',
+          items: [
+            { label: 'Command index', slug: 'reference/command-index' },
+          ],
+        },
+        {
           label: 'Workflows',
           items: [
             { label: 'Daily flow', slug: 'workflows/daily-flow' },
