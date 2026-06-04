@@ -1,0 +1,6 @@
+# Backlog
+
+> Pending change ideas. Each item: `- [ ] [{id}] {description}` with a 4-char id.
+> Start one with `/fab-new {id}` (the id becomes the change id); `/fab-archive` ticks it `[x]` on ship.
+
+- [ ] [rk7t] Tune the README-extraction divergence reporter (`findUnknownTokens` in `sites/astro-starlight-terminal1/src/lib/extract-readme.ts`) to cut false positives. The report-only gate (change `4s3e`) now warns instead of blocks, so noisy warnings are tolerable but undermine the punch-list's signal. Known false-positive classes observed in the first refresh run: (1) Cobra auto-generated `completion` / `help` subcommands (real, but hidden from `help-dump` so absent from `help/<tool>.json`) — ignore them; (2) the `h ou<TAB>` tab-completion *demo* idiom (a navigation example, not a command invocation) — e.g. `hop ou` was flagged; (3) bare flags (`--force`, `-R`, `-d`, `--stop`, `--restart`, `--worktree-name`) checked too narrowly — scope flag validation to the relevant subcommand rather than the root. Keep true positives intact (the genuine README drift: `shll shell-install`, `fab init`/`sync`/`doctor`, `hop outbox`/`loom`/`dotfiles`/`infra-tf`). Add regression tests per class. Deferred from `4s3e` (intake assumption #7).
