@@ -28,14 +28,18 @@ Interactive elements (links, toggles, form controls) MUST be keyboard-navigable 
 ### External Links
 Outbound links to other projects in the toolkit (`sahil87/*`, `noon.design`, Discord, etc.) MUST remain accurate. Broken or stale links MUST be fixed before any other landing-page work. Rationale: the site's value is as a directory into the rest of the toolkit — every dead link erodes that.
 
+### Tool-Page Depth
+Tool pages MAY host deep per-tool content — including substantial prose, referenced screenshots, and rendered diagrams — provided that content is **mechanically synced from a canonical source, never hand-copied**. The canonical source is the tool's own repo (its README slice and any `docs/site/*.md`), pulled on a schedule and rendered at build time (see `docs/specs/readme-extraction-contract.md` and `docs/specs/help-dump-contract.md`). Hand-maintained long-form duplication of a tool's docs remains prohibited — it invites the drift `vn39` had to clean up. Rationale: a visitor to `shll.ai/<tool>` SHOULD be able to understand the tool deeply *on the site* without clicking out to GitHub; the anti-drift value is preserved by single-sourcing + mechanical sync (the producer repo stays canonical), not by keeping pages thin. Any synced prose that references a tool's commands/flags MUST pass the validation gate against `help/<tool>.json` (the binding `vn39` rule).
+
 ### Test Integrity
 Tests MUST conform to the implementation spec — never the other way around. When tests fail, the fix SHALL either (a) update the tests to match the spec, or (b) update the implementation to match the spec. Modifying implementation code solely to accommodate test fixtures or test infrastructure is prohibited. Specs are the source of truth; tests verify conformance to specs.
 
 ## Governance
 
-**Version**: 2.0.0 | **Ratified**: 2026-05-17 | **Last Amended**: 2026-05-18
+**Version**: 2.1.0 | **Ratified**: 2026-05-17 | **Last Amended**: 2026-06-04
 
 ### Changelog
 
+- **2.1.0 (2026-06-04)**: Added the **Tool-Page Depth** constraint (change `w32m`). Revises the prior "site is a thin directory / link out for depth / no screenshots" stance: tool pages MAY now host deep per-tool prose, referenced screenshots, and rendered diagrams — *provided* the content is mechanically synced from the canonical tool repo (README slice + `docs/site/`), never hand-copied, and passes the `vn39` command/flag validation gate. The six core principles (I–VI) are unchanged; the anti-drift value behind the old stance is preserved and made explicit (single-source + mechanical sync, not thinness).
 - **2.0.0 (2026-05-18)**: Restructured for multi-site exploration. Removed stack-specific principles (Content collections, Tailwind-only, mermaid mechanism). Added Multi-Site Isolation and One Live Site at a Time. Reframed Dark Mode Parity as value-oriented, not mechanism-bound.
 - **1.0.0 (2026-05-17)**: Initial ratification.

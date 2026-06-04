@@ -14,3 +14,4 @@
 | Spec | Description |
 |------|-------------|
 | [help-dump-contract](./help-dump-contract.md) | The forward contract for what each toolkit CLI's `help-dump` MUST emit — invocation, output schema (envelope + recursive Node, the `captured_at` asymmetry), filter/discovery rules, the `tu` exception, schema evolution, and the dated push→pull migration. Consumed by `docs/memory/conventions/help-collection.md`; machine-anchored to `schemas.ts`. |
+| [readme-extraction-contract](./readme-extraction-contract.md) | The forward contract for how each toolkit CLI's `README.md` MUST be structured so shll.ai can pull a deduced, curated slice and render it on the tool page — head rule (skip H1/blockquote/badges), tail rule (denylist; `Install` included), image/dark-theme/mermaid rules, the `docs/site/` escape hatch, and the `vn39` validation gate (sole install guard). The README-prose sibling of `help-dump-contract`; machine-anchored to `src/lib/extract-readme.ts`. |

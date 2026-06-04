@@ -1,0 +1,192 @@
+name: Scheduled README refresh
+
+# The PULL side of the README-extraction contract (see
+# docs/specs/readme-extraction-contract.md). The README-prose SIBLING of
+# scheduled-help-refresh.yml: where that job pulls the machine-generated command
+# reference (JSON, validated against a Zod schema), this job pulls a deduced,
+# curated slice of each tool's authored README (markdown, gated by the vn39
+# command/flag cross-check). On a daily schedule (and on demand), it fetches each
+# of the 7 toolkit repos' README.md, runs the head/tail deduction + mermaid-strip
+# + #gh-*-mode-only-strip + the vn39 validation gate (all single-sourced from
+# src/lib/extract-readme.ts), and DIRECT-COMMITS the passing slice to
+# content/<slug>/README.md on main — gated on the gate passing.
+#
+# DESIGN (mirrors scheduled-help-refresh.yml; see readme-extraction-contract §8):
+#   - SIBLING, not an extension of the help-refresh job. Distinct data kind
+#     (markdown slices → content/, not JSON → help/) and a distinct gate (vn39
+#     command/flag cross-check, not Zod schema validation), so each workflow stays
+#     single-purpose and the help-refresh job is untouched (lower blast radius).
+#   - DIRECT COMMIT to main is sound here for the same reason as help-refresh: the
+#     committer is a SINGLE trusted cron, not 7 external repos. No PR, no
+#     auto-merge, no SHLLAI_TOKEN — just the default GITHUB_TOKEN with
+#     contents:write.
+#   - GATED ON THE vn39 GATE: a slice is only committed if extract-readme-cli.mjs
+#     exits 0 (no unknown command/flag tokens). This is the SOLE guard on pulled
+#     install accuracy now that Install is pulled — it catches the exact failure
+#     mode vn39 cleaned up (e.g. `shll shell-install`, a non-existent alias).
+#   - PER-TOOL FAILURE ISOLATION: each tool is extracted into a TEMP file; the
+#     committed content/<slug>/README.md is only overwritten when that tool's
+#     fetch + extraction + gate all succeed. A failing tool keeps its last-good
+#     committed slice and is logged as a warning; the run continues for the others.
+#   - OFF THE DEPLOY PATH: this workflow does NOT deploy. When it commits to main,
+#     the EXISTING deploy.yml push-to-main deploy ships the updated slices
+#     (Constitution IV) — no new deploy trigger here. A flaky fetch or a
+#     non-conformant README therefore breaks the REFRESH, not the deploy: the site
+#     keeps shipping last-good committed slices.
+
+on:
+  # Daily off-peak refresh. 41 minutes past 07 UTC — a quiet hour, and an offset
+  # from scheduled-help-refresh.yml's 07:13 so the two pulls don't race on a
+  # direct commit to main at the same minute.
+  schedule:
+    - cron: '41 7 * * *'
+  # On-demand: trigger manually after a tool README change to refresh immediately.
+  workflow_dispatch:
+
+# Minimal permissions: just enough to commit the refreshed content/*/README.md to main.
+permissions:
+  contents: write
+
+# Avoid overlapping refreshes racing on a direct commit to main (and avoid racing
+# the help-refresh: distinct group, but both push to main — keep this one serial).
+concurrency:
+  group: scheduled-readme-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      # Always operate on main. workflow_dispatch can be triggered from any
+      # branch, but this is a direct-commit-to-main workflow — pin the checkout
+      # (and therefore the later `git push`) to main so a manual dispatch from a
+      # feature branch can never refresh/commit slices onto that branch by mistake.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      # Reuse deploy.yml's exact pnpm + Node setup so the extract CLI runs on the
+      # SAME toolchain that builds the site (pnpm 10, Node 22 — well past 22.18, so
+      # native .ts type-stripping is on by default; extract-readme.ts is type-only
+      # for schemas.ts, so no astro:content alias is needed). Cache keyed on the
+      # live site's lockfile, matching scheduled-help-refresh.yml.
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: sites/astro-starlight-terminal1/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: sites/astro-starlight-terminal1
+        run: pnpm install --frozen-lockfile
+
+      # Fetch + extract + gate each tool independently. TWO names per tool:
+      #   - file slug → names help/<slug>.json (the gate's truth) AND the output
+      #                 content/<slug>/README.md
+      #   - repo      → the GitHub repo whose README.md is fetched
+      #                 (all tools live at github.com/sahil87/<repo>)
+      # (Unlike the help job there is no formula/binary mapping here — we fetch a
+      # file from the repo, we don't install + run a binary. run-kit's repo is
+      # `run-kit` even though its binary/formula is `rk`.)
+      #
+      # Per-tool isolation: fetch the raw README to a TEMP file, run the extract
+      # CLI (deduction + vn39 gate) writing to a TEMP slice; only on success do we
+      # overwrite content/<slug>/README.md. Any failure (fetch, gate, missing help)
+      # leaves the last-good committed slice intact and is logged as a warning (the
+      # run continues for the other tools). The CLI is single-sourced from
+      # src/lib/extract-readme.ts, the same module scripts/extract-readme.test.mjs
+      # pins — so CI behavior and the tested behavior cannot drift.
+      - name: Pull + extract + gate each tool README
+        working-directory: sites/astro-starlight-terminal1
+        run: |
+          set -uo pipefail
+
+          # slug:repo pairs
+          #   slug → output content/<slug>/README.md + help/<slug>.json (gate truth)
+          #   repo → github.com/sahil87/<repo>/README.md
+          tools=(
+            "idea:idea"
+            "hop:hop"
+            "fab-kit:fab-kit"
+            "wt:wt"
+            "run-kit:run-kit"
+            "tu:tu"
+            "shll:shll"
+          )
+
+          tmpdir="$(mktemp -d)"
+          failed=()
+
+          for pair in "${tools[@]}"; do
+            IFS=: read -r slug repo <<<"$pair"
+            echo "::group::$slug (repo: sahil87/$repo)"
+
+            # Fetch the raw README from the repo's default branch. A failed fetch
+            # is isolated to this tool. Try main, then master.
+            raw="$tmpdir/$slug.README.md"
+            ok=0
+            for branch in main master; do
+              url="https://raw.githubusercontent.com/sahil87/$repo/$branch/README.md"
+              if curl -fsSL "$url" -o "$raw" && [ -s "$raw" ]; then
+                echo "fetched $url"
+                ok=1
+                break
+              fi
+            done
+            if [ "$ok" -ne 1 ]; then
+              echo "::warning::could not fetch README for $slug — keeping last-good content/$slug/README.md"
+              failed+=("$slug")
+              echo "::endgroup::"
+              continue
+            fi
+
+            # Extract + run the vn39 gate. The CLI exits non-zero (printing the
+            # offending tokens) when the slice references a command/flag absent
+            # from help/<slug>.json — in which case we keep the last-good slice.
+            slice="$tmpdir/$slug.slice.md"
+            if node scripts/extract-readme-cli.mjs "$slug" "$raw" --out "$slice"; then
+              mkdir -p "../../content/$slug"
+              mv "$slice" "../../content/$slug/README.md"
+              echo "extracted content/$slug/README.md"
+            else
+              echo "::warning::extract/gate failed for $slug — keeping last-good content/$slug/README.md"
+              failed+=("$slug")
+            fi
+            echo "::endgroup::"
+          done
+
+          if [ "${#failed[@]}" -gt 0 ]; then
+            echo "::notice::tools with no fresh slice this run (last-good preserved): ${failed[*]}"
+          fi
+          # NOTE: we never fail the job here. One bad tool must not poison the
+          # others, and a not-yet-conformant README is the expected interim state.
+          # Each tool's slice was individually gated above before being staged.
+
+      # DIRECT COMMIT to main. Each committed slice already passed the vn39 gate in
+      # the step above (per-tool), so this commits only gate-clean content. Uses the
+      # default GITHUB_TOKEN (no PR, no auto-merge, no SHLLAI_TOKEN). Commits only
+      # when there is an actual change. The push to main then triggers the EXISTING
+      # deploy.yml deploy (Constitution IV) — no deploy logic lives here.
+      - name: Commit refreshed README slices
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Stage only content/ — nothing else should change in this workflow.
+          git add content/
+
+          if git diff --cached --quiet; then
+            echo "No README-slice changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore(content): refresh README slices via scheduled puller"
+          git push
