@@ -7,6 +7,16 @@
  * terminal-styled, collapsible reference. All work happens in this frontmatter,
  * which runs during `astro build` — no client-side fetch (Constitution I).
  *
+ * ENRICHED RENDER (260604-qemq): each node's verbatim `-h` blob is decomposed at
+ * build time by `parseHelp` (src/lib/parse-help.ts) into a structured view —
+ * description, usage, and a flags table with type/required badges and per-row
+ * copy affordances, plus a per-command flag filter. The parse is DISPLAY-ONLY:
+ * the tree still comes from the JSON `commands[]` (help-dump-contract §5), and
+ * the raw `text` stays the verbatim authority behind a per-command "show raw"
+ * toggle. The boilerplate `-h, --help` row is suppressed per command; a single
+ * universal-help note (rendered once at the top of the reference) preserves the
+ * fact that `-h`/`--help` work everywhere and `-v`/`--version` at the tool root.
+ *
  * The data lives at the repo root (`help/*.json`), OUTSIDE this site directory —
  * the documented cross-boundary read (see docs/memory/conventions/help-collection.md).
  * The path is anchored on the component module via `import.meta.url`, NOT on
@@ -33,6 +43,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { HelpDocSchema, type Node, type HelpDoc } from '../lib/schemas.ts';
+import { parseHelp, type ParsedFlag } from '../lib/parse-help.ts';
 
 interface Props {
   /** Tool slug — names the help file at `<repo-root>/help/<tool>.json`. */
@@ -71,6 +82,24 @@ function findRepoRoot(startDir: string): string {
   throw new Error(
     `CommandReference: could not locate a repo-root 'help/' directory by ascending from ${startDir}`,
   );
+}
+
+/**
+ * Is this the boilerplate `-h, --help` row Cobra adds to every command? Those
+ * repeat on all 120 commands, so they are suppressed from the per-command table;
+ * the universal-help note (rendered once) carries the fact that help works
+ * everywhere, and the raw view still shows them verbatim.
+ */
+function isHelpFlag(f: ParsedFlag): boolean {
+  return f.long === 'help' && f.short === 'h';
+}
+
+/** The full flag token a copy button copies, e.g. "--worktree-name ". A flag
+ * with a value placeholder gets a trailing space (you still need to type a
+ * value); a boolean switch does not. Prefer the short form when present. */
+function flagToken(f: ParsedFlag): string {
+  const name = f.short ? `-${f.short}` : `--${f.long}`;
+  return f.placeholder ? `${name} ` : name;
 }
 
 // Two modes in one component:
@@ -122,6 +151,15 @@ if (!node) {
     }
   }
 }
+
+// Build-time decomposition for the node being rendered (recursive mode). The
+// parse is display-only; `node.text` remains the verbatim authority.
+const parsed = node ? parseHelp(node.text) : null;
+const visibleFlags = parsed ? parsed.flags.filter((f) => !isHelpFlag(f)) : [];
+const visibleGlobalFlags = parsed
+  ? parsed.globalFlags.filter((f) => !isHelpFlag(f))
+  : [];
+const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
 ---
 
 {
@@ -131,8 +169,128 @@ if (!node) {
       <summary class="cmd-summary">
         <span class="cmd-path">{node.path}</span>
         <span class="cmd-short">{node.short}</span>
+        <button
+          type="button"
+          class="cmd-copy cmd-copy-path"
+          data-copy={node.path}
+          aria-label={`Copy command: ${node.path}`}
+          title="Copy command"
+        >
+          copy
+        </button>
       </summary>
-      <pre class="cmd-text">{node.text}</pre>
+
+      <div class="cmd-body">
+        {parsed!.description && (
+          <p class="cmd-desc">{parsed!.description}</p>
+        )}
+
+        {parsed!.usage.length > 0 && (
+          <div class="cmd-usage">
+            <span class="cmd-label">usage</span>
+            <ul class="cmd-usage-list">
+              {parsed!.usage.map((line) => (
+                <li class="cmd-usage-row">
+                  <code class="cmd-usage-text">{line}</code>
+                  <button
+                    type="button"
+                    class="cmd-copy"
+                    data-copy={line}
+                    aria-label={`Copy usage: ${line}`}
+                    title="Copy"
+                  >
+                    copy
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {hasFlags && (
+          <div class="cmd-flags" data-cmd-flags>
+            <div class="cmd-flags-head">
+              <span class="cmd-label">flags</span>
+              <input
+                type="text"
+                class="cmd-filter"
+                placeholder="filter flags…"
+                aria-label={`Filter flags for ${node.path}`}
+                data-cmd-filter
+              />
+            </div>
+            <table class="cmd-flag-table">
+              <thead>
+                <tr>
+                  <th scope="col">flag</th>
+                  <th scope="col">type</th>
+                  <th scope="col">description</th>
+                  <th scope="col"><span class="sr-only">copy</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ...visibleFlags.map((f) => ({ f, global: false })),
+                  ...visibleGlobalFlags.map((f) => ({ f, global: true })),
+                ].map(({ f, global }) => (
+                  <tr
+                    class="cmd-flag-row"
+                    data-flag-search={`${f.short ? `-${f.short} ` : ''}--${f.long} ${f.placeholder ?? ''} ${f.desc}`.toLowerCase()}
+                  >
+                    <td class="cmd-flag-name">
+                      <code>
+                        {f.short && <span class="cmd-flag-short">-{f.short}, </span>}
+                        <span class="cmd-flag-long">--{f.long}</span>
+                        {f.placeholder && (
+                          <span class="cmd-flag-ph"> {f.placeholder}</span>
+                        )}
+                      </code>
+                      {global && <span class="cmd-badge cmd-badge-global">global</span>}
+                    </td>
+                    <td class="cmd-flag-type">
+                      {f.argtype && <span class="cmd-badge cmd-badge-type">{f.argtype}</span>}
+                      {f.required && <span class="cmd-badge cmd-badge-req">required</span>}
+                    </td>
+                    <td class="cmd-flag-desc">
+                      {f.desc}
+                      {f.default && (
+                        <span class="cmd-flag-default"> (default {f.default})</span>
+                      )}
+                    </td>
+                    <td class="cmd-flag-copy-cell">
+                      <button
+                        type="button"
+                        class="cmd-copy"
+                        data-copy={flagToken(f)}
+                        aria-label={`Copy flag --${f.long}`}
+                        title="Copy"
+                      >
+                        copy
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p class="cmd-no-match" data-cmd-no-match hidden>
+              No flags match that filter.
+            </p>
+          </div>
+        )}
+
+        {parsed!.examples && (
+          <div class="cmd-examples">
+            <span class="cmd-label">examples</span>
+            <pre class="cmd-examples-text">{parsed!.examples}</pre>
+          </div>
+        )}
+
+        <details class="cmd-raw">
+          <summary class="cmd-raw-summary">show raw <code>-h</code> output</summary>
+          <pre class="cmd-text">{node.text}</pre>
+        </details>
+      </div>
+
       {node.commands.length > 0 && (
         <div class="cmd-children">
           {node.commands.map((child) => (
@@ -152,6 +310,13 @@ if (!node) {
   ) : (
     // ── Present data → render the tree from doc.root ────────────────────
     <div class="cmd-reference not-content">
+      {/* Universal-help note — rendered ONCE per page, not per command. The
+          per-command -h/--help rows are suppressed in the flags tables above;
+          this preserves that the help affordance is universal. */}
+      <p class="cmd-help-note">
+        <code>-h</code>/<code>--help</code> work on every command;{' '}
+        <code>-v</code>/<code>--version</code> at the tool root.
+      </p>
       <pre class="cmd-text cmd-root-text">{doc!.root.text}</pre>
       {doc!.root.commands.length > 0 && (
         <div class="cmd-children cmd-root-children">
@@ -164,6 +329,56 @@ if (!node) {
   )
 }
 
+{/* Progressive enhancement only: copy buttons + per-command flag filter operate
+    over already-rendered static DOM (Constitution I — no data fetch). The page
+    is fully usable without JS; this just adds copy + filter affordances. The
+    script is emitted once per page (Astro dedupes module scripts), even though
+    the component recurses. */}
+<script>
+  // Copy-to-clipboard for any [data-copy] button.
+  document.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement;
+    const btn = target.closest<HTMLButtonElement>('button.cmd-copy[data-copy]');
+    if (!btn) return;
+    // The path copy button lives inside <summary>; a click there would otherwise
+    // toggle the <details>. Suppress that so copying never expands/collapses.
+    if (btn.closest('summary')) event.preventDefault();
+    const text = btn.dataset.copy ?? '';
+    const done = () => {
+      const prev = btn.textContent;
+      btn.textContent = 'copied';
+      btn.classList.add('is-copied');
+      window.setTimeout(() => {
+        btn.textContent = prev;
+        btn.classList.remove('is-copied');
+      }, 1200);
+    };
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => {});
+    }
+  });
+
+  // Per-command flag filter: narrows the already-rendered rows of THIS command's
+  // table only. No network, no re-render — just toggling row visibility.
+  document.querySelectorAll<HTMLInputElement>('input[data-cmd-filter]').forEach((input) => {
+    const container = input.closest('[data-cmd-flags]');
+    if (!container) return;
+    const rows = Array.from(container.querySelectorAll<HTMLElement>('.cmd-flag-row'));
+    const noMatch = container.querySelector<HTMLElement>('[data-cmd-no-match]');
+    input.addEventListener('input', () => {
+      const q = input.value.trim().toLowerCase();
+      let shown = 0;
+      for (const row of rows) {
+        const hay = row.dataset.flagSearch ?? '';
+        const match = q === '' || hay.includes(q);
+        row.hidden = !match;
+        if (match) shown += 1;
+      }
+      if (noMatch) noMatch.hidden = shown !== 0;
+    });
+  });
+</script>
+
 <style>
   /* Terminal-styled command reference. Colors come from the site's --c-* tokens
      (src/styles/terminal.css), which flip with Starlight's data-theme, so dark-
@@ -174,6 +389,23 @@ if (!node) {
     font-size: 0.9rem;
     color: var(--c-fg);
     margin: 1.25rem 0;
+  }
+
+  /* Universal-help note — rendered once per page. */
+  .cmd-help-note {
+    color: var(--c-fg-dim);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    margin: 0 0 1rem;
+    font-size: 0.85rem;
+  }
+  .cmd-help-note code {
+    color: var(--c-accent);
+    background: var(--c-surface-2);
+    padding: 0.05em 0.3em;
+    border-radius: 2px;
   }
 
   .cmd-placeholder p {
@@ -273,13 +505,259 @@ if (!node) {
   .cmd-short {
     color: var(--c-fg-dim);
   }
+  /* Push the command-path copy button to the trailing edge of the summary row. */
+  .cmd-copy-path {
+    margin-inline-start: auto;
+  }
 
-  /* The text block inside an expanded node sits flush below the summary. */
-  .cmd-node > .cmd-text {
+  /* ── Structured node body ──────────────────────────────────────────────── */
+  .cmd-body {
+    border-top: 1px solid var(--c-border);
+    background: var(--c-bg);
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .cmd-desc {
+    margin: 0;
+    color: var(--c-fg);
+    white-space: pre-wrap;
+    line-height: 1.5;
+  }
+
+  .cmd-label {
+    display: inline-block;
+    color: var(--c-fg-faint);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .cmd-label::before {
+    content: '# ';
+    color: var(--c-accent-2);
+  }
+
+  .cmd-usage-list {
+    list-style: none;
+    margin: 0.25rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .cmd-usage-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .cmd-usage-text {
+    color: var(--c-accent);
+    background: var(--c-surface-2);
+    padding: 0.1em 0.4em;
+    border-radius: 2px;
+    overflow-x: auto;
+  }
+
+  /* ── Flags table ───────────────────────────────────────────────────────── */
+  .cmd-flags-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.25rem;
+  }
+  .cmd-filter {
+    font-family: var(--sl-font-mono);
+    font-size: 0.8rem;
+    color: var(--c-fg);
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    min-width: 12ch;
+  }
+  .cmd-filter::placeholder {
+    color: var(--c-fg-faint);
+  }
+  .cmd-filter:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 1px;
+    border-color: var(--c-accent);
+  }
+
+  .cmd-flag-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  .cmd-flag-table th {
+    text-align: left;
+    color: var(--c-fg-faint);
+    font-weight: 500;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.2rem 0.5rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+  .cmd-flag-table td {
+    padding: 0.3rem 0.5rem;
+    border-bottom: 1px solid var(--c-border);
+    vertical-align: top;
+  }
+  .cmd-flag-table tr:last-child td {
+    border-bottom: 0;
+  }
+  .cmd-flag-name code {
+    color: var(--c-fg);
+    white-space: nowrap;
+  }
+  .cmd-flag-long {
+    color: var(--c-accent);
+    font-weight: 600;
+  }
+  .cmd-flag-short {
+    color: var(--c-accent-3);
+  }
+  .cmd-flag-ph {
+    color: var(--c-fg-dim);
+  }
+  .cmd-flag-desc {
+    color: var(--c-fg);
+    line-height: 1.4;
+    /* Preserve the newlines + leading indentation the parser now keeps for
+       multi-line flag help (e.g. `rk riff --layout`'s ASCII diagram). pre-wrap
+       honors explicit line breaks and leading spaces while still wrapping
+       overlong lines so the cell stays readable. */
+    white-space: pre-wrap;
+  }
+  .cmd-flag-default {
+    color: var(--c-fg-dim);
+  }
+
+  /* Badges — type / required / global. */
+  .cmd-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    padding: 0.05em 0.4em;
+    border-radius: 3px;
+    border: 1px solid var(--c-border);
+    margin-inline-end: 0.25rem;
+    white-space: nowrap;
+  }
+  .cmd-badge-type {
+    color: var(--c-accent-3);
+    border-color: var(--c-accent-3);
+  }
+  .cmd-badge-req {
+    color: var(--c-accent);
+    border-color: var(--c-accent);
+  }
+  .cmd-badge-global {
+    color: var(--c-fg-dim);
+    margin-inline-start: 0.4rem;
+  }
+
+  .cmd-no-match {
+    color: var(--c-fg-dim);
+    font-size: 0.8rem;
+    margin: 0.5rem 0 0;
+  }
+
+  /* ── Copy buttons ──────────────────────────────────────────────────────── */
+  .cmd-copy {
+    font-family: var(--sl-font-mono);
+    font-size: 0.7rem;
+    color: var(--c-fg-dim);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 3px;
+    padding: 0.1em 0.5em;
+    cursor: pointer;
+    flex: none;
+    transition:
+      border-color 0.12s ease,
+      color 0.12s ease;
+  }
+  .cmd-copy:hover {
+    color: var(--c-fg);
+    border-color: var(--c-accent);
+  }
+  .cmd-copy:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 1px;
+  }
+  .cmd-copy.is-copied {
+    color: var(--c-accent-2);
+    border-color: var(--c-accent-2);
+  }
+
+  /* ── Examples + raw toggle ─────────────────────────────────────────────── */
+  .cmd-examples-text {
+    white-space: pre-wrap;
+    background: var(--c-surface-2);
+    border: 1px solid var(--c-border);
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    margin: 0.25rem 0 0;
+    color: var(--c-fg);
+  }
+
+  .cmd-raw {
+    border: 1px solid var(--c-border);
+    border-radius: 4px;
+    background: var(--c-surface);
+  }
+  .cmd-raw-summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 0.35rem 0.6rem;
+    color: var(--c-fg-dim);
+    font-size: 0.8rem;
+  }
+  .cmd-raw-summary::-webkit-details-marker {
+    display: none;
+  }
+  .cmd-raw-summary::before {
+    content: '+ ';
+    color: var(--c-fg-faint);
+    font-weight: 600;
+  }
+  .cmd-raw[open] > .cmd-raw-summary::before {
+    content: '- ';
+  }
+  .cmd-raw-summary:hover {
+    color: var(--c-fg);
+  }
+  .cmd-raw-summary:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: -2px;
+  }
+  .cmd-raw-summary code {
+    color: var(--c-accent);
+  }
+  .cmd-raw > .cmd-text {
     border: 0;
     border-top: 1px solid var(--c-border);
     border-radius: 0;
     background: var(--c-bg);
+  }
+
+  /* Screen-reader-only label for the copy column header. */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   .cmd-node ::selection {

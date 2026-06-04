@@ -1,0 +1,22 @@
+{"action":"enter","driver":"fab-new","event":"stage-transition","stage":"intake","ts":"2026-06-04T02:40:31Z"}
+{"args":"Enrich the generated command reference with a build-time -h parser: separate parser module decomposing Cobra text into structured flags/description/usage/examples; structured render with flags table, copy affordances, per-command filter, type/required badges, show-raw toggle; cross-tool flag index page. Build-time only, display-only parse, no tool-repo changes.","cmd":"fab-new","event":"command","ts":"2026-06-04T02:40:31Z"}
+{"delta":"+2.1","event":"confidence","score":2.1,"trigger":"calc-score","ts":"2026-06-04T02:41:45Z"}
+{"delta":"+0.0","event":"confidence","score":2.1,"trigger":"calc-score","ts":"2026-06-04T02:41:51Z"}
+{"cmd":"fab-clarify","event":"command","ts":"2026-06-04T02:55:16Z"}
+{"delta":"+0.0","event":"confidence","score":2.1,"trigger":"calc-score","ts":"2026-06-04T02:58:14Z"}
+{"delta":"+0.0","event":"confidence","score":2.1,"trigger":"calc-score","ts":"2026-06-04T02:58:24Z"}
+{"delta":"+0.0","event":"confidence","score":2.1,"trigger":"calc-score","ts":"2026-06-04T02:58:30Z"}
+{"delta":"+0.0","event":"confidence","score":2.1,"trigger":"calc-score","ts":"2026-06-04T02:58:38Z"}
+{"delta":"+2.9","event":"confidence","score":5,"trigger":"calc-score","ts":"2026-06-04T02:59:01Z"}
+{"delta":"+0.0","event":"confidence","score":5,"trigger":"calc-score","ts":"2026-06-04T02:59:09Z"}
+{"delta":"+0.0","event":"confidence","score":5,"trigger":"calc-score","ts":"2026-06-04T02:59:13Z"}
+{"cmd":"fab-fff","event":"command","ts":"2026-06-04T03:41:00Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"apply","ts":"2026-06-04T03:41:17Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"review","ts":"2026-06-04T03:52:21Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"hydrate","ts":"2026-06-04T03:55:40Z"}
+{"event":"review","result":"passed","ts":"2026-06-04T03:55:40Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"ship","ts":"2026-06-04T03:57:52Z"}
+{"action":"enter","driver":"git-pr","event":"stage-transition","stage":"review-pr","ts":"2026-06-04T04:00:35Z"}
+{"event":"review","result":"passed","ts":"2026-06-04T04:01:52Z"}
+{"action":"re-entry","driver":"fab-fff","event":"stage-transition","stage":"review-pr","ts":"2026-06-04T07:08:56Z"}
+{"event":"review","result":"passed","ts":"2026-06-04T07:13:50Z"}

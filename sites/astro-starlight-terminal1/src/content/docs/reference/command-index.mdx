@@ -1,0 +1,13 @@
+---
+title: Command index
+description: A searchable cross-tool index of every command and flag — generated at build time from each binary's own --help output.
+---
+
+import CommandIndex from '../../../components/CommandIndex.astro';
+
+Every command and every real flag across the toolkit, in one searchable list —
+answer "which tools have `--json`?" or "where is `--non-interactive`?" at a
+glance. Generated at build time from each binary's own `--help` output; each
+entry links to that tool's full command reference.
+
+<CommandIndex />

@@ -1,0 +1,378 @@
+---
+/**
+ * CommandIndex — a cross-tool, searchable flat index of every command and every
+ * real flag across all tools, generated entirely at BUILD TIME.
+ *
+ * Reads ALL `<repo-root>/help/*.json`, validates each against `HelpDocSchema`,
+ * and runs `parseHelp` (display-only — the tree still comes from JSON
+ * `commands[]`, help-dump-contract §5) to produce two kinds of rows:
+ *   - one per command PATH (every node, incl. prose-only roots), and
+ *   - one per REAL flag (incl. Global Flags), EXCLUDING the universal boilerplate
+ *     `-h`/`--help`/`-v`/`--version` (the universal-help note carries that fact).
+ *
+ * Every row links to the owning tool's `commands` page. A client-side search box
+ * filters the already-rendered static rows (progressive enhancement only —
+ * Constitution I; the content is fully static and usable without JS).
+ *
+ * The repo-root `help/` dir is resolved by ascending from `import.meta.url` (the
+ * same marker-search pattern CommandReference uses, for the same Vite
+ * bundled-chunk-depth reason). A MISSING help dir is a build-stopping condition;
+ * an individual present-but-invalid file fails the build loudly (a committed
+ * defect must not deploy). An absent help dir cannot happen here because the
+ * ascent throws if no `help/` exists.
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { HelpDocSchema, type Node } from '../lib/schemas.ts';
+import { parseHelp, type ParsedFlag } from '../lib/parse-help.ts';
+
+// Marker-search ascent to the repo root (see CommandReference.astro for why a
+// fixed `..` depth does not survive `astro build`).
+const MAX_ASCENT = 12;
+function findRepoRoot(startDir: string): string {
+  let dir = startDir;
+  for (let i = 0; i < MAX_ASCENT; i += 1) {
+    const candidate = path.join(dir, 'help');
+    if (fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()) {
+      return dir;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  throw new Error(
+    `CommandIndex: could not locate a repo-root 'help/' directory by ascending from ${startDir}`,
+  );
+}
+
+/** Boilerplate flags excluded from the cross-tool index (carried by the note). */
+function isBoilerplateFlag(f: ParsedFlag): boolean {
+  return (
+    (f.long === 'help' && f.short === 'h') ||
+    (f.long === 'version' && f.short === 'v')
+  );
+}
+
+/** Depth-first walk yielding every node (root + all subcommands). */
+function* walk(node: Node): Generator<Node> {
+  yield node;
+  for (const child of node.commands) yield* walk(child);
+}
+
+interface CommandRow {
+  kind: 'command';
+  tool: string; // file slug, e.g. "run-kit" — also the docs route segment
+  path: string; // e.g. "rk riff"
+  short: string;
+}
+interface FlagRow {
+  kind: 'flag';
+  tool: string;
+  commandPath: string; // owning command path
+  short: string | null;
+  long: string;
+  placeholder: string | null;
+  argtype: string | null;
+  required: boolean;
+  global: boolean;
+  desc: string;
+}
+type IndexRow = CommandRow | FlagRow;
+
+const repoRoot = findRepoRoot(path.dirname(fileURLToPath(import.meta.url)));
+const helpDir = path.join(repoRoot, 'help');
+const slugs = fs
+  .readdirSync(helpDir)
+  .filter((f) => f.endsWith('.json'))
+  .map((f) => f.replace(/\.json$/, ''))
+  .sort();
+
+const rows: IndexRow[] = [];
+for (const slug of slugs) {
+  const raw = fs.readFileSync(path.join(helpDir, `${slug}.json`), 'utf8');
+  let doc;
+  try {
+    doc = HelpDocSchema.parse(JSON.parse(raw));
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `Invalid help document at ${path.join(helpDir, `${slug}.json`)} — does not match HelpDocSchema:\n${detail}`,
+    );
+  }
+
+  for (const node of walk(doc.root)) {
+    // Every command path is listed (prose-only roots included — they simply
+    // contribute no flag rows).
+    rows.push({ kind: 'command', tool: slug, path: node.path, short: node.short });
+
+    const parsed = parseHelp(node.text);
+    const all = [
+      ...parsed.flags.map((f) => ({ f, global: false })),
+      ...parsed.globalFlags.map((f) => ({ f, global: true })),
+    ];
+    for (const { f, global } of all) {
+      if (isBoilerplateFlag(f)) continue;
+      rows.push({
+        kind: 'flag',
+        tool: slug,
+        commandPath: node.path,
+        short: f.short,
+        long: f.long,
+        placeholder: f.placeholder,
+        argtype: f.argtype,
+        required: f.required,
+        global,
+        desc: f.desc,
+      });
+    }
+  }
+}
+
+/** Link to the owning tool's generated commands page. */
+function commandsHref(slug: string): string {
+  return `/tools/${slug}/commands/`;
+}
+
+const commandCount = rows.filter((r) => r.kind === 'command').length;
+const flagCount = rows.filter((r) => r.kind === 'flag').length;
+---
+
+<div class="ci not-content">
+  <p class="ci-help-note">
+    <code>-h</code>/<code>--help</code> work on every command;{' '}
+    <code>-v</code>/<code>--version</code> at each tool root. They are omitted
+    from this index to keep it scannable.
+  </p>
+
+  <div class="ci-controls">
+    <input
+      type="text"
+      class="ci-search"
+      placeholder="search commands and flags…"
+      aria-label="Search all commands and flags across tools"
+      data-ci-search
+    />
+    <span class="ci-count" data-ci-count>
+      {commandCount} commands · {flagCount} flags
+    </span>
+  </div>
+
+  <ul class="ci-list" data-ci-list>
+    {rows.map((row) =>
+      row.kind === 'command' ? (
+        <li
+          class="ci-row ci-row-command"
+          data-ci-haystack={`${row.path} ${row.short} ${row.tool}`.toLowerCase()}
+        >
+          <span class="ci-tool">{row.tool}</span>
+          <a class="ci-cmd-link" href={commandsHref(row.tool)}>
+            <code class="ci-path">{row.path}</code>
+          </a>
+          <span class="ci-cmd-short">{row.short}</span>
+        </li>
+      ) : (
+        <li
+          class="ci-row ci-row-flag"
+          data-ci-haystack={`${row.commandPath} ${row.short ? `-${row.short} ` : ''}--${row.long} ${row.placeholder ?? ''} ${row.desc} ${row.tool}`.toLowerCase()}
+        >
+          <span class="ci-tool">{row.tool}</span>
+          <a class="ci-cmd-link" href={commandsHref(row.tool)}>
+            <code class="ci-flag-cmd">{row.commandPath}</code>
+          </a>
+          <code class="ci-flag-name">
+            {row.short && <span class="ci-flag-short">-{row.short}, </span>}
+            <span class="ci-flag-long">--{row.long}</span>
+            {row.placeholder && <span class="ci-flag-ph"> {row.placeholder}</span>}
+          </code>
+          {row.argtype && <span class="ci-badge ci-badge-type">{row.argtype}</span>}
+          {row.required && <span class="ci-badge ci-badge-req">required</span>}
+          {row.global && <span class="ci-badge ci-badge-global">global</span>}
+        </li>
+      ),
+    )}
+  </ul>
+  <p class="ci-no-match" data-ci-no-match hidden>No commands or flags match that search.</p>
+</div>
+
+{/* Progressive enhancement only: filters already-rendered static rows. No data
+    fetch (Constitution I); the full index is in the static HTML. */}
+<script>
+  const search = document.querySelector<HTMLInputElement>('input[data-ci-search]');
+  const list = document.querySelector<HTMLElement>('[data-ci-list]');
+  const noMatch = document.querySelector<HTMLElement>('[data-ci-no-match]');
+  if (search && list) {
+    const rows = Array.from(list.querySelectorAll<HTMLElement>('.ci-row'));
+    search.addEventListener('input', () => {
+      const q = search.value.trim().toLowerCase();
+      let shown = 0;
+      for (const row of rows) {
+        const hay = row.dataset.ciHaystack ?? '';
+        const match = q === '' || hay.includes(q);
+        row.hidden = !match;
+        if (match) shown += 1;
+      }
+      if (noMatch) noMatch.hidden = shown !== 0;
+    });
+  }
+</script>
+
+<style>
+  .ci {
+    font-family: var(--sl-font-mono);
+    font-size: 0.85rem;
+    color: var(--c-fg);
+    margin: 1.25rem 0;
+  }
+
+  .ci-help-note {
+    color: var(--c-fg-dim);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    margin: 0 0 1rem;
+    font-size: 0.85rem;
+  }
+  .ci-help-note code {
+    color: var(--c-accent);
+    background: var(--c-surface-2);
+    padding: 0.05em 0.3em;
+    border-radius: 2px;
+  }
+
+  .ci-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+  }
+  .ci-search {
+    flex: 1 1 18ch;
+    font-family: var(--sl-font-mono);
+    font-size: 0.85rem;
+    color: var(--c-fg);
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    border-radius: 4px;
+    padding: 0.35rem 0.6rem;
+  }
+  .ci-search::placeholder {
+    color: var(--c-fg-faint);
+  }
+  .ci-search:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 1px;
+    border-color: var(--c-accent);
+  }
+  .ci-count {
+    color: var(--c-fg-faint);
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  .ci-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--c-border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .ci-row {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.6rem;
+    padding: 0.3rem 0.6rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+  .ci-row:last-child {
+    border-bottom: 0;
+  }
+  .ci-row-command {
+    background: var(--c-surface);
+  }
+  .ci-row-flag {
+    background: var(--c-bg);
+  }
+
+  .ci-tool {
+    flex: none;
+    min-width: 7ch;
+    color: var(--c-fg-faint);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .ci-cmd-link {
+    text-decoration: none;
+    border-bottom: 1px dotted transparent;
+  }
+  .ci-cmd-link:hover,
+  .ci-cmd-link:focus-visible {
+    border-bottom-color: var(--c-accent);
+    outline: none;
+  }
+  .ci-cmd-link:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 2px;
+  }
+  .ci-path {
+    color: var(--c-accent);
+    font-weight: 600;
+  }
+  .ci-cmd-short {
+    color: var(--c-fg-dim);
+  }
+
+  .ci-flag-cmd {
+    color: var(--c-fg-dim);
+  }
+  .ci-flag-name {
+    color: var(--c-fg);
+  }
+  .ci-flag-long {
+    color: var(--c-accent);
+    font-weight: 600;
+  }
+  .ci-flag-short {
+    color: var(--c-accent-3);
+  }
+  .ci-flag-ph {
+    color: var(--c-fg-dim);
+  }
+
+  .ci-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    padding: 0.05em 0.4em;
+    border-radius: 3px;
+    border: 1px solid var(--c-border);
+    white-space: nowrap;
+  }
+  .ci-badge-type {
+    color: var(--c-accent-3);
+    border-color: var(--c-accent-3);
+  }
+  .ci-badge-req {
+    color: var(--c-accent);
+    border-color: var(--c-accent);
+  }
+  .ci-badge-global {
+    color: var(--c-fg-dim);
+  }
+
+  .ci-no-match {
+    color: var(--c-fg-dim);
+    font-size: 0.8rem;
+    margin: 0.5rem 0 0;
+  }
+
+  .ci ::selection {
+    background: var(--c-fg);
+    color: var(--c-bg);
+  }
+</style>
