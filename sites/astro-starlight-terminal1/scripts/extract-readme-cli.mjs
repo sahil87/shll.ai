@@ -65,8 +65,9 @@ let helpDoc;
 try {
   helpDoc = JSON.parse(await readFile(helpPath, 'utf8'));
 } catch (err) {
+  const detail = err instanceof Error ? err.message : String(err);
   console.error(
-    `gate: cannot verify ${slug} — help/${slug}.json is missing or unreadable (${err.message}).`,
+    `gate: cannot verify ${slug} — help/${slug}.json is missing or unreadable (${detail}).`,
   );
   console.error('Refusing to commit unverified README prose (vn39 gate cannot run).');
   process.exit(1);

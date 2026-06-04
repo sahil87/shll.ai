@@ -74,11 +74,52 @@ const BADGE_LINE_RE =
   /^(?:\s*(?:\[!\[[^\]]*\]\([^)]*\)\]\([^)]*\)|!\[[^\]]*\]\([^)]*\)|<\/?(?:p|img|picture|source|a|div)\b[^>]*>))+\s*$/i;
 
 /** Opening fence of an inline mermaid block: ```mermaid (any indent, any fence
- *  char run length). The matching close is the next fence of the same family. */
+ *  char run length). The matching close is the next fence of the same family
+ *  whose run length is >= this opening run (CommonMark — see {@link isClosingFence}). */
 const MERMAID_OPEN_RE = /^(\s*)(`{3,}|~{3,})\s*mermaid\s*$/i;
 
-/** Any fenced-code opening/closing line → the fence token (``` or ~~~ run). */
+/** Any fenced-code opening/closing line → the fence run (``` or ~~~). */
 const FENCE_RE = /^(\s*)(`{3,}|~{3,})/;
+
+/** A parsed open fence: its char family and its run length. */
+interface OpenFence {
+  /** The fence char family: '`' (backtick) or '~' (tilde). */
+  char: string;
+  /** The number of fence chars in the opening run (>= 3). */
+  len: number;
+}
+
+/**
+ * Parse a line as an opening code fence, returning its {@link OpenFence} (char
+ * family + run length) or `null` if the line is not a fence. The run length is
+ * load-bearing: per CommonMark a closing fence must be at least as long as the
+ * opening one, so an opening ```` (4 backticks) is NOT closed by a later ```
+ * (3 backticks) — see {@link isClosingFence}. Single-sources fence-open parsing
+ * for `tailBoundary`, `stripMermaid`, and `codeSpans`.
+ */
+function openFence(line: string): OpenFence | null {
+  const m = FENCE_RE.exec(line);
+  if (!m) return null;
+  return { char: m[2][0], len: m[2].length };
+}
+
+/**
+ * Does `line` close a code block opened by `open`? Per CommonMark a closing
+ * fence must be of the SAME char family AND have a run length >= the opening
+ * run (and carry no info string). Tracking the open run's length is what stops a
+ * 4-backtick block from being wrongly terminated by an inner 3-backtick fence.
+ * Single-sourced so all three scanners apply the identical rule.
+ */
+function isClosingFence(line: string, open: OpenFence): boolean {
+  const m = FENCE_RE.exec(line);
+  if (!m) return false;
+  const close: OpenFence = { char: m[2][0], len: m[2].length };
+  if (close.char !== open.char || close.len < open.len) return false;
+  // A closing fence carries no info string: only the fence run (and trailing
+  // whitespace) may follow. Anything else (e.g. ```` ```bash ````) opens a new
+  // nested block of a different family/length, not a close.
+  return line.slice(m.index + m[1].length + m[2].length).trim() === '';
+}
 
 /** A markdown image whose URL carries the GitHub theme-only fragment (§4/§6).
  *  `g` so every occurrence on a line is removed; `i` for the fragment casing. */
@@ -133,20 +174,20 @@ function headBoundary(lines: string[]): number {
  * NOT treated as headings (a `## ...` line inside a ```` ``` ```` block is code).
  */
 function tailBoundary(lines: string[], start: number): number {
-  let fenceToken: string | null = null;
+  let open: OpenFence | null = null;
   for (let i = start; i < lines.length; i += 1) {
     const line = lines[i];
-    const fence = FENCE_RE.exec(line);
+    if (open !== null) {
+      // Inside a code block: it ends only on a same-family fence whose run is
+      // >= the opening run (CommonMark). A shorter inner fence does NOT close it.
+      if (isClosingFence(line, open)) open = null;
+      continue; // lines inside a code block are not headings
+    }
+    const fence = openFence(line);
     if (fence) {
-      const token = fence[2][0]; // '`' or '~'
-      if (fenceToken === null) {
-        fenceToken = token;
-      } else if (fenceToken === token) {
-        fenceToken = null; // closing fence of the same family
-      }
+      open = fence;
       continue;
     }
-    if (fenceToken !== null) continue; // inside a code block — not a heading
     const heading = HEADING_RE.exec(line);
     if (heading && DENYLIST_HEADINGS.has(heading[1].trim().toLowerCase())) {
       return i;
@@ -162,24 +203,23 @@ function tailBoundary(lines: string[], start: number): number {
  */
 function stripMermaid(lines: string[]): string[] {
   const out: string[] = [];
-  let inMermaid = false;
-  let mermaidFence: string | null = null;
+  let mermaidOpen: OpenFence | null = null;
   for (const line of lines) {
-    if (!inMermaid) {
+    if (mermaidOpen === null) {
       const open = MERMAID_OPEN_RE.exec(line);
       if (open) {
-        inMermaid = true;
-        mermaidFence = open[2][0]; // '`' or '~'
+        // Capture the opening fence's char + run length so a shorter inner fence
+        // inside the mermaid block does not prematurely close it (CommonMark).
+        mermaidOpen = { char: open[2][0], len: open[2].length };
         continue; // drop the opening fence line
       }
       out.push(line);
       continue;
     }
-    // Inside a mermaid block: drop lines until the matching close fence.
-    const fence = FENCE_RE.exec(line);
-    if (fence && fence[2][0] === mermaidFence) {
-      inMermaid = false;
-      mermaidFence = null;
+    // Inside a mermaid block: drop lines until the matching close fence (same
+    // family, run length >= the opening run).
+    if (isClosingFence(line, mermaidOpen)) {
+      mermaidOpen = null;
     }
     // drop this line (the close fence itself is dropped too)
   }
@@ -280,18 +320,22 @@ function helpFacts(doc: HelpDoc): HelpFacts {
 function codeSpans(slice: string): string[] {
   const spans: string[] = [];
   const lines = slice.split('\n');
-  let fenceToken: string | null = null;
+  let open: OpenFence | null = null;
   for (const line of lines) {
-    const fence = FENCE_RE.exec(line);
-    if (fence) {
-      const token = fence[2][0];
-      if (fenceToken === null) fenceToken = token;
-      else if (fenceToken === token) fenceToken = null;
-      continue; // the fence line itself carries no command
-    }
-    if (fenceToken !== null) {
+    if (open !== null) {
+      // Inside a fenced block: a shorter inner fence does NOT close it
+      // (CommonMark — same rule the boundary/strip scanners use).
+      if (isClosingFence(line, open)) {
+        open = null;
+        continue; // the closing fence line carries no command
+      }
       spans.push(line);
       continue;
+    }
+    const fence = openFence(line);
+    if (fence) {
+      open = fence;
+      continue; // the opening fence line carries no command
     }
     // Outside a fence: pull inline `code` spans from this prose line.
     const inline = line.match(/`[^`]+`/g);

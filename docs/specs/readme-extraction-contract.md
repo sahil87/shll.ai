@@ -231,9 +231,10 @@ because it is a different data kind (markdown slices, not the JSON command tree)
 gate (§7 command/flag cross-check, not Zod-schema validation).
 
 - **Triggers:** a daily `schedule` cron + `workflow_dispatch` (on-demand after a README change).
-- **Per-tool pipeline** (looped over all 7 tools): fetch the repo's `README.md` (and any
-  `docs/site/*.md`, §9) → apply §1 head + §2 tail deduction → §6 strips → §7 validation gate → on
-  success, commit the slice to `content/<slug>/README.md`.
+- **Per-tool pipeline** (looped over all 7 tools): fetch the repo's `README.md` → apply §1 head +
+  §2 tail deduction → §6 strips → §7 validation gate → on success, commit the slice to
+  `content/<slug>/README.md`. (The `docs/site/*.md` source of §9 is reserved/future and is **not**
+  part of this pipeline today — only `README.md` is fetched and rendered.)
 - **Repo-root data location:** the extracted slice is committed to a `content/<slug>/` directory at
   the **repo root** (sibling to `help/`, `sites/`, `fab/`, `docs/`). Same rationale as `help/`:
   project-level data that **survives a live-site swap** (Constitution II + III), kept distinct from
@@ -264,23 +265,32 @@ gate (§7 command/flag cross-check, not Zod-schema validation).
 - **Per-tool isolation** — GIVEN one tool whose fetch or gate fails; WHEN the run proceeds; THEN that
   tool keeps its last-good `content/<slug>/README.md` and the other tools still refresh.
 
-## §9 The `docs/site/` escape hatch
+## §9 The `docs/site/` escape hatch — RESERVED / NOT YET IMPLEMENTED
 
-The README slice is the **default** source. For site-only additions that should NOT live in the
-README, a tool repo MAY add `docs/site/*.md`, which the puller also pulls. Maintainer/design notes
-that must **never** reach the site go in `docs/internal/` (NOT `docs/specs/` — that name collides
-with fab's existing meaning of pre-implementation design intent).
+> **Status: reserved future extension.** The pull + render path shipped in change `w32m` handles
+> **only** the README slice (`README.md` → `content/<slug>/README.md`). The workflow
+> (`scheduled-readme-refresh.yml`), the CLI (`extract-readme-cli.mjs`), and the renderer
+> (`ReadmeSlice.astro`) have **no `docs/site/` fetch or render path**. This section records the
+> *intended* design so a later change can implement it without re-litigating the model — it does
+> **not** describe current behavior.
 
-The organizing axis is **audience** — user-facing (README slice + `docs/site/`), GitHub-native
-(footer chrome, denylisted sections), maintainer-facing (`docs/internal/`) — **not** "wanted vs.
-unwanted."
+The README slice is the **default** (and, today, the only) source. The reserved extension: for
+site-only additions that should NOT live in the README, a tool repo MAY add `docs/site/*.md`, which
+a future puller would also pull and render. Maintainer/design notes that must **never** reach the
+site go in `docs/internal/` (NOT `docs/specs/` — that name collides with fab's existing meaning of
+pre-implementation design intent).
+
+The intended organizing axis is **audience** — user-facing (README slice + the future `docs/site/`),
+GitHub-native (footer chrome, denylisted sections), maintainer-facing (`docs/internal/`) — **not**
+"wanted vs. unwanted."
 
 ### GIVEN/WHEN/THEN
 
-- **Audience axis, not a wanted/unwanted axis** — GIVEN a tool author with a site-only note and a
-  maintainer-only note; WHEN they place them; THEN the site-only note goes in `docs/site/*.md` (pulled)
-  and the maintainer note goes in `docs/internal/` (never pulled), and `docs/specs/` is avoided to not
-  collide with fab's meaning.
+- **Audience axis, not a wanted/unwanted axis (intended model)** — GIVEN a tool author with a
+  site-only note and a maintainer-only note; WHEN `docs/site/` ingestion is eventually implemented;
+  THEN the site-only note would go in `docs/site/*.md` (pulled) and the maintainer note in
+  `docs/internal/` (never pulled), and `docs/specs/` is avoided to not collide with fab's meaning.
+  Until then, only the README slice is pulled.
 
 ## §Extraction reference
 
@@ -306,4 +316,4 @@ The single **machine-anchored** definition of the deduction + strip + verify beh
 
 | Date | Change |
 |------|--------|
-| 2026-06-04 | Created (change `w32m`): forward contract for README extraction. §1 head rule (skip H1 + toolkit blockquote + contiguous badge/image lines), §2 tail rule (final denylist `Contributing`/`Development`/`Building`/`License`/`Acknowledgements`; `Install` INCLUDED; `Changelog`/`Roadmap`/`FAQ` kept), §3 image rule (reference-not-copy, alt-text-travels, co-capture, ≤24h transient-404 accepted, vendoring deferred), §4 dark-theme producer/consumer stanzas (`data-theme` not `prefers-color-scheme`; `<picture>` mapping deferred), §5 mermaid Option A (strip inline, require rendered SVG), §6 strips (mermaid fences + `#gh-*-mode-only` images), §7 the `vn39` validation gate (sole install guard; `shll shell-install` failure mode; single-sourced `findUnknownTokens` verifier), §8 pull model (sibling of `scheduled-help-refresh.yml`, `content/<slug>/` repo-root collector, direct-commit-gated-on-validation, off-deploy, per-tool isolation, `ReadmeSlice.astro` build-time render injected into overviews), §9 `docs/site/` escape hatch (audience axis). §Extraction reference anchors `src/lib/extract-readme.ts`. Symmetric with `help-dump-contract.md`. |
+| 2026-06-04 | Created (change `w32m`): forward contract for README extraction. §1 head rule (skip H1 + toolkit blockquote + contiguous badge/image lines), §2 tail rule (final denylist `Contributing`/`Development`/`Building`/`License`/`Acknowledgements`; `Install` INCLUDED; `Changelog`/`Roadmap`/`FAQ` kept), §3 image rule (reference-not-copy, alt-text-travels, co-capture, ≤24h transient-404 accepted, vendoring deferred), §4 dark-theme producer/consumer stanzas (`data-theme` not `prefers-color-scheme`; `<picture>` mapping deferred), §5 mermaid Option A (strip inline, require rendered SVG), §6 strips (mermaid fences + `#gh-*-mode-only` images), §7 the `vn39` validation gate (sole install guard; `shll shell-install` failure mode; single-sourced `findUnknownTokens` verifier), §8 pull model (sibling of `scheduled-help-refresh.yml`, `content/<slug>/` repo-root collector, direct-commit-gated-on-validation, off-deploy, per-tool isolation, `ReadmeSlice.astro` build-time render injected into overviews), §9 `docs/site/` escape hatch (audience axis) marked RESERVED / not yet implemented — only `README.md` is pulled today. §Extraction reference anchors `src/lib/extract-readme.ts`. Symmetric with `help-dump-contract.md`. |

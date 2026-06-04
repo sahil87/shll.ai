@@ -16,8 +16,12 @@
  * `import.meta.glob` (Vite's project-root `fs.allow` blocks files outside the
  * site dir). A FIXED relative depth does NOT survive `astro build` (Vite bundles
  * this frontmatter into a chunk at an unstable depth), so we ascend from
- * `import.meta.url` until we find the directory that CONTAINS a `content/` folder
- * — the repo root. See help-collection.md → Rendering Consumer for the rationale.
+ * `import.meta.url` until we find the directory that CONTAINS a `help/` folder
+ * — the repo root — then read `content/<tool>/README.md` beneath it. The marker
+ * is `help/`, NOT `content/`: the site has its own `src/content/` (Starlight's),
+ * so a `content/`-anchored ascent would stop at `src/` in dev and read the wrong
+ * dir; `help/` exists only at the repo root. This matches CommandReference's
+ * findRepoRoot. See help-collection.md → Rendering Consumer for the rationale.
  *
  * Markdown rendering uses `@astrojs/markdown-remark`'s `createMarkdownProcessor`
  * — the SAME markdown processor `astro` core already depends on directly
@@ -61,16 +65,24 @@ if (!tool) {
   throw new Error('ReadmeSlice: a `tool` slug prop is required.');
 }
 
-// Max ancestors to climb while searching for the repo-root `content/` dir. The
-// real ascent is ~5 hops (from dist/.prerender/chunks/); 12 is generous headroom.
-// (Identical strategy to CommandReference's findRepoRoot, anchored on `content/`
-// instead of `help/`. Duplicated, not extracted, to keep the two read paths
-// independent — same call the cross-tool index made for the same reason.)
+// Max ancestors to climb while searching for the repo root. The real ascent is
+// ~5 hops (from dist/.prerender/chunks/); 12 is generous headroom.
+//
+// The repo-root marker is `help/`, NOT `content/`. The slice lives at the repo
+// root under `content/<tool>/README.md`, but anchoring the ASCENT on `content/`
+// is unsafe: the site has its OWN `src/content/` (Starlight's content dir). In
+// dev the module URL is in `src/components`, so a `content/`-anchored ascent
+// stops at `sites/<name>/src` (which contains `content/`) and reads the WRONG
+// `src/content/<tool>/README.md` → always the placeholder. `help/` cannot
+// collide: the repo root has `help/`, but `src/` (and every intermediate dir)
+// does not. This is the identical marker CommandReference's findRepoRoot uses
+// (which reads `help/` directly); duplicated, not extracted, to keep the two
+// read paths independent.
 const MAX_ASCENT = 12;
 function findRepoRoot(startDir: string): string {
   let dir = startDir;
   for (let i = 0; i < MAX_ASCENT; i += 1) {
-    const candidate = path.join(dir, 'content');
+    const candidate = path.join(dir, 'help');
     if (fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()) {
       return dir;
     }
@@ -79,7 +91,7 @@ function findRepoRoot(startDir: string): string {
     dir = parent;
   }
   throw new Error(
-    `ReadmeSlice: could not locate a repo-root 'content/' directory by ascending from ${startDir}`,
+    `ReadmeSlice: could not locate a repo-root 'help/' directory by ascending from ${startDir}`,
   );
 }
 
@@ -87,8 +99,8 @@ let html = '';
 let missing = false;
 const githubUrl = `https://github.com/sahil87/${tool}`;
 
-// Resolve the slice path. If no `content/` ancestor exists at all (the contract's
-// repo-root collector is absent), `findRepoRoot` throws — that is a build-stopping
+// Resolve the slice path. If no `help/` ancestor exists at all (the cross-boundary
+// repo root cannot be located), `findRepoRoot` throws — that is a build-stopping
 // broken-contract condition, distinct from the per-tool missing-file case below.
 const repoRoot = findRepoRoot(path.dirname(fileURLToPath(import.meta.url)));
 const slicePath = path.join(repoRoot, 'content', tool, 'README.md');

@@ -14,7 +14,7 @@ This file documents the **consume/pull side** — how shll.ai deduces, validates
 
 ## The contract (where it lives)
 
-> **Forward contract**: [`docs/specs/readme-extraction-contract.md`](../../specs/readme-extraction-contract.md) — §1 head rule, §2 tail rule (denylist; Install included), §3 image rule, §4 dark-theme producer/consumer stanzas, §5 mermaid Option A, §6 strips, §7 the `vn39` validation gate, §8 pull model, §9 the `docs/site/` escape hatch.
+> **Forward contract**: [`docs/specs/readme-extraction-contract.md`](../../specs/readme-extraction-contract.md) — §1 head rule, §2 tail rule (denylist; Install included), §3 image rule, §4 dark-theme producer/consumer stanzas, §5 mermaid Option A, §6 strips, §7 the `vn39` validation gate, §8 pull model, §9 the `docs/site/` escape hatch (reserved/future — not yet implemented).
 
 The **single machine-anchored** definition of the deduction + strip + verify behavior is `sites/astro-starlight-terminal1/src/lib/extract-readme.ts`. The prose contract MUST agree with it; on any discrepancy the prose is reconciled to match the code (the code is what the workflow and the component actually run).
 
@@ -34,7 +34,7 @@ The denylist, mermaid/theme-image markers, and head-chrome patterns are **named 
 
 **Why the root.** Same rationale as [`help/`](./help-collection.md#the-help-collector): the slice data is project-level, not owned by any one site variant. Keeping it at the root means it **survives a live-site swap** (Constitution III — One Live Site at a Time): changing `SITE_DIR` does not require moving the collector. It is kept **distinct from `help/`** so the two data kinds — JSON command trees vs. markdown prose slices — don't overload one directory.
 
-**Filename.** The slice file is `content/<slug>/README.md` — the directory is fixed by the contract; naming the file `README.md` keeps provenance obvious and leaves room for the `docs/site/*.md` siblings the contract permits (contract §9). A `content/.gitkeep` is committed so the repo-root collector exists at build time even before any tool's first successful pull.
+**Filename.** The slice file is `content/<slug>/README.md` — the directory is fixed by the contract; naming the file `README.md` keeps provenance obvious. Today **only** `README.md` is pulled and rendered; the `docs/site/*.md` siblings the contract sketches (contract §9) are a **reserved/future** extension — there is no `docs/site/` fetch or render path yet. A `content/.gitkeep` is committed so the repo-root collector exists at build time even before any tool's first successful pull.
 
 **No slice data ships in this change.** The slices are produced by the daily workflow against live external repos; the change `w32m` ships only the *machinery*. Every tool renders the placeholder until its first successful pull.
 

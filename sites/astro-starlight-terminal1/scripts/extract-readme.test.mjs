@@ -165,6 +165,30 @@ test('tail: a denylisted word inside a code fence does not terminate', () => {
   assert.ok(slice.includes('real'));
 });
 
+test('tail: a longer outer fence is NOT closed by a shorter inner fence (CommonMark)', () => {
+  // The outer block opens with FOUR backticks and contains a THREE-backtick line
+  // (e.g. demonstrating a nested fence). Per CommonMark the inner ``` does NOT
+  // close the outer ```` block, so the `## License` heading that follows is still
+  // INSIDE the code block and must NOT terminate the slice.
+  const md = [
+    'Lede.',
+    '',
+    '````markdown',
+    'Here is how to write a fenced block:',
+    '```',
+    '## License: not a real heading — it lives inside the documented code sample',
+    '```',
+    '````',
+    '',
+    '## Usage',
+    'real usage',
+  ].join('\n');
+  const { slice } = extractReadme(md);
+  assert.ok(slice.includes('## Usage'), 'slice did not terminate early on the in-fence ## License');
+  assert.ok(slice.includes('real usage'));
+  assert.ok(slice.includes('````markdown'), 'outer 4-backtick fence preserved');
+});
+
 // ── §5/§6 strips ─────────────────────────────────────────────────────────────
 
 test('strip: inline mermaid fence removed, surrounding prose + bash fence kept', () => {
@@ -188,6 +212,31 @@ test('strip: inline mermaid fence removed, surrounding prose + bash fence kept',
   assert.ok(slice.includes('After diagram.'));
   assert.ok(slice.includes('```bash'), 'non-mermaid fence preserved');
   assert.ok(slice.includes('echo hi'));
+});
+
+test('strip: a 4-backtick mermaid block containing a 3-backtick line is FULLY stripped', () => {
+  // The mermaid block opens with FOUR backticks and contains a THREE-backtick
+  // line. The shorter inner ``` must NOT close the block early (CommonMark), so
+  // the entire mermaid block — including the inner-fence residue — is stripped,
+  // and the prose after the real 4-backtick close survives.
+  const md = [
+    'Intro.',
+    '',
+    '````mermaid',
+    'graph TD;',
+    '```',
+    'A-->B;',
+    '````',
+    '',
+    'After diagram.',
+  ].join('\n');
+  const { slice } = extractReadme(md);
+  assert.ok(!slice.includes('mermaid'), 'mermaid fence removed');
+  assert.ok(!slice.includes('graph TD'), 'mermaid body removed');
+  assert.ok(!slice.includes('A-->B'), 'mermaid body after the shorter inner fence also removed');
+  assert.ok(!slice.includes('```'), 'no fence residue leaked from the mermaid block');
+  assert.ok(slice.includes('Intro.'));
+  assert.ok(slice.includes('After diagram.'), 'prose after the real outer close survives');
 });
 
 test('strip: #gh-*-mode-only images removed, plain image survives', () => {
@@ -269,6 +318,27 @@ test('gate: real subcommand + real flag from wt passes; fabricated subcommand ca
   assert.deepEqual(findUnknownTokens(good, wt), []);
   const bad = ['```bash', 'wt summon lively-otter', '```'].join('\n');
   assert.ok(findUnknownTokens(bad, wt).includes('wt summon'), 'fabricated subcommand caught');
+});
+
+test('gate: a longer outer fence keeps scanning past a shorter inner fence (CommonMark)', async () => {
+  const doc = await loadHelp('shll');
+  // The whole block is opened with FOUR backticks. A THREE-backtick line sits in
+  // the middle; per CommonMark it does NOT close the outer block, so a fabricated
+  // command AFTER the inner fence is still inside a code span and MUST be scanned
+  // (and flagged). If fence length were ignored, codeSpans would treat the inner
+  // ``` as a close and stop scanning, missing the fabricated alias.
+  const slice = [
+    '````bash',
+    'shll install',
+    '```',
+    'shll shell-install',
+    '````',
+  ].join('\n');
+  const unknown = findUnknownTokens(slice, doc);
+  assert.ok(
+    unknown.includes('shll shell-install'),
+    `expected the post-inner-fence fabricated alias flagged, got: ${JSON.stringify(unknown)}`,
+  );
 });
 
 // ── §7 gate: M2 regression — a known TERMINAL command followed by a positional
