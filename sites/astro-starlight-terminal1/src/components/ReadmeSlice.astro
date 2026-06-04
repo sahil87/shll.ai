@@ -1,0 +1,179 @@
+---
+/**
+ * ReadmeSlice — renders a tool's pulled README slice at BUILD TIME.
+ *
+ * Reads `<repo-root>/content/<tool>/README.md` (the deduced, curated slice the
+ * scheduled readme-refresh job commits — see docs/specs/readme-extraction-contract.md),
+ * renders the markdown to static HTML, and injects it into the tool's overview
+ * page. All work happens in this frontmatter, which runs during `astro build` —
+ * no client-side fetch and no client JS for the primary content (Constitution I).
+ *
+ * This is the README-prose sibling of CommandReference.astro (which renders the
+ * machine-generated command reference). It reuses CommandReference's proven
+ * cross-boundary read: the slice data lives at the repo root (`content/*`),
+ * OUTSIDE this site directory, and the path is anchored on THIS module via
+ * `import.meta.url` — NOT `process.cwd()` (which varies by invocation) and NOT
+ * `import.meta.glob` (Vite's project-root `fs.allow` blocks files outside the
+ * site dir). A FIXED relative depth does NOT survive `astro build` (Vite bundles
+ * this frontmatter into a chunk at an unstable depth), so we ascend from
+ * `import.meta.url` until we find the directory that CONTAINS a `help/` folder
+ * — the repo root — then read `content/<tool>/README.md` beneath it. The marker
+ * is `help/`, NOT `content/`: the site has its own `src/content/` (Starlight's),
+ * so a `content/`-anchored ascent would stop at `src/` in dev and read the wrong
+ * dir; `help/` exists only at the repo root. This matches CommandReference's
+ * findRepoRoot. See help-collection.md → Rendering Consumer for the rationale.
+ *
+ * Markdown rendering uses `@astrojs/markdown-remark`'s `createMarkdownProcessor`
+ * — the SAME markdown processor `astro` core already depends on directly
+ * (`astro@6.3.3`'s package.json pins `@astrojs/markdown-remark@7.1.2`; Starlight
+ * pulls it too). Under strict pnpm a transitive dep is NOT hoisted to the site's
+ * top-level `node_modules`, so a bare `import '@astrojs/markdown-remark'` does not
+ * resolve through Vite/Rollup unless the package is DECLARED. We therefore declare
+ * it explicitly in package.json, pinned to the exact `7.1.2` that astro core uses.
+ *
+ * This is a BUILD-TIME dependency already pulled transitively by `astro`/
+ * `@astrojs/starlight`; declaring it explicitly makes an existing dep IMPORTABLE
+ * rather than adding a new one — no new runtime dependency, no new transitive
+ * weight, no version split (Constitution VI). Note this differs from schemas.ts
+ * importing `z` from `astro:content`: that is a Vite VIRTUAL module Astro injects,
+ * not an npm package, so it needs no package.json entry; an npm package import
+ * does. It resolves at build time through Vite, the way Astro's own pipeline does.
+ *
+ * Failure modes are deliberately distinct (mirroring CommandReference):
+ *   - MISSING slice (ENOENT) → neutral placeholder, build SUCCEEDS (the daily
+ *     pull lands slices over time; an absent slice is an expected interim state).
+ *   - PRESENT but unreadable/unrenderable → the error propagates (wrapped with
+ *     the filename) so `astro build` FAILS loudly (a committed defect must not
+ *     deploy).
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createMarkdownProcessor } from '@astrojs/markdown-remark';
+
+interface Props {
+  /** Tool slug — names the slice at `<repo-root>/content/<tool>/README.md`. */
+  tool: string;
+}
+
+const { tool } = Astro.props as Props;
+
+// A missing slug is a page-author error (the prop was forgotten) — fail the
+// build loudly rather than silently rendering a placeholder against a broken
+// path, mirroring CommandReference/GithubButton's top-level guard.
+if (!tool) {
+  throw new Error('ReadmeSlice: a `tool` slug prop is required.');
+}
+
+// Max ancestors to climb while searching for the repo root. The real ascent is
+// ~5 hops (from dist/.prerender/chunks/); 12 is generous headroom.
+//
+// The repo-root marker is `help/`, NOT `content/`. The slice lives at the repo
+// root under `content/<tool>/README.md`, but anchoring the ASCENT on `content/`
+// is unsafe: the site has its OWN `src/content/` (Starlight's content dir). In
+// dev the module URL is in `src/components`, so a `content/`-anchored ascent
+// stops at `sites/<name>/src` (which contains `content/`) and reads the WRONG
+// `src/content/<tool>/README.md` → always the placeholder. `help/` cannot
+// collide: the repo root has `help/`, but `src/` (and every intermediate dir)
+// does not. This is the identical marker CommandReference's findRepoRoot uses
+// (which reads `help/` directly); duplicated, not extracted, to keep the two
+// read paths independent.
+const MAX_ASCENT = 12;
+function findRepoRoot(startDir: string): string {
+  let dir = startDir;
+  for (let i = 0; i < MAX_ASCENT; i += 1) {
+    const candidate = path.join(dir, 'help');
+    if (fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()) {
+      return dir;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break; // reached filesystem root
+    dir = parent;
+  }
+  throw new Error(
+    `ReadmeSlice: could not locate a repo-root 'help/' directory by ascending from ${startDir}`,
+  );
+}
+
+let html = '';
+let missing = false;
+const githubUrl = `https://github.com/sahil87/${tool}`;
+
+// Resolve the slice path. If no `help/` ancestor exists at all (the cross-boundary
+// repo root cannot be located), `findRepoRoot` throws — that is a build-stopping
+// broken-contract condition, distinct from the per-tool missing-file case below.
+const repoRoot = findRepoRoot(path.dirname(fileURLToPath(import.meta.url)));
+const slicePath = path.join(repoRoot, 'content', tool, 'README.md');
+
+let raw: string | null = null;
+try {
+  raw = fs.readFileSync(slicePath, 'utf8');
+} catch (err) {
+  if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+    missing = true;
+  } else {
+    throw err;
+  }
+}
+
+if (!missing) {
+  try {
+    const processor = await createMarkdownProcessor({});
+    const rendered = await processor.render(raw!);
+    html = rendered.code;
+  } catch (err) {
+    // A present-but-unrenderable slice is a committed defect that must not
+    // deploy: let it fail the build. Wrap with the filename so the error is
+    // actionable (ENOENT was already handled above).
+    const detail = err instanceof Error ? err.message : String(err);
+    throw new Error(`Failed to render README slice at ${slicePath}:\n${detail}`);
+  }
+}
+---
+
+{
+  missing ? (
+    // ── Missing slice → neutral placeholder (build succeeds) ─────────────
+    <div class="readme-slice not-content readme-placeholder">
+      <p>
+        README overview not synced yet — see the{' '}
+        <a href={githubUrl}>GitHub README</a>.
+      </p>
+    </div>
+  ) : (
+    // ── Present slice → rendered markdown (build-time static HTML) ────────
+    <div class="readme-slice" set:html={html} />
+  )
+}
+
+<style>
+  /* The pulled slice renders as ordinary Starlight markdown — it deliberately
+     does NOT carry `not-content`, so it inherits Starlight's prose styles
+     (headings, lists, tables, code) and dark-mode parity follows the site's
+     data-theme automatically (Constitution V). Only spacing is nudged here. */
+  .readme-slice {
+    margin: 1.25rem 0;
+  }
+
+  /* The placeholder is the one piece that opts out of prose styling. */
+  .readme-placeholder p {
+    color: var(--c-fg-dim);
+    border: 1px dashed var(--c-border);
+    border-radius: 4px;
+    padding: 0.75rem 1rem;
+    margin: 0;
+    font-family: var(--sl-font-mono);
+    font-size: 0.9rem;
+  }
+  .readme-placeholder a {
+    color: var(--c-accent);
+    border-bottom: 1px dotted var(--c-accent);
+    text-decoration: none;
+  }
+  .readme-placeholder a:hover,
+  .readme-placeholder a:focus-visible {
+    border-bottom-style: solid;
+    background: var(--c-surface-2);
+    outline: none;
+  }
+</style>

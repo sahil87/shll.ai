@@ -1,0 +1,12 @@
+# README-slice collector (repo-root, sibling to help/).
+#
+# The scheduled readme-refresh workflow (.github/workflows/scheduled-readme-refresh.yml)
+# commits each tool's deduced README slice here as content/<slug>/README.md.
+# See docs/specs/readme-extraction-contract.md (§8 Pull model).
+#
+# This directory is committed (via this .gitkeep) so it exists at build time even
+# before any slice has been pulled: ReadmeSlice.astro ascends to the repo root by
+# locating this `content/` directory, then degrades a missing per-tool slice to a
+# neutral placeholder (an expected interim state — same discipline as a missing
+# help/<tool>.json). Tool slices are NOT committed by the change that ships this
+# machinery; they land over time from the daily pull, like the help producers.

@@ -4,8 +4,11 @@ description: Opinionated git worktree wrapper — one worktree per change, one A
 ---
 
 import GithubButton from '../../../../components/GithubButton.astro';
+import ReadmeSlice from '../../../../components/ReadmeSlice.astro';
 
 <GithubButton tool="wt" />
+
+<ReadmeSlice tool="wt" />
 
 `wt` wraps `git worktree` with opinionated defaults: worktrees are sibling directories (`<repo>.worktrees/<name>/`), names are memorable adjective-noun pairs, and a shell wrapper makes `cd`-into-worktree from a menu work.
 
