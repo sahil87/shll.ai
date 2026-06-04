@@ -1,0 +1,14 @@
+{"action":"enter","driver":"fab-new","event":"stage-transition","stage":"intake","ts":"2026-06-04T11:29:00Z"}
+{"args":"fix: command-reference box overflows horizontally on mobile — the whole expanded box pans left instead of the content scrolling inside it. Root cause in CommandReference.astro: the flags table and other wide body children have no own horizontal-scroll container, so overflow propagates up to .cmd-node and the page. Fix: wrap the flags table in an overflow-x:auto scroll container and contain .cmd-node/.cmd-body. Decided: scroll-inside-the-box.","cmd":"fab-new","event":"command","ts":"2026-06-04T11:29:00Z"}
+{"delta":"+3.4","event":"confidence","score":3.4,"trigger":"calc-score","ts":"2026-06-04T11:29:52Z"}
+{"delta":"+0.0","event":"confidence","score":3.4,"trigger":"calc-score","ts":"2026-06-04T11:29:58Z"}
+{"cmd":"fab-fff","event":"command","ts":"2026-06-04T11:37:33Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"apply","ts":"2026-06-04T11:37:33Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-06-04T11:38:38Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"review","ts":"2026-06-04T11:42:53Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-06-04T11:43:38Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"hydrate","ts":"2026-06-04T11:46:30Z"}
+{"event":"review","result":"passed","ts":"2026-06-04T11:46:30Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-06-04T11:47:12Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"ship","ts":"2026-06-04T11:48:08Z"}
+{"cmd":"git-pr","event":"command","ts":"2026-06-04T12:01:54Z"}
