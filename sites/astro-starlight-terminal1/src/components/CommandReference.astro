@@ -241,8 +241,15 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
                       <code>
                         {f.short && <span class="cmd-flag-short">-{f.short}, </span>}
                         <span class="cmd-flag-long">--{f.long}</span>
-                        {f.placeholder && (
-                          <span class="cmd-flag-ph"> {f.placeholder}</span>
+                        {/* Show the placeholder inline ONLY when it isn't a simple
+                            type already surfaced as the type badge — avoids
+                            duplicating e.g. `string` in both columns. Non-simple
+                            placeholders (e.g. `cmd[=__rk_riff_pane_bare__]`) have
+                            argtype === null, so they still render here. Spacing is
+                            via CSS margin, not a template space (Astro strips the
+                            leading space inside the expression span). */}
+                        {f.placeholder && !f.argtype && (
+                          <span class="cmd-flag-ph">{f.placeholder}</span>
                         )}
                       </code>
                       {global && <span class="cmd-badge cmd-badge-global">global</span>}
@@ -624,6 +631,9 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
   }
   .cmd-flag-ph {
     color: var(--c-fg-dim);
+    /* Separate the placeholder from the flag name. A template space inside the
+       Astro expression span is stripped at build time, so space it via CSS. */
+    margin-inline-start: 0.5ch;
   }
   .cmd-flag-desc {
     color: var(--c-fg);

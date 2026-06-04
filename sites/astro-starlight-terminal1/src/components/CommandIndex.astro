@@ -183,7 +183,11 @@ const flagCount = rows.filter((r) => r.kind === 'flag').length;
           <code class="ci-flag-name">
             {row.short && <span class="ci-flag-short">-{row.short}, </span>}
             <span class="ci-flag-long">--{row.long}</span>
-            {row.placeholder && <span class="ci-flag-ph"> {row.placeholder}</span>}
+            {/* Inline placeholder only when not already a simple type badge;
+                spacing via CSS margin (template space is stripped by Astro). */}
+            {row.placeholder && !row.argtype && (
+              <span class="ci-flag-ph">{row.placeholder}</span>
+            )}
           </code>
           {row.argtype && <span class="ci-badge ci-badge-type">{row.argtype}</span>}
           {row.required && <span class="ci-badge ci-badge-req">required</span>}
@@ -342,6 +346,8 @@ const flagCount = rows.filter((r) => r.kind === 'flag').length;
   }
   .ci-flag-ph {
     color: var(--c-fg-dim);
+    /* Template space inside the expression span is stripped by Astro; space it via CSS. */
+    margin-inline-start: 0.5ch;
   }
 
   .ci-badge {
