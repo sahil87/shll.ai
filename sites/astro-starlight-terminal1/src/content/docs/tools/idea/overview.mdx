@@ -4,32 +4,14 @@ description: Plain-Markdown backlog tracker — worktree-aware, queryable from t
 ---
 
 import GithubButton from '../../../../components/GithubButton.astro';
-import ReadmeSlice from '../../../../components/ReadmeSlice.astro';
 
 <GithubButton tool="idea" />
 
-<ReadmeSlice tool="idea" />
+`idea` captures and manages a per-repo backlog in a plain Markdown file (`fab/backlog.md`) — worktree-aware, queryable from the CLI, and the same file `fab-kit`'s `/fab-new` reads.
 
-`idea` captures and manages a per-repo backlog in a plain Markdown file (`fab/backlog.md`). The file is the contract: hand-edit it, grep it, diff it, review it in PRs.
+## Where to next
 
-## Why it exists
-
-Every project accumulates a list of things to do. Most tools store that list in a database, in a SaaS, or in a hidden state file. `idea` keeps it as a markdown file in your repo, alongside the code, where it can be diff-reviewed and where every AI agent can read it without authentication.
-
-## Distinguishing properties
-
-- **Plain Markdown, not a database** — the backlog is a checked-in file.
-- **Per-repo, not global** — every repo has its own backlog.
-- **Worktree-aware** — reads/writes the current worktree's backlog by default; `--main` opts into the shared one.
-- **Short, addressable IDs** — `[qu1d]`-style IDs you can type into any command.
-- **Hooks into fab-kit** — same `fab/backlog.md` that `/fab-new` reads.
-
-## When to use it
-
-- Capturing ideas mid-flow without breaking out of your terminal
-- Maintaining a backlog you actually look at, because it's a file you already look at
-- Feeding a queue of changes to `fab-kit` for AI-driven implementation
-
----
-
-Next: [install idea](./install/), or jump to [commands](./commands/).
+- **[Readme](./readme/)** — the full canonical guide, synced from idea's own repo.
+- **[Install](./install/)** — get idea on your machine.
+- **[Commands](./commands/)** — every subcommand and flag.
+- **[Workflows](./workflows/)** — end-to-end recipes.

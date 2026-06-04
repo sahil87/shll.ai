@@ -4,42 +4,14 @@ description: 7-stage pipeline that forces AI agents to plan before they code.
 ---
 
 import GithubButton from '../../../../components/GithubButton.astro';
-import ReadmeSlice from '../../../../components/ReadmeSlice.astro';
 
 <GithubButton tool="fab-kit" />
 
-<ReadmeSlice tool="fab-kit" />
+`fab-kit` is a development toolkit for AI-assisted coding: a 7-stage pipeline (intake → spec → apply → review → hydrate → ship → review-PR), standalone CLI tools, and batch orchestration for running multiple agents in parallel. Plain markdown prompts — no SDK, no vendor lock-in.
 
-`fab-kit` is a development toolkit for AI-assisted coding. It includes a 7-stage pipeline (intake → spec → apply → review → hydrate → ship → review-PR), standalone CLI tools, and batch orchestration for running multiple AI agents in parallel.
+## Where to next
 
-Plain markdown prompts. No SDK. No vendor lock-in.
-
-## The 7 stages
-
-| # | Stage | Purpose |
-|---|-------|---------|
-| 1 | **Intake** | Capture intent, scope, approach |
-| 2 | **Spec** | Define requirements and acceptance criteria |
-| 3 | **Apply** | Generate plan, execute the tasks |
-| 4 | **Review** | Sub-agent validates against spec and constitution |
-| 5 | **Hydrate** | Save learnings into project memory |
-| 6 | **Ship** | Commit, push, create PR |
-| 7 | **Review-PR** | Triage and fix PR review comments |
-
-## Key ideas
-
-- **Self-contained change folders** — each change has its own spec, plan, and status under `fab/changes/`.
-- **Project constitution** — `fab/project/constitution.md` defines MUST/SHOULD/MUST NOT rules; every spec, plan, and review checks against it.
-- **Shared memory that grows** — design decisions hydrate into `docs/memory/`, loaded as context for future changes.
-- **SRAD autonomy framework** — confidence-scored decisions: proceed silently, proceed with marker, or block and ask.
-- **Works with any agent** — Claude Code, Codex, Cursor, Windsurf. The contract is markdown files, not an SDK.
-
-## When to use it
-
-- You want AI to do real implementation work, not just autocomplete
-- You're tired of agents producing plausible-looking-but-wrong code
-- You need a paper trail for AI-driven changes (specs, plans, review reports — all in git)
-
----
-
-Next: [install fab-kit](./install/), or read the [commands reference](./commands/).
+- **[Readme](./readme/)** — the full canonical guide, synced from fab-kit's own repo.
+- **[Install](./install/)** — get fab-kit on your machine.
+- **[Commands](./commands/)** — every subcommand and flag.
+- **[Workflows](./workflows/)** — end-to-end recipes.

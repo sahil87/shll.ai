@@ -4,37 +4,12 @@ description: Opinionated git worktree wrapper — one worktree per change, one A
 ---
 
 import GithubButton from '../../../../components/GithubButton.astro';
-import ReadmeSlice from '../../../../components/ReadmeSlice.astro';
 
 <GithubButton tool="wt" />
 
-<ReadmeSlice tool="wt" />
-
 `wt` wraps `git worktree` with opinionated defaults: worktrees are sibling directories (`<repo>.worktrees/<name>/`), names are memorable adjective-noun pairs, and a shell wrapper makes `cd`-into-worktree from a menu work.
 
-## Install
+## Where to next
 
-```bash
-brew install sahil87/tap/wt
-eval "$(wt shell-init)"   # in ~/.zshrc — needed for "Open here" cd
-```
-
-## At a glance
-
-```bash
-wt create                # new worktree with a random name
-wt list                  # show every worktree
-wt open lively-otter     # menu: editor / terminal / file manager / cd here
-wt delete lively-otter   # remove (with optional branch cleanup)
-```
-
-- **Sibling layout, not clutter** — `<repo>.worktrees/<name>/`, never inside the main repo.
-- **Memorable names** — `lively-otter`, `bold-fox`, not `feature-1`.
-- **Real `cd` from a menu** — the shell wrapper lets `wt open` change your shell's directory.
-- **Per-worktree init** — each new worktree runs a configurable init script (e.g. to sync `.claude/` skills into the new worktree).
-
----
-
-See the [commands reference](./commands/) for every flag. Dedicated install and workflows pages are still pending — until then, the full README (`wt create --base` start-point table, `wt open` context-aware behavior) is the deepest reference:
-
-**→ [github.com/sahil87/wt](https://github.com/sahil87/wt)**
+- **[Readme](./readme/)** — the full canonical guide, synced from wt's own repo.
+- **[Commands](./commands/)** — every subcommand and flag.

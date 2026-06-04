@@ -17,8 +17,14 @@
  *     Changelog/Roadmap/FAQ KEPT; no-denylist → slice to EOF.
  *   - §5/§6 strips: inline ```mermaid removed (non-mermaid fences survive);
  *     `#gh-*-mode-only` images removed (plain images survive).
- *   - §7 gate: the `shll shell-install` fabricated-alias failure mode is caught
- *     against the REAL help/shll.json; a clean slice passes; unknown flags caught.
+ *   - §7 divergence reporter: `findUnknownTokens` still DETECTS the `shll
+ *     shell-install` fabricated-alias case against the REAL help/shll.json (a clean
+ *     slice → empty list; fabricated subcommands + unknown flags → flagged). As of
+ *     change `4s3e` this detector is REPORT-ONLY: it is a non-fatal reporter, not a
+ *     publish gate — the README is canonical and rendered verbatim, and divergence
+ *     surfaces as a `::warning::` (see extract-readme-cli.mjs). These tests pin the
+ *     DETECTION logic (unchanged); the warn-not-block CONSEQUENCE lives in the CLI
+ *     and the workflow, verified out-of-band (the CLI has no separate unit test).
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -262,7 +268,10 @@ test('extractReadme is total: empty + whitespace inputs do not throw', () => {
   assert.equal(extractReadme('# tool\n> blurb\n![b](b.svg)\n').slice, '');
 });
 
-// ── §7 validation gate (against the REAL help/shll.json) ─────────────────────
+// ── §7 divergence reporter (against the REAL help/shll.json) — REPORT-ONLY ───
+// `findUnknownTokens` is the non-fatal reporter (change `4s3e`): these cases pin
+// its DETECTION behavior (unchanged). The warn-and-still-write consequence lives
+// in extract-readme-cli.mjs / the workflow, not in the detector.
 
 test('gate: a clean shll slice (real commands/flags) passes', async () => {
   const doc = await loadHelp('shll');

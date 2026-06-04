@@ -4,43 +4,12 @@ description: Browser dashboard for tmux + Claude Code workspaces. Mobile-friendl
 ---
 
 import GithubButton from '../../../../components/GithubButton.astro';
-import ReadmeSlice from '../../../../components/ReadmeSlice.astro';
 
 <GithubButton tool="run-kit" />
 
-<ReadmeSlice tool="run-kit" />
+`rk riff` spawns AI coding agents in parallel git worktrees; `rk serve` is a browser dashboard that lets you watch them all — from your desk or your phone.
 
-`rk riff` spawns AI coding agents in parallel git worktrees. `rk serve` is a browser dashboard that lets you watch them all — from your desk or your phone.
+## Where to next
 
-## Install
-
-```bash
-brew install sahil87/tap/rk
-rk serve -d                  # start dashboard daemon on :3000
-open http://localhost:3000
-```
-
-## At a glance
-
-```bash
-rk riff                              # 1 agent pane
-rk riff --skill /fab-fff             # specific slash command
-rk riff --skill /a --cmd "just dev"  # agent + dev server
-rk riff ship -N 3                    # 3 parallel ship workspaces from preset
-```
-
-- **One command per parallel agent** — `rk riff` creates a worktree, tmux window, and Claude Code pane in one shot.
-- **Browser dashboard for tmux** — every session and pane in a sidebar; click for a live terminal.
-- **Mobile-first, keyboard-first** — `Cmd+K` palette, mobile touch targets, swipe carousels.
-- **No database, no daemon magic** — state derived from tmux + filesystem; agents survive `rk` restarts.
-- **Boards** — pin panes from multiple servers into one cross-server dashboard.
-
-## Drive it from your phone
-
-HTTPS over Tailscale: `tailscale serve --bg http://localhost:3000`, open `https://<machine>.<tailnet>.ts.net`.
-
----
-
-See the [commands reference](./commands/) for every subcommand. Dedicated install and workflows pages are still pending — until then, the full README (riff guide, boards, Tailscale setup, architecture) is the deepest reference:
-
-**→ [github.com/sahil87/run-kit](https://github.com/sahil87/run-kit)**
+- **[Readme](./readme/)** — the full canonical guide, synced from run-kit's own repo.
+- **[Commands](./commands/)** — every subcommand and flag.

@@ -4,38 +4,12 @@ description: Token/cost tracker for Claude Code, Codex, OpenCode. Multi-machine 
 ---
 
 import GithubButton from '../../../../components/GithubButton.astro';
-import ReadmeSlice from '../../../../components/ReadmeSlice.astro';
 
 <GithubButton tool="tu" />
 
-<ReadmeSlice tool="tu" />
+`tu` tracks what your AI coding sessions are costing you — across tools and machines, with multi-machine sync and a live watch mode.
 
-`tu` tracks what your AI coding sessions are costing you — across tools and machines.
+## Where to next
 
-## Install
-
-```bash
-brew install sahil87/tap/tu
-eval "$(tu shell-init zsh)"   # completion
-```
-
-## At a glance
-
-```bash
-tu                # today's cost, all tools
-tu cc             # today's cost, Claude Code
-tu h              # daily cost history
-tu cc mh          # monthly cost history, Claude Code
-tu m              # this month's cost
-```
-
-- **Multi-tool** — `cc` (Claude Code), `co` (Codex), `oc` (OpenCode), `all` (default).
-- **Multi-machine sync** — push/pull metrics across laptops via a metrics repo.
-- **Live watch mode** — `--watch` for persistent polling.
-- **JSON output** — `--json` for scripting.
-
----
-
-The [commands page](./commands/) is live, though `tu`'s generated reference isn't published yet — for now the full README (flags, multi-machine setup, sync semantics) is the deepest reference. Dedicated install and workflows pages are still pending:
-
-**→ [github.com/sahil87/tu](https://github.com/sahil87/tu)**
+- **[Readme](./readme/)** — the full canonical guide, synced from tu's own repo.
+- **[Commands](./commands/)** — every subcommand and flag.

@@ -4,39 +4,12 @@ description: Meta-CLI to install, update, and shell-wire the whole toolkit in on
 ---
 
 import GithubButton from '../../../../components/GithubButton.astro';
-import ReadmeSlice from '../../../../components/ReadmeSlice.astro';
 
 <GithubButton tool="shll" />
 
-<ReadmeSlice tool="shll" />
-
 `shll` composes the per-tool CLIs — it doesn't replace them. One command to install, update, and shell-wire every tool in the toolkit.
 
-## Install
+## Where to next
 
-```bash
-brew install sahil87/tap/shll       # or: brew install sahil87/tap/all
-shll install                        # brew-installs every roster tool you're missing
-shll shell-setup --trust-tap        # wire your shell + record trust for sahil87/tap
-exec $SHELL                          # reload so the shell integration takes effect
-```
-
-## At a glance
-
-```bash
-shll install        # bootstrap missing tools
-shll update         # `brew update` then upgrade every installed roster tool
-shll shell-setup    # wire the composed shell-init into your rc file
-shll version        # paste-friendly version dump for bug reports
-```
-
-- **One-shot install** — idempotent and safe to re-run.
-- **One-line shell integration** — one eval block covers `hop`, `wt`, and any future shell-init.
-- **One update for everything** — `brew update` once, then upgrade every installed roster tool.
-- **No state, no special knowledge** — every subcommand is a thin coordinator over per-tool CLIs.
-
----
-
-See the [commands reference](./commands/) for every subcommand. Dedicated install and workflows pages are still pending — until then, the full README (composition model, per-tool contributions) is the deepest reference:
-
-**→ [github.com/sahil87/shll](https://github.com/sahil87/shll)**
+- **[Readme](./readme/)** — the full canonical guide, synced from shll's own repo.
+- **[Commands](./commands/)** — every subcommand and flag.
