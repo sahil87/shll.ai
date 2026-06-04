@@ -329,12 +329,10 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
           per-command -h/--help rows are suppressed in the flags tables above;
           this preserves that the help affordance is universal. */}
       <div class="cmd-toolbar">
-        <p class="cmd-help-note">
-          <code>-h</code>/<code>--help</code> work on every command;{' '}
-          <code>-v</code>/<code>--version</code> at the tool root.
-        </p>
-        {/* Expand/collapse every command node at once. Pure DOM toggle of the
-            <details open> attribute — no data, no re-render (Constitution I). */}
+        {/* Actions are a right-aligned cluster on their own row; the universal-help
+            note sits below. Expand/collapse act on command NODES (the +/- tree);
+            show-raw toggles the raw -h blocks — independent of each other. Pure DOM
+            toggles, no data, no re-render (Constitution I). */}
         <div class="cmd-toolbar-actions">
           <button type="button" class="cmd-toolbar-btn" data-cmd-expand-all>
             expand all
@@ -342,7 +340,26 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
           <button type="button" class="cmd-toolbar-btn" data-cmd-collapse-all>
             collapse all
           </button>
+          {/* Page-level toggle for whether the per-command "show raw -h" blocks
+              are present at all. Hidden by default (only once JS marks the page),
+              so the structured view isn't cluttered; raw stays the verbatim
+              authority. Label flips show/hide. Does NOT touch command nodes. */}
+          <button
+            type="button"
+            class="cmd-toolbar-btn"
+            data-cmd-raw-toggle
+            aria-pressed="false"
+          >
+            show raw
+          </button>
         </div>
+        {/* Universal-help note — rendered ONCE per page, not per command. The
+            per-command -h/--help rows are suppressed in the flags tables above;
+            this preserves that the help affordance is universal. */}
+        <p class="cmd-help-note">
+          <code>-h</code>/<code>--help</code> work on every command;{' '}
+          <code>-v</code>/<code>--version</code> at the tool root.
+        </p>
       </div>
       {/* The ROOT renders through the SAME recursive node branch as every
           subcommand — structured view (description/usage/flags) + a collapsible
@@ -412,13 +429,24 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
     });
   });
 
-  // Expand/collapse all command nodes. Pure DOM: toggles the `open` attribute on
-  // every <details.cmd-node> within the reference. No data, no re-render.
   document.querySelectorAll<HTMLElement>('[data-cmd-reference]').forEach((ref) => {
+    // Expand/collapse all command NODES. Pure DOM: toggles `open` on every
+    // <details.cmd-node>. No data, no re-render. Independent of raw blocks.
     const nodes = Array.from(ref.querySelectorAll<HTMLDetailsElement>('details.cmd-node'));
     const setAll = (open: boolean) => nodes.forEach((d) => { d.open = open; });
     ref.querySelector('[data-cmd-expand-all]')?.addEventListener('click', () => setAll(true));
     ref.querySelector('[data-cmd-collapse-all]')?.addEventListener('click', () => setAll(false));
+
+    // Raw-output toggle. With JS present, hide the "show raw -h" blocks by default
+    // (declutter); the button flips them all on/off page-wide. Without JS the
+    // class is never added, so raw stays visible (verbatim-authority fallback).
+    ref.classList.add('js-raw-hidden');
+    const rawBtn = ref.querySelector<HTMLButtonElement>('[data-cmd-raw-toggle]');
+    rawBtn?.addEventListener('click', () => {
+      const nowHidden = ref.classList.toggle('js-raw-hidden');
+      rawBtn.textContent = nowHidden ? 'show raw' : 'hide raw';
+      rawBtn.setAttribute('aria-pressed', String(!nowHidden));
+    });
   });
 </script>
 
@@ -434,13 +462,12 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
     margin: 1.25rem 0;
   }
 
-  /* Top toolbar: universal-help note + expand/collapse-all actions. */
+  /* Top toolbar: a right-aligned cluster of actions on its own row, with the
+     universal-help note below it. */
   .cmd-toolbar {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem 0.75rem;
+    flex-direction: column;
+    gap: 0.5rem;
     margin-bottom: 1rem;
   }
 
@@ -464,7 +491,9 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
   .cmd-toolbar-actions {
     display: flex;
     gap: 0.4rem;
-    flex: none;
+    /* Right-align the cluster; wrap on narrow widths. */
+    justify-content: flex-end;
+    flex-wrap: wrap;
   }
   .cmd-toolbar-btn {
     font: inherit;
@@ -809,6 +838,13 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
     border: 1px solid var(--c-border);
     border-radius: 4px;
     background: var(--c-surface);
+  }
+  /* Raw blocks are hidden by default ONLY once JS marks the reference as
+     raw-hidden (the `data-cmd-raw-toggle` button flips this class). Without JS
+     the class is never added, so the raw -h fallback stays visible — the
+     verbatim authority is never JS-gated (Constitution I). */
+  .cmd-reference.js-raw-hidden .cmd-raw {
+    display: none;
   }
   .cmd-raw-summary {
     cursor: pointer;
