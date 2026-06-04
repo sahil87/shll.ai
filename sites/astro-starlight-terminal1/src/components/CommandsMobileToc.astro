@@ -157,10 +157,20 @@ const onThisPage = Astro.locals.t('tableOfContents.onThisPage');
       const close = () => {
         details.open = false;
       };
-      this.querySelectorAll<HTMLAnchorElement>('a[data-cmd-toc-link]').forEach((a) => {
+      // The collapsed bar shows the current command (like the default mobile
+      // ToC). Initialize to the first entry; update it when one is chosen.
+      const display = this.querySelector<HTMLElement>('.display-current');
+      const links = Array.from(
+        this.querySelectorAll<HTMLAnchorElement>('a[data-cmd-toc-link]'),
+      );
+      if (display && links.length > 0) {
+        display.textContent = links[0].textContent?.trim() ?? '';
+      }
+      links.forEach((a) => {
         a.addEventListener('click', () => {
           const target = document.getElementById(a.dataset.cmdTocLink!);
           if (target instanceof HTMLDetailsElement) target.open = true;
+          if (display) display.textContent = a.textContent?.trim() ?? '';
           close();
         });
       });

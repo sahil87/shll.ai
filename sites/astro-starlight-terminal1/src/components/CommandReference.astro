@@ -41,9 +41,9 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { HelpDocSchema, type Node, type HelpDoc } from '../lib/schemas.ts';
 import { parseHelp, commandSlug, type ParsedFlag } from '../lib/parse-help.ts';
+import { repoRootFromModuleUrl } from '../lib/repo-root.ts';
 
 interface Props {
   /** Tool slug — names the help file at `<repo-root>/help/<tool>.json`. */
@@ -61,36 +61,6 @@ interface Props {
 }
 
 const { tool, node, open = false, bodyOnly = false } = Astro.props as Props;
-
-/**
- * Resolve the repo root by ascending from a starting directory until a `help/`
- * directory is found. Anchored on the module URL (passed by the caller), not on
- * `process.cwd()`. Throws if no `help/` directory exists in any ancestor — which
- * would mean the cross-boundary contract is broken, a build-stopping condition.
- *
- * (The standalone `scripts/validate-help.mjs` uses a fixed-depth resolve instead,
- * because it runs in plain Node where the module path is stable; this component
- * runs through Vite, which relocates the bundled chunk to an unstable depth — so
- * a fixed `..` count would be wrong at build time. Hence the marker search here.)
- */
-// Max ancestors to climb while searching for the repo-root `help/` dir. The real
-// ascent is ~5 hops (from dist/.prerender/chunks/); 12 is generous headroom.
-const MAX_ASCENT = 12;
-function findRepoRoot(startDir: string): string {
-  let dir = startDir;
-  for (let i = 0; i < MAX_ASCENT; i += 1) {
-    const candidate = path.join(dir, 'help');
-    if (fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()) {
-      return dir;
-    }
-    const parent = path.dirname(dir);
-    if (parent === dir) break; // reached filesystem root
-    dir = parent;
-  }
-  throw new Error(
-    `CommandReference: could not locate a repo-root 'help/' directory by ascending from ${startDir}`,
-  );
-}
 
 /**
  * Is this the boilerplate `-h, --help` row Cobra adds to every command? Those
@@ -129,7 +99,7 @@ if (!node) {
   }
   const slug = tool;
   githubUrl = `https://github.com/sahil87/${slug}`;
-  const repoRoot = findRepoRoot(path.dirname(fileURLToPath(import.meta.url)));
+  const repoRoot = repoRootFromModuleUrl(import.meta.url);
   const helpPath = path.join(repoRoot, 'help', `${slug}.json`);
 
   let raw: string;

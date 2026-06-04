@@ -50,6 +50,9 @@ const onThisPage = Astro.locals.t('tableOfContents.onThisPage');
 }
 
 <style>
+  /* Structural only — the terminal look (heading "# " prefix, active "> "
+     marker, link colors) is single-sourced in src/styles/terminal.css, which
+     targets `starlight-commands-toc` alongside the default `starlight-toc`. */
   .cmd-toc-list {
     list-style: none;
     padding: 0;
@@ -58,10 +61,7 @@ const onThisPage = Astro.locals.t('tableOfContents.onThisPage');
   .cmd-toc-list a {
     font-family: var(--sl-font-mono, monospace);
   }
-  /* Active command (in view) — mirror Starlight's aria-current accent. */
-  .cmd-toc-list a[aria-current='true'] {
-    color: var(--sl-color-text-accent);
-  }
+  /* The active accent comes from terminal.css; keep the <code> inheriting it. */
   .cmd-toc-list a[aria-current='true'] code {
     color: inherit;
   }
@@ -78,19 +78,37 @@ const onThisPage = Astro.locals.t('tableOfContents.onThisPage');
       );
       if (links.length === 0) return;
 
-      // Clicking a ToC link opens the target <details> so the jump lands on an
-      // expanded node, not a collapsed summary.
+      const byId = new Map(links.map((l) => [l.dataset.cmdTocLink!, l]));
+
+      // A click is an explicit choice — it should win and not be clobbered by the
+      // scroll-spy / bottom-of-page correction that the ensuing jump-scroll fires.
+      // While this is set, auto-correction is suppressed; it clears once the
+      // jump-scroll settles (a short quiet period with no scroll events).
+      let clickLockSlug: string | null = null;
+      let clickLockTimer = 0;
+
+      // Clicking a ToC link opens the target <details> AND marks it active
+      // immediately — don't wait for the observer (which may never fire for a
+      // target that can't reach the active band, e.g. the last command at the
+      // page bottom). Instant feedback, and correct for the can't-scroll case.
       for (const link of links) {
         link.addEventListener('click', () => {
           const slug = link.dataset.cmdTocLink!;
           const target = document.getElementById(slug);
           if (target instanceof HTMLDetailsElement) target.open = true;
+          setActive(slug);
+          // Hold the clicked item active through the jump-scroll. Re-arm on each
+          // call so a quick second click extends the lock rather than racing.
+          clickLockSlug = slug;
+          window.clearTimeout(clickLockTimer);
+          clickLockTimer = window.setTimeout(() => {
+            clickLockSlug = null;
+          }, 600);
         });
       }
 
       // Scroll-spy: mark the link whose command summary is nearest the top of
       // the viewport. Observe each node's <summary> (the stable header row).
-      const byId = new Map(links.map((l) => [l.dataset.cmdTocLink!, l]));
       const summaries: HTMLElement[] = [];
       for (const slug of byId.keys()) {
         const node = document.getElementById(slug);
@@ -112,22 +130,64 @@ const onThisPage = Astro.locals.t('tableOfContents.onThisPage');
         }
       };
 
+      // Track the FULL set of currently-intersecting summaries across callbacks
+      // — a single callback's `entries` only reports what CHANGED, so when the
+      // active summary leaves the band and nothing new enters, the callback
+      // carries only the leaving (now non-intersecting) element. Maintaining the
+      // set means the highlight always advances to the next visible command
+      // instead of sticking on an out-of-view one.
+      const intersecting = new Set<HTMLElement>();
       const observer = new IntersectionObserver(
         (entries) => {
-          // Pick the topmost intersecting summary; if none intersect, keep last.
-          const visible = entries
-            .filter((e) => e.isIntersecting)
-            .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-          if (visible.length > 0) {
-            const slug = (visible[0].target as HTMLElement).dataset.cmdTocFor!;
-            setActive(slug);
+          for (const e of entries) {
+            const el = e.target as HTMLElement;
+            if (e.isIntersecting) intersecting.add(el);
+            else intersecting.delete(el);
           }
+          if (clickLockSlug) return; // a click chose the active item; don't override
+          if (intersecting.size === 0) return; // none in band → keep last active
+          // Topmost intersecting summary is the "current" command.
+          let top: HTMLElement | null = null;
+          for (const el of intersecting) {
+            if (!top || el.getBoundingClientRect().top < top.getBoundingClientRect().top) {
+              top = el;
+            }
+          }
+          if (top) setActive(top.dataset.cmdTocFor!);
         },
         // A band near the top of the viewport so the "current" command is the
         // one you've just scrolled to.
         { rootMargin: '0px 0px -75% 0px', threshold: 0 },
       );
       for (const s of summaries) observer.observe(s);
+
+      // Bottom-of-page correction. Commands near the page end can never reach the
+      // top active band (the page bottoms out first), so the observer would never
+      // mark them — most visibly the LAST command. When scrolled to (near) the
+      // bottom, mark the topmost summary that sits below the band's lower edge,
+      // i.e. the first command the observer can't reach. This makes scrolling to
+      // the end highlight the trailing command(s), matching click behavior.
+      const BAND_BOTTOM = () => window.innerHeight * 0.25; // mirrors the -75% margin
+      const onScroll = () => {
+        if (clickLockSlug) return; // a click is in progress; don't override it
+        const atBottom =
+          window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+        if (!atBottom) return;
+        // First summary whose top is below the active band → the topmost command
+        // stuck in the un-reachable bottom region.
+        let pick: HTMLElement | null = null;
+        for (const s of summaries) {
+          if (s.getBoundingClientRect().top >= BAND_BOTTOM()) {
+            pick = s;
+            break;
+          }
+        }
+        // Fallback: if all are above the band (very short page), use the last one.
+        if (!pick && summaries.length > 0) pick = summaries[summaries.length - 1];
+        if (pick) setActive(pick.dataset.cmdTocFor!);
+      };
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', onScroll, { passive: true });
     }
   }
   if (!customElements.get('starlight-commands-toc')) {

@@ -6,9 +6,9 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { HelpDocSchema, type Node } from './schemas.ts';
 import { commandSlug } from './parse-help.ts';
+import { repoRootFromModuleUrl } from './repo-root.ts';
 
 /** Per-tool commands pages have route id `tools/<tool>/commands`. */
 const COMMANDS_ROUTE_RE = /^tools\/([^/]+)\/commands$/;
@@ -26,24 +26,6 @@ export function toolFromRouteId(id: string): string | null {
   return m ? m[1] : null;
 }
 
-// Ascend from a starting dir to the repo root (the dir containing `help/`). A
-// fixed relative depth does not survive `astro build` (Vite relocates the
-// bundled chunk), so we ascend to the `help/` marker — robust in dev and build.
-const MAX_ASCENT = 12;
-function findRepoRoot(startDir: string): string {
-  let dir = startDir;
-  for (let i = 0; i < MAX_ASCENT; i += 1) {
-    const candidate = path.join(dir, 'help');
-    if (fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()) return dir;
-    const parent = path.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  throw new Error(
-    `commands-toc: could not locate a repo-root 'help/' directory by ascending from ${startDir}`,
-  );
-}
-
 /**
  * First-level commands for `tool`, read from `<repo-root>/help/<tool>.json`.
  * `moduleUrl` is the caller's `import.meta.url` (the anchor for the ascent).
@@ -53,7 +35,7 @@ function findRepoRoot(startDir: string): string {
  */
 export function firstLevelCommands(tool: string, moduleUrl: string): TocCommand[] {
   try {
-    const repoRoot = findRepoRoot(path.dirname(fileURLToPath(moduleUrl)));
+    const repoRoot = repoRootFromModuleUrl(moduleUrl);
     const raw = fs.readFileSync(path.join(repoRoot, 'help', `${tool}.json`), 'utf8');
     const doc = HelpDocSchema.parse(JSON.parse(raw));
     return doc.root.commands.map((c: Node) => ({ path: c.path, slug: commandSlug(c.path) }));

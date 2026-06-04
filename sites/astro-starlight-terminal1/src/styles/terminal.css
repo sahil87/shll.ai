@@ -263,31 +263,40 @@ nav.sidebar {
   background: var(--c-bg);
 }
 
-/* Right-hand TOC ("On this page") — render heading as a shell comment. */
-starlight-toc nav > h2 {
+/* Right-hand TOC ("On this page") — render heading as a shell comment. Targets
+   both Starlight's default <starlight-toc> and the commands-page override
+   <starlight-commands-toc> (src/components/CommandsToc.astro), so the terminal
+   look (# heading prefix, > active marker, link colors) is single-sourced and
+   applies identically on every page. */
+starlight-toc nav > h2,
+starlight-commands-toc nav > h2 {
   color: var(--c-fg-dim);
   font-weight: 500;
   font-size: 0.85rem;
   text-transform: none;
   letter-spacing: 0.02em;
 }
-starlight-toc nav > h2::before {
+starlight-toc nav > h2::before,
+starlight-commands-toc nav > h2::before {
   content: '# ';
   color: var(--c-fg-faint);
   font-weight: 400;
 }
 
 /* TOC links: flatten, active marker '> ' like the sidebar. */
-starlight-toc a {
+starlight-toc a,
+starlight-commands-toc a {
   color: var(--c-fg-dim);
   border: none;
 }
-starlight-toc a[aria-current='true'] {
+starlight-toc a[aria-current='true'],
+starlight-commands-toc a[aria-current='true'] {
   color: var(--c-accent);
   font-weight: 600;
   background: transparent;
 }
-starlight-toc a[aria-current='true']::before {
+starlight-toc a[aria-current='true']::before,
+starlight-commands-toc a[aria-current='true']::before {
   content: '> ';
   color: var(--c-accent);
 }
