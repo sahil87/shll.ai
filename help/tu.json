@@ -1,0 +1,14 @@
+{
+  "tool": "tu",
+  "version": "0.4.17",
+  "captured_at": "2026-06-04T11:12:35Z",
+  "schema_version": 1,
+  "root": {
+    "name": "tu",
+    "path": "tu",
+    "short": "AI coding assistant cost tracking CLI",
+    "usage": "Usage: tu [source] [period] [display]",
+    "text": "Usage: tu [source] [period] [display]\n\nSources: cc (Claude Code), codex/co (Codex), oc (OpenCode), all (default)\nPeriods: d/daily (default), m/monthly\nDisplay: (bare) = snapshot, h/history = history\nCombined: dh (daily history), mh (monthly history)\n\nExamples:\n  tu                   Today's cost, all tools (snapshot)\n  tu cc                Today's cost, Claude Code\n  tu h                 Daily cost history, all tools (pivot)\n  tu cc mh             Monthly cost history, Claude Code\n  tu m                 This month's cost, all tools\n\nSetup:\n  tu init-conf         Scaffold ~/.tu.conf\n  tu init-metrics      Clone metrics repo\n  tu sync              Push/pull metrics manually\n  tu status            Show config and sync state\n  tu update            Update tu to latest version\n  tu shell-init <sh>   Emit shell init script (bash/zsh/fish)\n\nHelp: tu help | tu -h | tu --help\n\nFlags:\n  --json               Output data as JSON (data commands only)\n  --csv                Output data as CSV (data commands only)\n  --md                 Output data as Markdown (data commands only)\n  --sync               Sync metrics before fetching (multi mode)\n  --fresh / -f         Bypass cache, fetch fresh data (data commands only)\n  --watch / -w         Persistent polling mode with live display (data commands only)\n  --interval / -i <s>  Poll interval in seconds (default: 10, range: 5-3600)\n  --user / -u <user>   Show usage for a specific user (multi mode only)\n  --by-machine         Show per-machine cost breakdown (data commands only)\n  --skip-brew-update   Skip 'brew update' tap refresh during 'tu update'\n  --no-color           Disable ANSI color output\n  --no-rain            Disable matrix rain animation in watch mode\n",
+    "commands": []
+  }
+}
