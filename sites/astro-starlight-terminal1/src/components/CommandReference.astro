@@ -612,6 +612,11 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
   .cmd-flag-desc {
     color: var(--c-fg);
     line-height: 1.4;
+    /* Preserve the newlines + leading indentation the parser now keeps for
+       multi-line flag help (e.g. `rk riff --layout`'s ASCII diagram). pre-wrap
+       honors explicit line breaks and leading spaces while still wrapping
+       overlong lines so the cell stays readable. */
+    white-space: pre-wrap;
   }
   .cmd-flag-default {
     color: var(--c-fg-dim);

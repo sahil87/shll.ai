@@ -124,15 +124,30 @@ function parseFlagLine(line: string): ParsedFlag | null {
 /**
  * Finalize a flag after its (possibly wrapped) `desc` is fully assembled: split
  * a trailing "(default …)" out of `desc` into `default`, and set `required`.
- * Done post-fold so a `(default …)` that lands at the very end of a wrapped
- * description (e.g. `rk riff --layout`, whose default trails the ASCII art) is
- * still captured.
+ *
+ * Cobra emits the real `(default …)` at the very END of a flag's description —
+ * but it wraps with the rest of the desc, so for a multi-line desc the default
+ * lands on the LAST continuation line, not the first (e.g. `rk riff --layout`,
+ * whose `(default "auto")` trails its ASCII diagram). With continuation
+ * newlines+indentation now preserved, `DEFAULT_RE`'s `$` anchor no longer
+ * reaches the end of the blob, so default-extraction runs on the LAST line and
+ * the (stripped) last line is re-joined with the preceding lines. This also
+ * still handles the single-line case (last line === only line). The mid-sentence
+ * `(default "auto").` that opens the same desc is deliberately NOT matched —
+ * DEFAULT_RE anchors to end-of-line, so only the genuine trailing default wins.
  */
 function finalizeFlag(flag: ParsedFlag): void {
-  const defMatch = DEFAULT_RE.exec(flag.desc);
+  const nl = flag.desc.lastIndexOf('\n');
+  const head = nl === -1 ? '' : flag.desc.slice(0, nl + 1); // includes trailing "\n"
+  const lastLine = nl === -1 ? flag.desc : flag.desc.slice(nl + 1);
+
+  const defMatch = DEFAULT_RE.exec(lastLine);
   if (defMatch) {
     flag.default = defMatch[1];
-    flag.desc = flag.desc.slice(0, defMatch.index).replace(/\s+$/, '');
+    const trimmedLast = lastLine.slice(0, defMatch.index).replace(/\s+$/, '');
+    // Drop the last line entirely if it held nothing but the default token
+    // (Cobra wrapped a bare `(default …)` onto its own continuation line).
+    flag.desc = trimmedLast === '' ? head.replace(/\n$/, '') : head + trimmedLast;
   }
   flag.required = /\(required\)/i.test(flag.desc);
 }
@@ -258,9 +273,12 @@ export function parseHelp(text: string): ParsedHelp {
           lastFlag = flag;
         } else if (line.trim() !== '' && lastFlag) {
           // A wrapped continuation of the open flag's description (e.g. the
-          // ASCII layout diagrams under `rk riff --layout`). Fold it in so it
-          // is not lost; collapse the indent to a single space.
-          lastFlag.desc = `${lastFlag.desc} ${line.trim()}`.trimEnd();
+          // ASCII layout diagrams under `rk riff --layout`). Fold it in on its
+          // own line, KEEPING the raw line (with its original leading
+          // whitespace) so multi-line content — diagrams, indented sub-points —
+          // survives intact rather than being collapsed to a single space. The
+          // trailing whitespace is trimmed; the first line's desc is untouched.
+          lastFlag.desc = `${lastFlag.desc}\n${line.replace(/\s+$/, '')}`;
         }
         break;
       }
@@ -278,7 +296,10 @@ export function parseHelp(text: string): ParsedHelp {
   // Trim a leading/trailing blank line off the description but otherwise keep it
   // byte-for-byte (internal blank lines and indentation are meaningful prose).
   result.description = descLines.join('\n').replace(/^\n+/, '').replace(/\s+$/, '');
-  result.examples = exampleLines.join('\n').trim();
+  // Trim only leading/trailing BLANK lines — preserve per-line indentation
+  // (Cobra indents example lines by 2 spaces; a bare `.trim()` would strip the
+  // first example's leading indent). Mirrors the description trim above.
+  result.examples = exampleLines.join('\n').replace(/^\n+/, '').replace(/\s+$/, '');
 
   return result;
 }

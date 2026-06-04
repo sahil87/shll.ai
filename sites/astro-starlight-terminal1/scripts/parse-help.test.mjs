@@ -127,8 +127,29 @@ test('rk riff: --cmd placeholder with spaces, multi-line --layout desc not ragge
 
   const layout = flags.find((f) => f.long === 'layout');
   assert.equal(layout.argtype, 'string');
-  // The wrapped ASCII-art description folded in (default "auto" split out).
+  // The trailing `(default "auto")` (which Cobra wraps onto the LAST line of the
+  // desc, after the ASCII art) is split out into `default`.
   assert.equal(layout.default, '"auto"');
+  // Multi-line content is now PRESERVED, not collapsed to a single space: the
+  // wrapped continuation lines keep their newlines AND original indentation so
+  // the ASCII layout diagram survives intact for rendering (white-space:pre-wrap).
+  assert.ok(layout.desc.includes('\n'), 'layout desc retains line breaks');
+  assert.ok(layout.desc.includes('┌───┬───┐'), 'ASCII diagram preserved verbatim');
+  assert.ok(
+    layout.desc.includes('\n                                                t, tiled'),
+    'continuation indentation preserved (not trimmed to a single space)',
+  );
+  // The first line is untouched; the mid-sentence "(default ...)" prose stays.
+  assert.equal(
+    layout.desc.split('\n')[0],
+    'Pane layout (default "auto"). layout name (canonical + shortform):',
+  );
+  // The genuine trailing default token is removed from the desc; the bare
+  // continuation line that held only "(default "auto")" is dropped entirely.
+  assert.ok(
+    !/\(default\s+[^)]*\)\s*$/.test(layout.desc),
+    'trailing default token stripped from desc',
+  );
 });
 
 test('multi-word placeholders captured whole, argtype null', () => {
