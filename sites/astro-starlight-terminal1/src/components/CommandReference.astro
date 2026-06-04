@@ -329,13 +329,10 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
           per-command -h/--help rows are suppressed in the flags tables above;
           this preserves that the help affordance is universal. */}
       <div class="cmd-toolbar">
-        <p class="cmd-help-note">
-          <code>-h</code>/<code>--help</code> work on every command;{' '}
-          <code>-v</code>/<code>--version</code> at the tool root.
-        </p>
-        {/* Expand/collapse every command NODE at once (the +/- tree). Pure DOM
-            toggle of the <details open> attribute — no data, no re-render
-            (Constitution I). Independent of the raw-output toggle below. */}
+        {/* Actions are a right-aligned cluster on their own row; the universal-help
+            note sits below. Expand/collapse act on command NODES (the +/- tree);
+            show-raw toggles the raw -h blocks — independent of each other. Pure DOM
+            toggles, no data, no re-render (Constitution I). */}
         <div class="cmd-toolbar-actions">
           <button type="button" class="cmd-toolbar-btn" data-cmd-expand-all>
             expand all
@@ -356,6 +353,13 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
             show raw
           </button>
         </div>
+        {/* Universal-help note — rendered ONCE per page, not per command. The
+            per-command -h/--help rows are suppressed in the flags tables above;
+            this preserves that the help affordance is universal. */}
+        <p class="cmd-help-note">
+          <code>-h</code>/<code>--help</code> work on every command;{' '}
+          <code>-v</code>/<code>--version</code> at the tool root.
+        </p>
       </div>
       {/* The ROOT renders through the SAME recursive node branch as every
           subcommand — structured view (description/usage/flags) + a collapsible
@@ -458,13 +462,12 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
     margin: 1.25rem 0;
   }
 
-  /* Top toolbar: universal-help note + expand/collapse-all actions. */
+  /* Top toolbar: a right-aligned cluster of actions on its own row, with the
+     universal-help note below it. */
   .cmd-toolbar {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem 0.75rem;
+    flex-direction: column;
+    gap: 0.5rem;
     margin-bottom: 1rem;
   }
 
@@ -488,7 +491,9 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
   .cmd-toolbar-actions {
     display: flex;
     gap: 0.4rem;
-    flex: none;
+    /* Right-align the cluster; wrap on narrow widths. */
+    justify-content: flex-end;
+    flex-wrap: wrap;
   }
   .cmd-toolbar-btn {
     font: inherit;
