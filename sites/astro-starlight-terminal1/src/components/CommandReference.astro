@@ -560,6 +560,13 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
     border-radius: 4px;
     background: var(--c-surface);
     overflow: hidden;
+    /* `.cmd-node` is itself a flex item inside `.cmd-children` (column flex).
+       `overflow: hidden` above already opts it out of the auto min-size (a
+       block flex item with non-visible overflow gets an automatic minimum of
+       0), so a wide descendant can't widen the box — but state it explicitly so
+       the containment doesn't silently depend on that overflow value if it ever
+       changes. Mirrors the `min-width: 0` guards on `.cmd-body`/`.cmd-summary`. */
+    min-width: 0;
   }
 
   /* Grid lanes keep the marker + path aligned even when the description wraps.
