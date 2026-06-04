@@ -53,9 +53,14 @@ interface Props {
   /** Internal: render this node's <details> open by default (used for the root,
    *  so its structured view shows immediately while subcommands stay collapsed). */
   open?: boolean;
+  /** Internal: render only this node's own body (description/usage/flags/raw),
+   *  NOT its children. The top-level entry uses this for the ROOT so its
+   *  subcommands render flush as peers below it, instead of indented inside the
+   *  root's <details>. Deeper levels keep nesting normally. */
+  bodyOnly?: boolean;
 }
 
-const { tool, node, open = false } = Astro.props as Props;
+const { tool, node, open = false, bodyOnly = false } = Astro.props as Props;
 
 /**
  * Resolve the repo root by ascending from a starting directory until a `help/`
@@ -301,7 +306,7 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
         </details>
       </div>
 
-      {node.commands.length > 0 && (
+      {!bodyOnly && node.commands.length > 0 && (
         <div class="cmd-children">
           {node.commands.map((child) => (
             <Astro.self node={child} />
@@ -341,11 +346,19 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
       </div>
       {/* The ROOT renders through the SAME recursive node branch as every
           subcommand — structured view (description/usage/flags) + a collapsible
-          "show raw -h", and its children nested below. `open` so the root's
-          structured body shows immediately while subcommands stay collapsed.
-          This removes the former special-case raw <pre> dump that pushed the
-          subcommand list far down the page. */}
-      <Astro.self node={doc!.root} open={true} />
+          "show raw -h". `open` so the root's body shows immediately; `bodyOnly`
+          so its subcommands are NOT nested inside it. This removes the former
+          special-case raw <pre> dump that pushed the subcommand list far down. */}
+      <Astro.self node={doc!.root} open={true} bodyOnly={true} />
+      {/* Top-level subcommands render FLUSH below the root as peers (not indented
+          inside the root's <details>). Deeper levels still nest under each. */}
+      {doc!.root.commands.length > 0 && (
+        <div class="cmd-children cmd-top-children">
+          {doc!.root.commands.map((child) => (
+            <Astro.self node={child} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -518,6 +531,13 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
     margin-inline-start: 1rem;
     padding-inline-start: 0.75rem;
     border-inline-start: 1px solid var(--c-border);
+  }
+  /* Top-level subcommands sit FLUSH below the root (no guide-rule indent — the
+     selector above only matches .cmd-children INSIDE a .cmd-node, and this one
+     is a direct child of .cmd-reference). A little more separation from the
+     root's body above. */
+  .cmd-top-children {
+    margin-top: 0.75rem;
   }
 
   .cmd-node {
