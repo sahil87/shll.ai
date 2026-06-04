@@ -1,0 +1,24 @@
+---
+/**
+ * MobileTocDispatcher — the mobile counterpart to TocDispatcher, registered as
+ * `components.MobileTableOfContents` in astro.config.mjs. Same route dispatch:
+ *
+ *   - `tools/<tool>/commands` → CommandsMobileToc
+ *   - `tools/<tool>/readme`   → ReadmeMobileToc
+ *   - everything else         → Starlight's <Default /> mobile ToC
+ *
+ * See TocDispatcher.astro for the rationale (explicit, traceable routing; no
+ * regression to the commands-page dropdown).
+ */
+import Default from '@astrojs/starlight/components/MobileTableOfContents.astro';
+import CommandsMobileToc from './CommandsMobileToc.astro';
+import ReadmeMobileToc from './ReadmeMobileToc.astro';
+import { toolFromRouteId } from '../lib/commands-toc.ts';
+import { toolFromReadmeRouteId } from '../lib/readme-toc.ts';
+
+const id = Astro.locals.starlightRoute.id;
+const isCommands = toolFromRouteId(id) !== null;
+const isReadme = toolFromReadmeRouteId(id) !== null;
+---
+
+{isCommands ? <CommandsMobileToc /> : isReadme ? <ReadmeMobileToc /> : <Default />}

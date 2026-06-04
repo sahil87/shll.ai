@@ -121,6 +121,17 @@ try {
 
 if (!missing) {
   try {
+    // The default processor already emits GitHub-style heading anchor `id`s on
+    // every <h2>/<h3> — its built-in `rehypeHeadingIds` pass slugs each heading
+    // with `github-slugger` (the same algorithm Starlight uses for native
+    // headings), so no extra rehype-slug config is needed here. The SAME slugs
+    // are also surfaced on `rendered.metadata.headings` ({ depth, slug, text }).
+    // src/lib/readme-toc.ts re-derives the rail from the identical pipeline (a
+    // second build-time render of this same slice), so a ToC `href` equals the
+    // rendered heading `id` by construction — duplicate-heading dedup suffixes
+    // (`-1`, `-2`) included. This is the README sibling of the way CommandsToc
+    // shares `commandSlug` with CommandReference, but single-sourced through
+    // Astro's own markdown processor rather than a hand-rolled slugger.
     const processor = await createMarkdownProcessor({});
     const rendered = await processor.render(raw!);
     html = rendered.code;

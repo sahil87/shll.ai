@@ -264,12 +264,15 @@ nav.sidebar {
 }
 
 /* Right-hand TOC ("On this page") — render heading as a shell comment. Targets
-   both Starlight's default <starlight-toc> and the commands-page override
-   <starlight-commands-toc> (src/components/CommandsToc.astro), so the terminal
-   look (# heading prefix, > active marker, link colors) is single-sourced and
-   applies identically on every page. */
+   Starlight's default <starlight-toc>, the commands-page override
+   <starlight-commands-toc> (src/components/CommandsToc.astro), and the
+   readme-page override <starlight-readme-toc> (src/components/ReadmeToc.astro),
+   so the terminal look (# heading prefix, > active marker, link colors) is
+   single-sourced and applies identically on every page — dark-mode parity comes
+   for free from the shared CSS variables (Constitution V). */
 starlight-toc nav > h2,
-starlight-commands-toc nav > h2 {
+starlight-commands-toc nav > h2,
+starlight-readme-toc nav > h2 {
   color: var(--c-fg-dim);
   font-weight: 500;
   font-size: 0.85rem;
@@ -277,7 +280,8 @@ starlight-commands-toc nav > h2 {
   letter-spacing: 0.02em;
 }
 starlight-toc nav > h2::before,
-starlight-commands-toc nav > h2::before {
+starlight-commands-toc nav > h2::before,
+starlight-readme-toc nav > h2::before {
   content: '# ';
   color: var(--c-fg-faint);
   font-weight: 400;
@@ -285,20 +289,29 @@ starlight-commands-toc nav > h2::before {
 
 /* TOC links: flatten, active marker '> ' like the sidebar. */
 starlight-toc a,
-starlight-commands-toc a {
+starlight-commands-toc a,
+starlight-readme-toc a {
   color: var(--c-fg-dim);
   border: none;
 }
 starlight-toc a[aria-current='true'],
-starlight-commands-toc a[aria-current='true'] {
+starlight-commands-toc a[aria-current='true'],
+starlight-readme-toc a[aria-current='true'] {
   color: var(--c-accent);
   font-weight: 600;
   background: transparent;
 }
 starlight-toc a[aria-current='true']::before,
-starlight-commands-toc a[aria-current='true']::before {
+starlight-commands-toc a[aria-current='true']::before,
+starlight-readme-toc a[aria-current='true']::before {
   content: '> ';
   color: var(--c-accent);
+}
+
+/* Readme ToC nesting: indent the H3 child list under its H2 parent so the
+   right rail reads as the same H2 → H3 hierarchy the page does. */
+starlight-readme-toc .readme-toc-sublist {
+  padding-inline-start: 1rem;
 }
 
 /* ── Density pass ───────────────────────────────────────────────────────────

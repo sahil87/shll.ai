@@ -1,0 +1,18 @@
+{"action":"enter","driver":"fab-new","event":"stage-transition","stage":"intake","ts":"2026-06-04T11:27:34Z"}
+{"args":"Add a custom Right Panel ToC for the per-tool README page (/tools/\u003ctool\u003e/readme), mirroring the commands-page ToC override. Separate ReadmeToc + ReadmeMobileToc components, route-dispatching override, H2+H3 nested depth, build-time only, dark-mode parity. Needs slug/anchor generation added to ReadmeSlice since createMarkdownProcessor({}) emits no heading IDs.","cmd":"fab-new","event":"command","ts":"2026-06-04T11:27:34Z"}
+{"delta":"+1.5","event":"confidence","score":1.5,"trigger":"calc-score","ts":"2026-06-04T11:28:51Z"}
+{"delta":"+0.0","event":"confidence","score":1.5,"trigger":"calc-score","ts":"2026-06-04T11:29:02Z"}
+{"cmd":"fab-clarify","event":"command","ts":"2026-06-04T16:28:32Z"}
+{"delta":"+3.5","event":"confidence","score":5,"trigger":"calc-score","ts":"2026-06-04T16:36:43Z"}
+{"delta":"+0.0","event":"confidence","score":5,"trigger":"calc-score","ts":"2026-06-04T16:36:54Z"}
+{"delta":"+0.0","event":"confidence","score":5,"trigger":"calc-score","ts":"2026-06-04T16:37:07Z"}
+{"delta":"+0.0","event":"confidence","score":5,"trigger":"calc-score","ts":"2026-06-04T16:37:19Z"}
+{"delta":"+0.0","event":"confidence","score":5,"trigger":"calc-score","ts":"2026-06-04T16:37:42Z"}
+{"delta":"+0.0","event":"confidence","score":5,"trigger":"calc-score","ts":"2026-06-04T16:37:46Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"apply","ts":"2026-06-04T16:38:15Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"review","ts":"2026-06-04T16:46:37Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"hydrate","ts":"2026-06-04T16:52:12Z"}
+{"event":"review","result":"passed","ts":"2026-06-04T16:52:12Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"ship","ts":"2026-06-04T16:55:55Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-06-04T16:55:58Z"}
+{"cmd":"git-pr","event":"command","ts":"2026-06-04T16:57:07Z"}
