@@ -18,3 +18,5 @@
 {"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"ship","ts":"2026-06-04T03:57:52Z"}
 {"action":"enter","driver":"git-pr","event":"stage-transition","stage":"review-pr","ts":"2026-06-04T04:00:35Z"}
 {"event":"review","result":"passed","ts":"2026-06-04T04:01:52Z"}
+{"action":"re-entry","driver":"fab-fff","event":"stage-transition","stage":"review-pr","ts":"2026-06-04T07:08:56Z"}
+{"event":"review","result":"passed","ts":"2026-06-04T07:13:50Z"}
