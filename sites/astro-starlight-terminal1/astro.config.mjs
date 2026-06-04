@@ -81,6 +81,7 @@ export default defineConfig({
               collapsed: true,
               items: [
                 { label: 'Overview', slug: 'tools/idea/overview' },
+                { label: 'Readme', slug: 'tools/idea/readme' },
                 { label: 'Install', slug: 'tools/idea/install' },
                 { label: 'Commands', slug: 'tools/idea/commands' },
                 { label: 'Workflows', slug: 'tools/idea/workflows' },
@@ -91,6 +92,7 @@ export default defineConfig({
               collapsed: true,
               items: [
                 { label: 'Overview', slug: 'tools/hop/overview' },
+                { label: 'Readme', slug: 'tools/hop/readme' },
                 { label: 'Commands', slug: 'tools/hop/commands' },
               ],
             },
@@ -99,6 +101,7 @@ export default defineConfig({
               collapsed: true,
               items: [
                 { label: 'Overview', slug: 'tools/fab-kit/overview' },
+                { label: 'Readme', slug: 'tools/fab-kit/readme' },
                 { label: 'Install', slug: 'tools/fab-kit/install' },
                 { label: 'Commands', slug: 'tools/fab-kit/commands' },
                 { label: 'Workflows', slug: 'tools/fab-kit/workflows' },
@@ -109,6 +112,7 @@ export default defineConfig({
               collapsed: true,
               items: [
                 { label: 'Overview', slug: 'tools/wt/overview' },
+                { label: 'Readme', slug: 'tools/wt/readme' },
                 { label: 'Commands', slug: 'tools/wt/commands' },
               ],
             },
@@ -117,6 +121,7 @@ export default defineConfig({
               collapsed: true,
               items: [
                 { label: 'Overview', slug: 'tools/run-kit/overview' },
+                { label: 'Readme', slug: 'tools/run-kit/readme' },
                 { label: 'Commands', slug: 'tools/run-kit/commands' },
               ],
             },
@@ -125,6 +130,7 @@ export default defineConfig({
               collapsed: true,
               items: [
                 { label: 'Overview', slug: 'tools/tu/overview' },
+                { label: 'Readme', slug: 'tools/tu/readme' },
                 { label: 'Commands', slug: 'tools/tu/commands' },
               ],
             },
@@ -133,6 +139,7 @@ export default defineConfig({
               collapsed: true,
               items: [
                 { label: 'Overview', slug: 'tools/shll/overview' },
+                { label: 'Readme', slug: 'tools/shll/readme' },
                 { label: 'Commands', slug: 'tools/shll/commands' },
               ],
             },

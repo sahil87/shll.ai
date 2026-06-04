@@ -1,25 +1,33 @@
 /**
  * extract-readme-cli — the thin Node CLI the scheduled readme-refresh workflow
- * calls per tool. It single-sources the deduction + gate logic from
- * `src/lib/extract-readme.ts` (the SAME module the unit test pins), so CI and
- * the tested behavior cannot drift.
+ * calls per tool. It single-sources the deduction + divergence-reporter logic
+ * from `src/lib/extract-readme.ts` (the SAME module the unit test pins), so CI
+ * and the tested behavior cannot drift.
  *
  * Usage:
  *   node scripts/extract-readme-cli.mjs <slug> <raw-readme-path> [--out <path>]
  *
  *   <slug>             the help/file slug (e.g. run-kit, fab-kit, shll). Names
- *                      both help/<slug>.json (the §7 gate's truth) and the output.
+ *                      both help/<slug>.json (the §7 reporter's truth) and the output.
  *   <raw-readme-path>  path to the fetched raw README.md to extract from.
  *   --out <path>       where to write the slice on success. Omit to write the
- *                      slice to stdout (the §7 gate result still goes to stderr).
+ *                      slice to stdout (the §7 divergence report still goes to stderr).
  *
- * Behavior (contract §7/§8):
+ * Behavior (contract §7/§8 — REPORT-ONLY, change `4s3e`):
+ *   The tool repo's README is CANONICAL and is rendered verbatim. `findUnknownTokens`
+ *   is a non-fatal REPORTER, not a publish gate: divergence is surfaced as a
+ *   `::warning::` but never withholds the slice. The slice is ALWAYS produced when
+ *   there is something to render.
  *   1. Read the raw README, run extractReadme() → the deduced + stripped slice.
- *   2. Load help/<slug>.json and run findUnknownTokens() — the vn39 gate.
- *   3. If the gate finds ANY unknown command/flag token, print them to stderr and
- *      EXIT NON-ZERO without writing — the workflow keeps the tool's last-good
- *      slice (per-tool failure isolation) and surfaces the defect.
- *   4. Else write the slice (to --out or stdout) and exit 0.
+ *      A missing/unreadable INPUT README is still an ERROR (exit non-zero) — there
+ *      is nothing to render, so report-only does not apply.
+ *   2. Load help/<slug>.json and run findUnknownTokens() — the divergence reporter.
+ *      A missing/unreadable help file means we cannot VERIFY: emit an "unverified"
+ *      `::warning::`, then still write the slice (canonical wins) and exit 0.
+ *   3. If the reporter finds unknown command/flag tokens, print them as a
+ *      `::warning::` (stderr), still WRITE the slice, and EXIT 0. The fix belongs
+ *      in the tool's README, never a silent exclusion on the shll.ai side.
+ *   4. Write the slice (to --out or stdout) and exit 0.
  *
  * Imports `extract-readme.ts`, which imports `parse-help.ts` (dependency-free) and
  * TYPE-ONLY from `schemas.ts` — type imports are stripped by Node's native
@@ -58,41 +66,52 @@ if (outIdx !== -1) {
 
 const helpPath = join(repoRoot, 'help', `${slug}.json`);
 
-// Load the tool's help document — the §7 gate's command/flag truth. A missing
-// help file means we cannot verify the slice's command accuracy; refuse to
-// commit unverified prose (fail closed), EXCEPT we still surface a clear message.
-let helpDoc;
+// Read the raw INPUT README first — this is the canonical content. A
+// missing/unreadable input is the ONE hard error here: there is nothing to
+// render, so report-only does not apply (exit non-zero, write nothing).
+let raw;
+try {
+  raw = await readFile(rawPath, 'utf8');
+} catch (err) {
+  const detail = err instanceof Error ? err.message : String(err);
+  console.error(`error: cannot read input README for ${slug} at ${rawPath} (${detail}).`);
+  console.error('Nothing to render — refusing to write a slice (this is a real fetch failure).');
+  process.exit(1);
+}
+
+const { slice } = extractReadme(raw);
+
+// Load the tool's help document — the divergence reporter's command/flag truth.
+// A missing/unreadable help file means we cannot VERIFY the slice. Under the
+// report-only model the README is canonical, so we still write the slice and
+// exit 0 — only emit an "unverified" warning (do NOT fail closed).
+let helpDoc = null;
 try {
   helpDoc = JSON.parse(await readFile(helpPath, 'utf8'));
 } catch (err) {
   const detail = err instanceof Error ? err.message : String(err);
   console.error(
-    `gate: cannot verify ${slug} — help/${slug}.json is missing or unreadable (${detail}).`,
+    `::warning::cannot verify ${slug} — help/${slug}.json is missing or unreadable (${detail}); committing the canonical README unverified.`,
   );
-  console.error('Refusing to commit unverified README prose (vn39 gate cannot run).');
-  process.exit(1);
 }
 
-const raw = await readFile(rawPath, 'utf8');
-const { slice } = extractReadme(raw);
-
-const unknown = findUnknownTokens(slice, helpDoc);
-if (unknown.length > 0) {
-  console.error(`gate FAILED for ${slug}: pulled prose references unknown command/flag tokens:`);
-  for (const tok of unknown) console.error(`  - ${tok}`);
-  console.error(
-    'These are absent from help/' +
-      slug +
-      '.json (the vn39 rule). Fix the tool README, not the site. Keeping last-good slice.',
-  );
-  process.exit(1);
+// Divergence reporter (vn39 cross-check) — NON-FATAL. When help is present and
+// the slice references command/flag tokens absent from it, surface a warning but
+// STILL write the slice (canonical wins). The fix belongs in the tool README.
+if (helpDoc) {
+  const unknown = findUnknownTokens(slice, helpDoc);
+  if (unknown.length > 0) {
+    console.error(
+      `::warning::${slug} README diverges from help/${slug}.json — references unknown command/flag tokens: ${unknown.join(', ')}. Rendering the canonical README anyway; fix the tool README, not the site.`,
+    );
+  }
 }
 
 if (outPath) {
   await mkdir(dirname(outPath), { recursive: true });
   await writeFile(outPath, slice, 'utf8');
-  console.error(`gate passed for ${slug}: wrote ${slice.length} bytes to ${outPath}`);
+  console.error(`wrote ${slice.length} bytes to ${outPath} for ${slug}`);
 } else {
   process.stdout.write(slice);
-  console.error(`gate passed for ${slug}`);
+  console.error(`wrote slice for ${slug}`);
 }

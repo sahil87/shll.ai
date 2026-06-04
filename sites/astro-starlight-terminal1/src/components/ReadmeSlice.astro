@@ -4,9 +4,12 @@
  *
  * Reads `<repo-root>/content/<tool>/README.md` (the deduced, curated slice the
  * scheduled readme-refresh job commits — see docs/specs/readme-extraction-contract.md),
- * renders the markdown to static HTML, and injects it into the tool's overview
- * page. All work happens in this frontmatter, which runs during `astro build` —
- * no client-side fetch and no client JS for the primary content (Constitution I).
+ * renders the markdown to static HTML, and emits it on the tool's parallel
+ * `readme` page (src/content/docs/tools/<tool>/readme.mdx, slug
+ * /tools/<tool>/readme — a sibling of the generated `commands` page; NOT the
+ * overview page). All work happens in this frontmatter, which runs during
+ * `astro build` — no client-side fetch and no client JS for the primary content
+ * (Constitution I).
  *
  * This is the README-prose sibling of CommandReference.astro (which renders the
  * machine-generated command reference). It reuses CommandReference's proven

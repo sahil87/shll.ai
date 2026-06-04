@@ -4,35 +4,38 @@ name: Scheduled README refresh
 # docs/specs/readme-extraction-contract.md). The README-prose SIBLING of
 # scheduled-help-refresh.yml: where that job pulls the machine-generated command
 # reference (JSON, validated against a Zod schema), this job pulls a deduced,
-# curated slice of each tool's authored README (markdown, gated by the vn39
-# command/flag cross-check). On a daily schedule (and on demand), it fetches each
-# of the 7 toolkit repos' README.md, runs the head/tail deduction + mermaid-strip
-# + #gh-*-mode-only-strip + the vn39 validation gate (all single-sourced from
-# src/lib/extract-readme.ts), and DIRECT-COMMITS the passing slice to
-# content/<slug>/README.md on main — gated on the gate passing.
+# curated slice of each tool's authored README (markdown). On a daily schedule
+# (and on demand), it fetches each of the 7 toolkit repos' README.md, runs the
+# head/tail deduction + mermaid-strip + #gh-*-mode-only-strip + the vn39
+# command/flag divergence REPORTER (all single-sourced from
+# src/lib/extract-readme.ts), and DIRECT-COMMITS the slice to
+# content/<slug>/README.md on main.
 #
 # DESIGN (mirrors scheduled-help-refresh.yml; see readme-extraction-contract §8):
 #   - SIBLING, not an extension of the help-refresh job. Distinct data kind
-#     (markdown slices → content/, not JSON → help/) and a distinct gate (vn39
-#     command/flag cross-check, not Zod schema validation), so each workflow stays
+#     (markdown slices → content/, not JSON → help/), so each workflow stays
 #     single-purpose and the help-refresh job is untouched (lower blast radius).
 #   - DIRECT COMMIT to main is sound here for the same reason as help-refresh: the
 #     committer is a SINGLE trusted cron, not 7 external repos. No PR, no
 #     auto-merge, no SHLLAI_TOKEN — just the default GITHUB_TOKEN with
 #     contents:write.
-#   - GATED ON THE vn39 GATE: a slice is only committed if extract-readme-cli.mjs
-#     exits 0 (no unknown command/flag tokens). This is the SOLE guard on pulled
-#     install accuracy now that Install is pulled — it catches the exact failure
-#     mode vn39 cleaned up (e.g. `shll shell-install`, a non-existent alias).
-#   - PER-TOOL FAILURE ISOLATION: each tool is extracted into a TEMP file; the
-#     committed content/<slug>/README.md is only overwritten when that tool's
-#     fetch + extraction + gate all succeed. A failing tool keeps its last-good
-#     committed slice and is logged as a warning; the run continues for the others.
+#   - REPORT-ONLY, NOT GATED (change `4s3e`): the tool repo's README is CANONICAL
+#     and is always committed + rendered verbatim. extract-readme-cli.mjs runs the
+#     vn39 command/flag cross-check as a NON-FATAL reporter: on divergence it emits
+#     a `::warning::` and STILL writes the slice (exit 0). A divergent README is no
+#     longer withheld — the drift signal surfaces as a CI warning where the fix
+#     belongs (the tool README), never as a silent exclusion on the site. The `tu`
+#     case (no help/tu.json) likewise commits its canonical README with an
+#     "unverified" `::warning::`.
+#   - PER-TOOL *FETCH-FAILURE* ISOLATION (KEPT): a README that genuinely cannot be
+#     fetched (network/404 on all branches) keeps its last-good committed slice and
+#     is logged — that is a REAL failure, distinct from divergence. The CLI exits
+#     non-zero ONLY when the input README cannot be read; that path keeps last-good.
 #   - OFF THE DEPLOY PATH: this workflow does NOT deploy. When it commits to main,
 #     the EXISTING deploy.yml push-to-main deploy ships the updated slices
-#     (Constitution IV) — no new deploy trigger here. A flaky fetch or a
-#     non-conformant README therefore breaks the REFRESH, not the deploy: the site
-#     keeps shipping last-good committed slices.
+#     (Constitution IV) — no new deploy trigger here. A flaky fetch therefore
+#     breaks the REFRESH for that tool, not the deploy: the site keeps shipping the
+#     last-good committed slice.
 
 on:
   # Daily off-peak refresh. 41 minutes past 07 UTC — a quiet hour, and an offset
@@ -96,20 +99,22 @@ jobs:
       # file from the repo, we don't install + run a binary. run-kit's repo is
       # `run-kit` even though its binary/formula is `rk`.)
       #
-      # Per-tool isolation: fetch the raw README to a TEMP file, run the extract
-      # CLI (deduction + vn39 gate) writing to a TEMP slice; only on success do we
-      # overwrite content/<slug>/README.md. Any failure (fetch, gate, missing help)
-      # leaves the last-good committed slice intact and is logged as a warning (the
-      # run continues for the other tools). The CLI is single-sourced from
+      # Per-tool flow: fetch the raw README to a TEMP file, run the extract CLI
+      # (deduction + NON-FATAL vn39 divergence reporter) writing to a TEMP slice,
+      # then overwrite content/<slug>/README.md. Under report-only the CLI exits 0
+      # on divergence and on missing help (writing the slice + emitting a
+      # `::warning::`); it exits non-zero ONLY when the input README cannot be read.
+      # So the only branch that keeps last-good here is a genuine FETCH/READ failure
+      # — divergence always commits. The CLI is single-sourced from
       # src/lib/extract-readme.ts, the same module scripts/extract-readme.test.mjs
       # pins — so CI behavior and the tested behavior cannot drift.
-      - name: Pull + extract + gate each tool README
+      - name: Pull + extract each tool README
         working-directory: sites/astro-starlight-terminal1
         run: |
           set -uo pipefail
 
           # slug:repo pairs
-          #   slug → output content/<slug>/README.md + help/<slug>.json (gate truth)
+          #   slug → output content/<slug>/README.md + help/<slug>.json (divergence-reporter truth)
           #   repo → github.com/sahil87/<repo>/README.md
           tools=(
             "idea:idea"
@@ -147,33 +152,36 @@ jobs:
               continue
             fi
 
-            # Extract + run the vn39 gate. The CLI exits non-zero (printing the
-            # offending tokens) when the slice references a command/flag absent
-            # from help/<slug>.json — in which case we keep the last-good slice.
+            # Extract (report-only). The CLI ALWAYS writes the slice and exits 0 on
+            # divergence and on missing help/<slug>.json — it emits a `::warning::`
+            # (surfaced in the run log) but the canonical README is still committed.
+            # It exits non-zero ONLY if the input README we just fetched cannot be
+            # read; that genuine read failure keeps the last-good slice.
             slice="$tmpdir/$slug.slice.md"
             if node scripts/extract-readme-cli.mjs "$slug" "$raw" --out "$slice"; then
               mkdir -p "../../content/$slug"
               mv "$slice" "../../content/$slug/README.md"
               echo "extracted content/$slug/README.md"
             else
-              echo "::warning::extract/gate failed for $slug — keeping last-good content/$slug/README.md"
+              echo "::warning::could not extract README for $slug (input unreadable) — keeping last-good content/$slug/README.md"
               failed+=("$slug")
             fi
             echo "::endgroup::"
           done
 
           if [ "${#failed[@]}" -gt 0 ]; then
-            echo "::notice::tools with no fresh slice this run (last-good preserved): ${failed[*]}"
+            echo "::notice::tools with no fresh slice this run (fetch/read failure, last-good preserved): ${failed[*]}"
           fi
           # NOTE: we never fail the job here. One bad tool must not poison the
-          # others, and a not-yet-conformant README is the expected interim state.
-          # Each tool's slice was individually gated above before being staged.
+          # others. Divergence is committed with a `::warning::` (report-only); only
+          # a genuine fetch/read failure preserves last-good.
 
-      # DIRECT COMMIT to main. Each committed slice already passed the vn39 gate in
-      # the step above (per-tool), so this commits only gate-clean content. Uses the
-      # default GITHUB_TOKEN (no PR, no auto-merge, no SHLLAI_TOKEN). Commits only
-      # when there is an actual change. The push to main then triggers the EXISTING
-      # deploy.yml deploy (Constitution IV) — no deploy logic lives here.
+      # DIRECT COMMIT to main. Under report-only this commits the canonical README
+      # slice for every tool that was fetchable (divergences carry a `::warning::`
+      # in the run log, not an exclusion). Uses the default GITHUB_TOKEN (no PR, no
+      # auto-merge, no SHLLAI_TOKEN). Commits only when there is an actual change.
+      # The push to main then triggers the EXISTING deploy.yml deploy
+      # (Constitution IV) — no deploy logic lives here.
       - name: Commit refreshed README slices
         run: |
           set -euo pipefail

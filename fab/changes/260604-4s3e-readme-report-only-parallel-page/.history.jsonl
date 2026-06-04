@@ -1,0 +1,19 @@
+{"action":"enter","driver":"fab-new","event":"stage-transition","stage":"intake","ts":"2026-06-04T09:51:26Z"}
+{"args":"Revise the README-extraction design after seeing it live: (1) flip the vn39 gate from blocking to report-only — the tool README is canonical and renders verbatim; help-dump divergence becomes a non-fatal warning, not a publish gate; (2) render the pulled slice on a parallel per-tool readme page instead of injecting into overview.mdx; (3) thin the overview page back to a directory entry (GithubButton + framing + nav). Supersedes w32m assumptions #11 and the blocking-gate parts of #9/#13.","cmd":"fab-new","event":"command","ts":"2026-06-04T09:51:26Z"}
+{"delta":"+1.7","event":"confidence","score":1.7,"trigger":"calc-score","ts":"2026-06-04T09:53:00Z"}
+{"delta":"+0.0","event":"confidence","score":1.7,"trigger":"calc-score","ts":"2026-06-04T09:53:11Z"}
+{"cmd":"fab-clarify","event":"command","ts":"2026-06-04T09:56:59Z"}
+{"delta":"+3.0","event":"confidence","score":4.7,"trigger":"calc-score","ts":"2026-06-04T09:58:30Z"}
+{"delta":"+0.0","event":"confidence","score":4.7,"trigger":"calc-score","ts":"2026-06-04T09:58:40Z"}
+{"delta":"+0.0","event":"confidence","score":4.7,"trigger":"calc-score","ts":"2026-06-04T09:58:48Z"}
+{"delta":"+0.0","event":"confidence","score":4.7,"trigger":"calc-score","ts":"2026-06-04T09:58:56Z"}
+{"delta":"+0.0","event":"confidence","score":4.7,"trigger":"calc-score","ts":"2026-06-04T09:59:01Z"}
+{"delta":"+0.0","event":"confidence","score":4.7,"trigger":"calc-score","ts":"2026-06-04T09:59:13Z"}
+{"delta":"+0.0","event":"confidence","score":4.7,"trigger":"calc-score","ts":"2026-06-04T09:59:18Z"}
+{"cmd":"fab-fff","event":"command","ts":"2026-06-04T09:59:46Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"apply","ts":"2026-06-04T09:59:46Z"}
+{"action":"enter","driver":"fab-continue","event":"stage-transition","stage":"review","ts":"2026-06-04T10:10:10Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"hydrate","ts":"2026-06-04T10:16:03Z"}
+{"event":"review","result":"passed","ts":"2026-06-04T10:16:03Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-06-04T10:16:43Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"ship","ts":"2026-06-04T10:22:47Z"}
