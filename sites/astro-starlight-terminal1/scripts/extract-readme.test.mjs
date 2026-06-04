@@ -292,11 +292,11 @@ test('gate (M2): `wt create <branch>` — positional arg after a real leaf is NO
 
 test('gate (M2): hop leaf commands with positional args are NOT flagged', async () => {
   const hop = await loadHelp('hop');
-  // `hop shell-init zsh`, `hop config add somedir`, `hop clone myrepo` — each ends
-  // in a real leaf command (`hop shell-init`, `hop config add`, `hop clone`)
+  // `hop shell-init zsh`, `hop config init somedir`, `hop clone myrepo` — each ends
+  // in a real leaf command (`hop shell-init`, `hop config init`, `hop clone`)
   // followed by an ordinary positional arg.
   assert.deepEqual(findUnknownTokens(['```bash', 'hop shell-init zsh', '```'].join('\n'), hop), [], 'hop shell-init zsh');
-  assert.deepEqual(findUnknownTokens(['```bash', 'hop config add somedir', '```'].join('\n'), hop), [], 'hop config add somedir');
+  assert.deepEqual(findUnknownTokens(['```bash', 'hop config init somedir', '```'].join('\n'), hop), [], 'hop config init somedir');
   assert.deepEqual(findUnknownTokens(['```bash', 'hop clone myrepo', '```'].join('\n'), hop), [], 'hop clone myrepo');
 });
 
@@ -314,7 +314,7 @@ test('gate (M2): fabricated subcommands are STILL flagged (true positives preser
     findUnknownTokens(['```bash', 'wt summon feature', '```'].join('\n'), wt).includes('wt summon'),
     'wt summon flagged',
   );
-  // `hop config bogus` — `hop config` has children (add/init/print/…) but `bogus`
+  // `hop config bogus` — `hop config` has children (init/print/scan/where) but `bogus`
   // is not one of them → fabricated nested subcommand, flagged.
   assert.ok(
     findUnknownTokens(['```bash', 'hop config bogus', '```'].join('\n'), hop).includes('hop config bogus'),
