@@ -169,6 +169,15 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
       <summary class="cmd-summary">
         <span class="cmd-path">{node.path}</span>
         <span class="cmd-short">{node.short}</span>
+        <button
+          type="button"
+          class="cmd-copy cmd-copy-path"
+          data-copy={node.path}
+          aria-label={`Copy command: ${node.path}`}
+          title="Copy command"
+        >
+          copy
+        </button>
       </summary>
 
       <div class="cmd-body">
@@ -331,6 +340,9 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
     const target = event.target as HTMLElement;
     const btn = target.closest<HTMLButtonElement>('button.cmd-copy[data-copy]');
     if (!btn) return;
+    // The path copy button lives inside <summary>; a click there would otherwise
+    // toggle the <details>. Suppress that so copying never expands/collapses.
+    if (btn.closest('summary')) event.preventDefault();
     const text = btn.dataset.copy ?? '';
     const done = () => {
       const prev = btn.textContent;
@@ -492,6 +504,10 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
   }
   .cmd-short {
     color: var(--c-fg-dim);
+  }
+  /* Push the command-path copy button to the trailing edge of the summary row. */
+  .cmd-copy-path {
+    margin-inline-start: auto;
   }
 
   /* ── Structured node body ──────────────────────────────────────────────── */
