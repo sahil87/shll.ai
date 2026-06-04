@@ -1,13 +1,13 @@
 {
   "tool": "wt",
-  "version": "1.4.2",
-  "captured_at": "2026-06-02T00:00:00Z",
+  "version": "v0.0.16",
+  "captured_at": "2026-06-04T09:28:12Z",
   "schema_version": 1,
   "root": {
     "name": "wt",
     "path": "wt",
-    "short": "Git worktree management — create, list, open, delete worktrees.",
-    "usage": "wt [command]",
+    "short": "Git worktree management — create, list, open, delete worktrees",
+    "usage": "wt [flags]",
     "text": "Git worktree management — create, list, open, delete worktrees.\n\nShell wrapper (recommended):\n  To enable the \"Open here\" menu option (cd into a worktree in the current\n  shell), add this to your shell profile (~/.bashrc or ~/.zshrc):\n\n    eval \"$(wt shell-init)\"\n\nUsage:\n  wt [command]\n\nAvailable Commands:\n  create      Create a git worktree\n  delete      Delete a git worktree\n  init        Run worktree init script\n  list        List all git worktrees\n  open        Open a directory or worktree in an application\n  shell-init  Output shell wrapper function for eval\n  update      self-update the wt binary via Homebrew\n\nFlags:\n  -h, --help      help for wt\n  -v, --version   version for wt\n\nUse \"wt [command] --help\" for more information about a command.",
     "commands": [
       {
@@ -23,7 +23,7 @@
         "path": "wt delete",
         "short": "Delete a git worktree",
         "usage": "wt delete [worktree-names...] [flags]",
-        "text": "Delete one or more git worktrees with optional branch cleanup.\n\nPositional arguments are interpreted as worktree names to delete.\nResolution order: --delete-all, positional args, --worktree-name (deprecated), current worktree, interactive selection.\n\nUsage:\n  wt delete [worktree-names...] [flags]\n\nFlags:\n      --delete-all             Delete all worktrees\n      --delete-branch string   Delete associated branch: true, false, or auto (default: auto — deletes only when branch matches worktree name)\n      --delete-remote string   Delete remote branch: true (default) or false\n  -h, --help                   help for delete\n      --non-interactive        No prompts, use defaults\n  -s, --stash                  Stash uncommitted changes before deleting",
+        "text": "Delete one or more git worktrees with optional branch cleanup.\n\nPositional arguments are interpreted as worktree names to delete.\nResolution order: --stale, --delete-all, positional args, --worktree-name (deprecated), current worktree, interactive selection.\n\nUsage:\n  wt delete [worktree-names...] [flags]\n\nFlags:\n      --delete-all             Delete all worktrees\n      --delete-branch string   Delete associated branch: true, false, or auto (default: auto — deletes only when branch matches worktree name)\n      --delete-remote string   Delete remote branch: true (default) or false\n  -h, --help                   help for delete\n      --non-interactive        No prompts, use defaults\n      --stale string[=\"7d\"]    Select idle worktrees (filesystem mtime older than the threshold) for deletion. Bare --stale uses the 7d default; --stale=Nd overrides (e.g. --stale=30d). The '=' is required.\n  -s, --stash                  Stash uncommitted changes before deleting",
         "commands": []
       },
       {
