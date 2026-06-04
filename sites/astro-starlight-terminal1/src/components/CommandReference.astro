@@ -50,9 +50,12 @@ interface Props {
   tool?: string;
   /** Internal: a single node to render recursively (used by `Astro.self`). */
   node?: Node;
+  /** Internal: render this node's <details> open by default (used for the root,
+   *  so its structured view shows immediately while subcommands stay collapsed). */
+  open?: boolean;
 }
 
-const { tool, node } = Astro.props as Props;
+const { tool, node, open = false } = Astro.props as Props;
 
 /**
  * Resolve the repo root by ascending from a starting directory until a `help/`
@@ -165,7 +168,7 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
 {
   node ? (
     // ── Recursive subcommand entry ──────────────────────────────────────
-    <details class="cmd-node">
+    <details class="cmd-node" open={open}>
       <summary class="cmd-summary">
         <span class="cmd-path">{node.path}</span>
         <span class="cmd-short">{node.short}</span>
@@ -316,22 +319,33 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
     </div>
   ) : (
     // ── Present data → render the tree from doc.root ────────────────────
-    <div class="cmd-reference not-content">
+    <div class="cmd-reference not-content" data-cmd-reference>
       {/* Universal-help note — rendered ONCE per page, not per command. The
           per-command -h/--help rows are suppressed in the flags tables above;
           this preserves that the help affordance is universal. */}
-      <p class="cmd-help-note">
-        <code>-h</code>/<code>--help</code> work on every command;{' '}
-        <code>-v</code>/<code>--version</code> at the tool root.
-      </p>
-      <pre class="cmd-text cmd-root-text">{doc!.root.text}</pre>
-      {doc!.root.commands.length > 0 && (
-        <div class="cmd-children cmd-root-children">
-          {doc!.root.commands.map((child) => (
-            <Astro.self node={child} />
-          ))}
+      <div class="cmd-toolbar">
+        <p class="cmd-help-note">
+          <code>-h</code>/<code>--help</code> work on every command;{' '}
+          <code>-v</code>/<code>--version</code> at the tool root.
+        </p>
+        {/* Expand/collapse every command node at once. Pure DOM toggle of the
+            <details open> attribute — no data, no re-render (Constitution I). */}
+        <div class="cmd-toolbar-actions">
+          <button type="button" class="cmd-toolbar-btn" data-cmd-expand-all>
+            expand all
+          </button>
+          <button type="button" class="cmd-toolbar-btn" data-cmd-collapse-all>
+            collapse all
+          </button>
         </div>
-      )}
+      </div>
+      {/* The ROOT renders through the SAME recursive node branch as every
+          subcommand — structured view (description/usage/flags) + a collapsible
+          "show raw -h", and its children nested below. `open` so the root's
+          structured body shows immediately while subcommands stay collapsed.
+          This removes the former special-case raw <pre> dump that pushed the
+          subcommand list far down the page. */}
+      <Astro.self node={doc!.root} open={true} />
     </div>
   )
 }
@@ -384,6 +398,15 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
       if (noMatch) noMatch.hidden = shown !== 0;
     });
   });
+
+  // Expand/collapse all command nodes. Pure DOM: toggles the `open` attribute on
+  // every <details.cmd-node> within the reference. No data, no re-render.
+  document.querySelectorAll<HTMLElement>('[data-cmd-reference]').forEach((ref) => {
+    const nodes = Array.from(ref.querySelectorAll<HTMLDetailsElement>('details.cmd-node'));
+    const setAll = (open: boolean) => nodes.forEach((d) => { d.open = open; });
+    ref.querySelector('[data-cmd-expand-all]')?.addEventListener('click', () => setAll(true));
+    ref.querySelector('[data-cmd-collapse-all]')?.addEventListener('click', () => setAll(false));
+  });
 </script>
 
 <style>
@@ -398,6 +421,16 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
     margin: 1.25rem 0;
   }
 
+  /* Top toolbar: universal-help note + expand/collapse-all actions. */
+  .cmd-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 0.75rem;
+    margin-bottom: 1rem;
+  }
+
   /* Universal-help note — rendered once per page. */
   .cmd-help-note {
     color: var(--c-fg-dim);
@@ -405,7 +438,7 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
     border: 1px solid var(--c-border);
     border-radius: 4px;
     padding: 0.5rem 0.75rem;
-    margin: 0 0 1rem;
+    margin: 0;
     font-size: 0.85rem;
   }
   .cmd-help-note code {
@@ -413,6 +446,31 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
     background: var(--c-surface-2);
     padding: 0.05em 0.3em;
     border-radius: 2px;
+  }
+
+  .cmd-toolbar-actions {
+    display: flex;
+    gap: 0.4rem;
+    flex: none;
+  }
+  .cmd-toolbar-btn {
+    font: inherit;
+    font-size: 0.8rem;
+    color: var(--c-fg-dim);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 4px;
+    padding: 0.25rem 0.6rem;
+    cursor: pointer;
+  }
+  .cmd-toolbar-btn:hover {
+    color: var(--c-accent);
+    border-color: var(--c-accent);
+    background: var(--c-surface-2);
+  }
+  .cmd-toolbar-btn:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 1px;
   }
 
   .cmd-placeholder p {
@@ -447,15 +505,12 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
     line-height: 1.5;
   }
 
-  .cmd-root-text {
-    margin-bottom: 1rem;
-  }
-
   /* Nested subcommands indent under their parent so tree depth reads visually. */
   .cmd-children {
     margin-top: 0.5rem;
   }
-  .cmd-root-children > .cmd-node + .cmd-node {
+  /* Spacing between sibling command nodes. */
+  .cmd-children > .cmd-node + .cmd-node {
     margin-top: 0.375rem;
   }
   /* A nested level indents and gets a guide rule. */
@@ -472,17 +527,21 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
     overflow: hidden;
   }
 
+  /* Grid lanes keep the marker + path aligned even when the description wraps.
+     marker · path · short(flexible, wraps in its own lane) · copy(pinned right). */
   .cmd-summary {
     cursor: pointer;
     list-style: none;
     padding: 0.5rem 0.75rem;
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1ch auto minmax(0, 1fr) auto;
     align-items: baseline;
-    gap: 0.5rem 0.75rem;
+    column-gap: 0.75rem;
+    row-gap: 0.25rem;
     color: var(--c-fg);
   }
-  /* Replace the default disclosure triangle with a shell-style +/- marker. */
+  /* Replace the default disclosure triangle with a shell-style +/- marker that
+     sits in the first grid lane. */
   .cmd-summary::-webkit-details-marker {
     display: none;
   }
@@ -490,8 +549,7 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
     content: '+';
     color: var(--c-fg-faint);
     font-weight: 600;
-    width: 1ch;
-    flex: none;
+    grid-column: 1;
   }
   .cmd-node[open] > .cmd-summary::before {
     content: '-';
@@ -508,13 +566,21 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
   .cmd-path {
     color: var(--c-accent);
     font-weight: 600;
+    grid-column: 2;
+    white-space: nowrap;
   }
   .cmd-short {
     color: var(--c-fg-dim);
+    grid-column: 3;
+    /* Wrap within the lane (long descriptions stay aligned under each other,
+       never under the path/marker). min-width:0 lets the grid lane shrink. */
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
-  /* Push the command-path copy button to the trailing edge of the summary row. */
+  /* The path copy button sits in the trailing grid lane. */
   .cmd-copy-path {
-    margin-inline-start: auto;
+    grid-column: 4;
+    align-self: start;
   }
 
   /* ── Structured node body ──────────────────────────────────────────────── */
