@@ -1,14 +1,16 @@
-A development toolkit for AI-assisted coding. It includes a 6-stage pipeline (intake → apply → review → hydrate → ship → review-PR), standalone CLI tools for [git worktree management](#standalone-cli-tools) (`wt`) and [idea backlogs](#standalone-cli-tools) (`idea`), and batch orchestration for running multiple AI agents in parallel. Plain markdown prompts, no SDK, no vendor lock-in. Works with Claude Code, Codex, Cursor, and Windsurf.
+A development toolkit for AI-assisted coding. It includes a 6-stage pipeline (intake → apply → review → hydrate → ship → review-PR), standalone CLI tools for [git worktree management](https://github.com/sahil87/fab-kit/blob/main/docs/specs/companions.md) (`wt`) and [idea backlogs](https://github.com/sahil87/fab-kit/blob/main/docs/specs/companions.md) (`idea`), and batch orchestration for running multiple AI agents in parallel. Plain markdown prompts, no SDK, no vendor lock-in. Works with Claude Code, Codex, Cursor, and Windsurf.
 
 AI agents write code fast. The bottleneck is now your clarity: did you define the problem well enough? Fab Kit sits at that bottleneck — it forces structured thinking before implementation, grounds every session in your project's actual context, and gets cheaper to run as agents improve.
 
-> **[Try it now](#quick-start)** | **[Understand the concepts](#why-fab-kit)** | **[Glossary](docs/specs/glossary.md)** (new to Fab terminology?)
+> **[Try it now](#quick-start)** | **[Understand the concepts](#why-fab-kit)** | **[Glossary](https://github.com/sahil87/fab-kit/blob/main/docs/specs/glossary.md)** (new to Fab terminology?)
 
-**Contents:** [The 6 Stages](#the-6-stages) · [Prerequisites](#prerequisites) · [Quick Start](#quick-start) · [Why Fab Kit](#why-fab-kit) · [The 5 Cs](#the-5-cs-of-quality) · [Commands](#command-quick-reference) · [Stage Coverage](#stage-coverage-by-command) · [CLI Tools](#standalone-cli-tools) · [Learn More](#learn-more)
+**Contents:** [The 6 Stages](#the-6-stages) · [Prerequisites](#prerequisites) · [Quick Start](#quick-start) · [Why Fab Kit](#why-fab-kit) · [The 5 Cs](#the-5-cs-of-quality) · [Commands](#command-quick-reference)
 
 ## The 6 Stages
 
 Every change (a self-contained feature or fix with its own folder) moves through six stages:
+
+![Fab Kit 6-stage pipeline: 1 Intake → Execution (2 Apply → 3 Review) → Completion (4 Hydrate) → Shipping (5 Ship → 6 Review-PR)](https://raw.githubusercontent.com/sahil87/fab-kit/main/docs/img/pipeline-stages.svg)
 
 | # | Stage | Purpose | Artifact |
 |---|-------|---------|----------|
@@ -168,7 +170,7 @@ To re-deploy skills, scaffold structure, and sync hooks without changing the pin
 fab sync
 ```
 
-> **Note:** `fab sync` runs automatically in every new worktree created by [`wt create`](docs/specs/companions.md#wt--worktree-isolation).
+> **Note:** `fab sync` runs automatically in every new worktree created by [`wt create`](https://github.com/sahil87/fab-kit/blob/main/docs/specs/companions.md#wt--worktree-isolation).
 
 ### 2. Your first change
 
@@ -218,7 +220,7 @@ wt create                # creates an isolated worktree with a random name
 /fab-new Add error toast for failed submissions
 ```
 
-Each change is a self-contained folder - multiple AI sessions run in parallel without conflicts. `/fab-new` auto-activates, so you can start working immediately. Use `/fab-draft` to queue a change without switching to it. [How the assembly line works →](docs/specs/assembly-line.md)
+Each change is a self-contained folder - multiple AI sessions run in parallel without conflicts. `/fab-new` auto-activates, so you can start working immediately. Use `/fab-draft` to queue a change without switching to it. [How the assembly line works →](https://github.com/sahil87/fab-kit/blob/main/docs/specs/assembly-line.md)
 
 ### Troubleshooting
 
@@ -355,7 +357,7 @@ Each dimension scores how safe it is to assume. The scores aggregate into a conf
 | **Tentative** | Proceeds with marker - resolvable via `/fab-clarify` |
 | **Unresolved** | Blocks and asks - too ambiguous to guess |
 
-Grades aggregate into a **confidence score** that gates `/fab-ff`. If ambiguity is too high, the pipeline refuses to run and tells you what to clarify - no silent guesswork, no unnecessary interruption. [How SRAD works →](docs/specs/srad.md)
+Grades aggregate into a **confidence score** that gates `/fab-ff`. If ambiguity is too high, the pipeline refuses to run and tells you what to clarify - no silent guesswork, no unnecessary interruption. [How SRAD works →](https://github.com/sahil87/fab-kit/blob/main/docs/specs/srad.md)
 
 ## Command Quick Reference
 
@@ -409,7 +411,7 @@ The operator (`/fab-operator`) is a long-running coordination layer that sits in
 |---------|---------|
 | `/fab-operator` | Multi-agent coordination — monitoring, auto-answering, autopilot queues, dependency-aware spawning |
 
-[Operator version history →](docs/specs/operator.md)
+[Operator version history →](https://github.com/sahil87/fab-kit/blob/main/docs/specs/operator.md)
 
 ### CLI Subcommands
 
@@ -422,51 +424,3 @@ The operator (`/fab-operator`) is a long-running coordination layer that sits in
 | `fab batch new` | Create worktree tabs from backlog items |
 | `fab batch switch` | Open tmux tabs in worktrees for one or more changes |
 | `fab batch archive` | Archive multiple completed changes in one session |
-
-## Stage Coverage by Command
-
-Which pipeline stages each command covers. Taller bars = more automation. Read left-to-right from most manual to most automated. **▶** marks typical entry points — start with `/fab-discuss` (exploratory) or `/fab-new` (ready to build). Arrows show the typical path from idea to PR. Dashed borders indicate optional/utility stages. Empty cells = not covered by that command.
-
-| Color | Category | Commands |
-|-------|----------|----------|
-| 🟦 Cyan | Explore (read-only) | `/fab-discuss` |
-| 🟧 Amber | Manual (single action) | `/fab-draft`, `/fab-switch`, `/fab-continue` |
-| ⬜ Blue-grey (dashed) | Git utilities | `/git-branch`, `/git-pr`, `/git-pr-review` |
-| 🟩 Green | Automated pipeline (multi-stage) | `/fab-new`, `/fab-ff`, `/fab-fff`, `/fab-proceed` |
-| ◻️ Grey | Fab pipeline stage (row label) | intake, change active, apply, review, hydrate |
-| ▶ | Typical entry point | `/fab-discuss`, `/fab-new` |
-
-**Quick reference** — which stages does each command cover?
-
-| Stage | `/fab-discuss` | `/fab-draft` | `/fab-switch` | `/git-branch` | `/fab-new` | `/fab-continue` | `/fab-ff` | `/git-pr` | `/git-pr-review` | `/fab-fff` | `/fab-proceed` |
-|-------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-| context | ✅ | | | | | | | | | | |
-| intake | | ✅ | | | ✅ | | | | | | ✅ |
-| change active | | | ✅ | | ✅ | | | | | | ✅ |
-| branch name | | | | ✅ | ✅ | | | | | | ✅ |
-| apply | | | | | | ✅ | ✅ | | | ✅ | ✅ |
-| review | | | | | | ✅ | ✅ | | | ✅ | ✅ |
-| hydrate | | | | | | ✅ | ✅ | | | ✅ | ✅ |
-| ship | | | | | | | | ✅ | | ✅ | ✅ |
-| review-pr | | | | | | | | | ✅ | ✅ | ✅ |
-
-## Companion tools
-
-fab-kit's Homebrew formula declares **wt** and **idea** as dependencies, so `brew install sahil87/tap/fab-kit` installs all four CLIs (`fab`, `fab-kit`, `wt`, `idea`) on PATH transitively. They're independent projects with their own release cadences:
-
-| Tool | Role in the fab workflow | Repo |
-|------|--------------------------|------|
-| **wt** | Worktree isolation — each change runs in its own worktree (the foundation of [parallel changes](#parallel-by-default)). Used by `fab batch new` and `fab batch switch`. | [sahil87/wt](https://github.com/sahil87/wt) |
-| **idea** | Per-repo backlog (`fab/backlog.md`) that feeds `/fab-new`. `fab batch new` reads open ideas and creates a worktree per item. | [sahil87/idea](https://github.com/sahil87/idea) |
-
-See [companions.md](docs/specs/companions.md) for the integration architecture.
-
-## Learn More
-
-- **[The Assembly Line](docs/specs/assembly-line.md)** - batch scripts, Gantt charts, and the full numbers behind parallel development
-- **[Design & Workflow Details](docs/specs/overview.md)** - principles, detailed stage descriptions, example workflows
-- **[User Flow Diagrams](docs/specs/user-flow.md)** - visual maps of the full pipeline, shortcuts, rework paths, and state machine
-- **[Full Command Reference](docs/specs/skills.md)** - detailed behavior for every `/fab-*` skill
-- **[SRAD Autonomy Framework](docs/specs/srad.md)** - how the pipeline handles ambiguity, confidence scoring, and autonomous execution gates
-- **[Glossary](docs/specs/glossary.md)** - all Fab terminology defined
-- **[Contributing](CONTRIBUTING.md)** - developing, extending, and releasing Fab Kit
