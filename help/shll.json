@@ -1,7 +1,7 @@
 {
   "tool": "shll",
-  "version": "v0.0.12",
-  "captured_at": "2026-06-04T11:12:35Z",
+  "version": "v0.0.13",
+  "captured_at": "2026-06-05T08:31:50Z",
   "schema_version": 1,
   "root": {
     "name": "shll",
@@ -15,7 +15,7 @@
         "path": "shll install",
         "short": "brew install every sahil87 tool that isn't already installed",
         "usage": "shll install [flags]",
-        "text": "Install every roster tool that isn't already installed via Homebrew.\n\nshll install iterates the roster (`wt`, `idea`, `tu`, `rk`, `hop`, `fab-kit`)\nand runs `brew install sahil87/tap/<formula>` for each one that is missing.\nTools that are already installed are skipped silently — the command is\nidempotent and safe to re-run. Brew's progress output streams directly to\nyour terminal.\n\nshll install does NOT upgrade already-installed tools. Use `shll update`\nfor that.\n\nUsage:\n  shll install [flags]\n\nFlags:\n  -h, --help   help for install\n",
+        "text": "Install every roster tool that isn't already installed via Homebrew.\n\nshll install iterates the roster (`wt`, `idea`, `tu`, `rk`, `hop`, `fab-kit`)\nand runs `brew install sahil87/tap/<formula>` for each one that is missing.\nTools that are already installed are skipped silently — the command is\nidempotent and safe to re-run. Brew's progress output streams directly to\nyour terminal.\n\nshll install does NOT upgrade already-installed tools. Use `shll update`\nfor that.\n\nUsage:\n  shll install [flags]\n\nFlags:\n      --dry-run   preview what would run, without making any changes\n  -h, --help      help for install\n",
         "commands": []
       },
       {
@@ -39,7 +39,7 @@
         "path": "shll update",
         "short": "brew update + per-tool update for shll and every installed sahil87 tool",
         "usage": "shll update [flags]",
-        "text": "Update shll itself and every installed sahil87 tool via Homebrew.\n\nshll update runs `brew update --quiet` once, then `brew upgrade sahil87/tap/shll`\n(when shll itself was installed via brew), then delegates to each installed roster\ntool's own `update` subcommand (with `--skip-brew-update` when the tool\nadvertises it) so each tool's post-upgrade side effects (e.g. rk's daemon restart)\nare preserved. A roster tool that exposes no `update` is upgraded via\n`brew upgrade sahil87/tap/<formula>` instead. Uninstalled tools (including shll\nitself, e.g. on a `go install` dev build) are skipped silently. Brew and per-tool\nprogress output streams directly to your terminal.\n\nUsage:\n  shll update [flags]\n\nFlags:\n  -h, --help   help for update\n",
+        "text": "Update shll itself and every installed sahil87 tool via Homebrew.\n\nshll update runs `brew update --quiet` once, then `brew upgrade sahil87/tap/shll`\n(when shll itself was installed via brew), then delegates to each installed roster\ntool's own `update` subcommand (with `--skip-brew-update` when the tool\nadvertises it) so each tool's post-upgrade side effects (e.g. rk's daemon restart)\nare preserved. A roster tool that exposes no `update` is upgraded via\n`brew upgrade sahil87/tap/<formula>` instead. Uninstalled tools (including shll\nitself, e.g. on a `go install` dev build) are skipped silently. Brew and per-tool\nprogress output streams directly to your terminal.\n\nUsage:\n  shll update [flags]\n\nFlags:\n      --dry-run   preview what would run, without making any changes\n  -h, --help      help for update\n",
         "commands": []
       },
       {
