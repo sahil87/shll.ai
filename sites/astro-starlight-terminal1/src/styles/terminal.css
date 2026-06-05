@@ -294,16 +294,22 @@ starlight-readme-toc a {
   color: var(--c-fg-dim);
   border: none;
 }
+/* `[data-parent-current]` is the readme ToC's parent-H2 highlight: when an H3
+   is the active item, its parent H2 is highlighted too but does NOT carry
+   `aria-current` (that stays singular on the H3 — see ReadmeToc.astro). It gets
+   the same accent treatment so the two read as one active branch. */
 starlight-toc a[aria-current='true'],
 starlight-commands-toc a[aria-current='true'],
-starlight-readme-toc a[aria-current='true'] {
+starlight-readme-toc a[aria-current='true'],
+starlight-readme-toc a[data-parent-current] {
   color: var(--c-accent);
   font-weight: 600;
   background: transparent;
 }
 starlight-toc a[aria-current='true']::before,
 starlight-commands-toc a[aria-current='true']::before,
-starlight-readme-toc a[aria-current='true']::before {
+starlight-readme-toc a[aria-current='true']::before,
+starlight-readme-toc a[data-parent-current]::before {
   content: '> ';
   color: var(--c-accent);
 }

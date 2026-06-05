@@ -68,8 +68,16 @@ const onThisPage = Astro.locals.t('tableOfContents.onThisPage');
   .readme-toc-list,
   .readme-toc-sublist {
     list-style: none;
-    padding: 0;
     margin: 0;
+  }
+  /* Only the top-level list resets padding here. The sublist's indent
+     (`padding-inline-start`) is owned solely by terminal.css — resetting it
+     here too would make two rules compete over the sublist's padding (it works
+     today only because Astro's `:where()`-scoped selector carries zero
+     specificity, so the global indent wins — but that is fragile to rely on).
+     Leaving the sublist's padding to terminal.css removes the conflict. */
+  .readme-toc-list {
+    padding: 0;
   }
 </style>
 
@@ -118,12 +126,18 @@ const onThisPage = Astro.locals.t('tableOfContents.onThisPage');
       const setActive = (slug: string) => {
         if (slug === activeSlug) return;
         activeSlug = slug;
-        // The active item is the heading itself plus (for an H3) its parent H2.
-        const parent = parentOf.get(slug);
-        const wanted = new Set([slug, parent].filter(Boolean) as string[]);
+        // `aria-current` marks a SINGLE current item (assistive tech expects one
+        // per set), so it goes only on the most-specific active heading — the H3
+        // when in view, else the H2. The parent H2 of an active H3 is still
+        // highlighted visually, but via a separate `data-parent-current`
+        // attribute (terminal.css gives both the same accent + "> " marker), so
+        // the a11y "current" stays singular.
+        const parent = slug === parentOf.get(slug) ? null : parentOf.get(slug)!;
         for (const [s, l] of byId) {
-          if (wanted.has(s)) l.setAttribute('aria-current', 'true');
+          if (s === slug) l.setAttribute('aria-current', 'true');
           else l.removeAttribute('aria-current');
+          if (s === parent) l.setAttribute('data-parent-current', '');
+          else l.removeAttribute('data-parent-current');
         }
       };
 
