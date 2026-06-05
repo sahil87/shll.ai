@@ -1,0 +1,29 @@
+---
+/**
+ * TocDispatcher — the single registered override for Starlight's right-rail
+ * "On this page" (`components.TableOfContents` in astro.config.mjs). The override
+ * slot is global and singular, but three different pages need three different
+ * rails, so this thin dispatcher inspects the route id and delegates:
+ *
+ *   - `tools/<tool>/commands` → CommandsToc   (first-level command list)
+ *   - `tools/<tool>/readme`   → ReadmeToc     (nested H2/H3 from the README slice)
+ *   - everything else         → Starlight's <Default /> ToC
+ *
+ * Each delegate independently re-checks the route and falls back to <Default />
+ * on an empty source, so routing here is intentionally explicit and traceable
+ * (no fall-through chaining among the components). Commands-page behavior is
+ * preserved byte-for-byte: on a commands route this renders exactly the
+ * CommandsToc that was previously wired directly to the override slot.
+ */
+import Default from '@astrojs/starlight/components/TableOfContents.astro';
+import CommandsToc from './CommandsToc.astro';
+import ReadmeToc from './ReadmeToc.astro';
+import { toolFromRouteId } from '../lib/commands-toc.ts';
+import { toolFromReadmeRouteId } from '../lib/readme-toc.ts';
+
+const id = Astro.locals.starlightRoute.id;
+const isCommands = toolFromRouteId(id) !== null;
+const isReadme = toolFromReadmeRouteId(id) !== null;
+---
+
+{isCommands ? <CommandsToc /> : isReadme ? <ReadmeToc /> : <Default />}

@@ -1,0 +1,200 @@
+---
+/**
+ * ReadmeToc — README-page counterpart to CommandsToc, filling Starlight's
+ * right-rail "On this page". Starlight builds the native ToC from the MDX file's
+ * own heading AST, but the readme page's MDX is just `<ReadmeSlice tool=…/>`, so
+ * the AST has zero headings — the real `##`/`###` headings live inside a runtime
+ * `set:html` string the AST never sees, leaving the rail empty. This override
+ * fills it with a nested H2 → H3 list built from the SAME `content/<tool>/
+ * README.md` slice (route gating lives in TocDispatcher; this is only rendered
+ * on readme routes).
+ *
+ * All work is build-time (Constitution I). Anchors come from the slice's
+ * rendered heading slugs (lib/readme-toc.ts → Astro's markdown processor), so
+ * each `href` matches the rendered heading `id` by construction. A small
+ * progressive-enhancement script highlights the in-view heading via
+ * IntersectionObserver, tracking BOTH H2 and H3 levels (the active H3 and its
+ * parent H2 are highlighted together). Unlike CommandsToc's <details> targets,
+ * ours are real headings, so there is no expand-on-click — just scroll-spy.
+ */
+import Default from '@astrojs/starlight/components/TableOfContents.astro';
+import { readmeToc, toolFromReadmeRouteId } from '../lib/readme-toc.ts';
+
+const tool = toolFromReadmeRouteId(Astro.locals.starlightRoute.id);
+const headings = tool ? await readmeToc(tool, import.meta.url) : [];
+const useCustom = headings.length > 0;
+const onThisPage = Astro.locals.t('tableOfContents.onThisPage');
+---
+
+{
+  useCustom ? (
+    // Match Starlight's ToC frame so PageSidebar's :global styles apply: a
+    // labelled <nav> with the "On this page" <h2> and a (here nested) list.
+    <starlight-readme-toc>
+      <nav aria-labelledby="starlight__on-this-page">
+        <h2 id="starlight__on-this-page">{onThisPage}</h2>
+        <ul class="readme-toc-list">
+          {headings.map((h) => (
+            <li>
+              <a href={`#${h.slug}`} data-readme-toc-link={h.slug}>
+                {h.text}
+              </a>
+              {h.children.length > 0 && (
+                <ul class="readme-toc-sublist">
+                  {h.children.map((c) => (
+                    <li>
+                      <a href={`#${c.slug}`} data-readme-toc-link={c.slug}>
+                        {c.text}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </starlight-readme-toc>
+  ) : (
+    <Default />
+  )
+}
+
+<style>
+  /* Structural only — the terminal look (heading "# " prefix, active "> "
+     marker, link colors, H3 indentation) is single-sourced in
+     src/styles/terminal.css, which targets `starlight-readme-toc` alongside the
+     default `starlight-toc` and `starlight-commands-toc`. */
+  .readme-toc-list,
+  .readme-toc-sublist {
+    list-style: none;
+    margin: 0;
+  }
+  /* Only the top-level list resets padding here. The sublist's indent
+     (`padding-inline-start`) is owned solely by terminal.css — resetting it
+     here too would make two rules compete over the sublist's padding (it works
+     today only because Astro's `:where()`-scoped selector carries zero
+     specificity, so the global indent wins — but that is fragile to rely on).
+     Leaving the sublist's padding to terminal.css removes the conflict. */
+  .readme-toc-list {
+    padding: 0;
+  }
+</style>
+
+<script>
+  // Progressive enhancement only (Constitution I): the static nested list above
+  // is fully usable without JS. This highlights the heading currently in view,
+  // tracking BOTH levels — the active H3 and its parent H2 are marked together.
+  class StarlightReadmeToc extends HTMLElement {
+    connectedCallback() {
+      const links = Array.from(
+        this.querySelectorAll<HTMLAnchorElement>('a[data-readme-toc-link]'),
+      );
+      if (links.length === 0) return;
+
+      const byId = new Map(links.map((l) => [l.dataset.readmeTocLink!, l]));
+
+      // Map each H3 link's slug → its parent H2 link's slug, so highlighting an
+      // H3 also lights up its H2. Top-level (H2) links map to themselves.
+      const parentOf = new Map<string, string>();
+      for (const li of Array.from(this.querySelectorAll('.readme-toc-list > li'))) {
+        const h2 = li.querySelector<HTMLAnchorElement>(':scope > a[data-readme-toc-link]');
+        if (!h2) continue;
+        const h2Slug = h2.dataset.readmeTocLink!;
+        parentOf.set(h2Slug, h2Slug);
+        for (const c of Array.from(
+          li.querySelectorAll<HTMLAnchorElement>('.readme-toc-sublist a[data-readme-toc-link]'),
+        )) {
+          parentOf.set(c.dataset.readmeTocLink!, h2Slug);
+        }
+      }
+
+      // The headings we observe are the real <h2>/<h3> in the rendered slice,
+      // keyed by the same slug our links use (lib/readme-toc.ts guarantees the
+      // match). Tag each with its slug for the observer callback.
+      const headings: HTMLElement[] = [];
+      for (const slug of byId.keys()) {
+        const el = document.getElementById(slug);
+        if (el) {
+          el.dataset.readmeTocFor = slug;
+          headings.push(el);
+        }
+      }
+      if (headings.length === 0) return;
+
+      let activeSlug = '';
+      const setActive = (slug: string) => {
+        if (slug === activeSlug) return;
+        activeSlug = slug;
+        // `aria-current` marks a SINGLE current item (assistive tech expects one
+        // per set), so it goes only on the most-specific active heading — the H3
+        // when in view, else the H2. The parent H2 of an active H3 is still
+        // highlighted visually, but via a separate `data-parent-current`
+        // attribute (terminal.css gives both the same accent + "> " marker), so
+        // the a11y "current" stays singular.
+        const parent = slug === parentOf.get(slug) ? null : parentOf.get(slug)!;
+        for (const [s, l] of byId) {
+          if (s === slug) l.setAttribute('aria-current', 'true');
+          else l.removeAttribute('aria-current');
+          if (s === parent) l.setAttribute('data-parent-current', '');
+          else l.removeAttribute('data-parent-current');
+        }
+      };
+
+      // Track the FULL set of currently-intersecting headings across callbacks
+      // — a single callback's `entries` only reports what CHANGED, so when the
+      // active heading leaves the band and nothing new enters, the callback
+      // carries only the leaving element. Maintaining the set means the
+      // highlight advances to the next visible heading instead of sticking.
+      const intersecting = new Set<HTMLElement>();
+      const observer = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            const el = e.target as HTMLElement;
+            if (e.isIntersecting) intersecting.add(el);
+            else intersecting.delete(el);
+          }
+          if (intersecting.size === 0) return; // none in band → keep last active
+          // Topmost intersecting heading is the "current" one.
+          let top: HTMLElement | null = null;
+          for (const el of intersecting) {
+            if (!top || el.getBoundingClientRect().top < top.getBoundingClientRect().top) {
+              top = el;
+            }
+          }
+          if (top) setActive(top.dataset.readmeTocFor!);
+        },
+        // A band near the top of the viewport so the "current" heading is the
+        // one you've just scrolled to (mirrors CommandsToc).
+        { rootMargin: '0px 0px -75% 0px', threshold: 0 },
+      );
+      for (const h of headings) observer.observe(h);
+
+      // Bottom-of-page correction. Headings near the page end can never reach
+      // the top active band, so the observer would never mark them — most
+      // visibly the LAST heading. When scrolled to (near) the bottom, mark the
+      // topmost heading below the band's lower edge so the trailing heading(s)
+      // light up (mirrors CommandsToc).
+      const BAND_BOTTOM = () => window.innerHeight * 0.25; // mirrors the -75% margin
+      const onScroll = () => {
+        const atBottom =
+          window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+        if (!atBottom) return;
+        let pick: HTMLElement | null = null;
+        for (const h of headings) {
+          if (h.getBoundingClientRect().top >= BAND_BOTTOM()) {
+            pick = h;
+            break;
+          }
+        }
+        if (!pick && headings.length > 0) pick = headings[headings.length - 1];
+        if (pick) setActive(pick.dataset.readmeTocFor!);
+      };
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', onScroll, { passive: true });
+    }
+  }
+  if (!customElements.get('starlight-readme-toc')) {
+    customElements.define('starlight-readme-toc', StarlightReadmeToc);
+  }
+</script>
