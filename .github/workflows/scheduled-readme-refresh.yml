@@ -176,25 +176,120 @@ jobs:
           # others. Divergence is committed with a `::warning::` (report-only); only
           # a genuine fetch/read failure preserves last-good.
 
+      # Pull + mount each tool's docs/site TREE (the §9 closed-set escape hatch,
+      # activated by change x0br). SIBLING of the README step above, same per-tool
+      # isolation discipline. Unlike the README (a single fixed file fetched via
+      # raw.githubusercontent.com), docs/site is a directory of unknown shape, so we
+      # fetch the repo TARBALL once per tool (codeload.github.com/.../tar.gz/<branch>,
+      # main→master fallback mirroring the README curl) and untar ONLY the docs/site
+      # subtree — one request per tool, no GitHub API rate limit, no token, no N+1
+      # per-file fetches. extract-docs-site-cli.mjs then copies each page verbatim to
+      # content/<slug>/site/<path>.md (preserving subtree shape) and runs the
+      # closure lint (findClosureViolations, single-sourced from
+      # src/lib/extract-readme.ts — the SAME module the unit test pins). The lint is
+      # REPORT-ONLY: a relative link that escapes docs/site, or a relative image,
+      # emits a `::warning::` but the page is still committed (canonical wins, exactly
+      # like the §7 README reporter). A tool with NO docs/site tree is a clean no-op.
+      - name: Pull + mount each tool docs/site tree
+        working-directory: sites/astro-starlight-terminal1
+        run: |
+          set -uo pipefail
+
+          # Same slug:repo pairs as the README step above (kept in lockstep).
+          #   slug → output content/<slug>/site/** + sidebar/route mount
+          #   repo → github.com/sahil87/<repo> (tarball source)
+          tools=(
+            "idea:idea"
+            "hop:hop"
+            "fab-kit:fab-kit"
+            "wt:wt"
+            "run-kit:run-kit"
+            "tu:tu"
+            "shll:shll"
+          )
+
+          tmpdir="$(mktemp -d)"
+          site_failed=()
+
+          for pair in "${tools[@]}"; do
+            IFS=: read -r slug repo <<<"$pair"
+            echo "::group::$slug docs/site (repo: sahil87/$repo)"
+
+            # Fetch the repo tarball and extract ONLY the docs/site subtree. Try
+            # main, then master. codeload serves a top-level dir `<repo>-<branch>/`,
+            # so the docs/site path inside the tarball is `*/docs/site/*`. A repo
+            # with no docs/site simply extracts nothing (not a failure).
+            extract_root="$tmpdir/$slug"
+            mkdir -p "$extract_root"
+            ok=0
+            for branch in main master; do
+              url="https://codeload.github.com/sahil87/$repo/tar.gz/$branch"
+              # --strip-components=1 drops the `<repo>-<branch>/` top dir, so the
+              # extracted tree is rooted at `docs/site/...` under $extract_root.
+              if curl -fsSL "$url" \
+                   | tar -xz -C "$extract_root" --strip-components=1 \
+                       --wildcards '*/docs/site/*' 2>/dev/null; then
+                echo "fetched + extracted docs/site from $url"
+                ok=1
+                break
+              fi
+              # The tar may exit non-zero ONLY because the tarball had no docs/site
+              # match (a repo with no tree). Distinguish that (success-with-no-tree)
+              # from a genuine fetch failure by re-checking the branch fetch alone.
+              if curl -fsSL "$url" -o /dev/null; then
+                echo "fetched $url but it has no docs/site tree — nothing to mount"
+                ok=1
+                break
+              fi
+            done
+            if [ "$ok" -ne 1 ]; then
+              echo "::warning::could not fetch repo tarball for $slug — keeping last-good content/$slug/site/"
+              site_failed+=("$slug")
+              echo "::endgroup::"
+              continue
+            fi
+
+            # Mount: copy each docs/site page verbatim to content/<slug>/site/** and
+            # run the closure lint (report-only). The CLI exits 0 on an empty/missing
+            # tree (clean no-op) and on lint violations (warns, still commits).
+            site_dir="$extract_root/docs/site"
+            if node scripts/extract-docs-site-cli.mjs "$slug" "$site_dir"; then
+              echo "mounted content/$slug/site/ (if any pages were present)"
+            else
+              echo "::warning::could not mount docs/site for $slug (I/O error) — keeping last-good content/$slug/site/"
+              site_failed+=("$slug")
+            fi
+            echo "::endgroup::"
+          done
+
+          if [ "${#site_failed[@]}" -gt 0 ]; then
+            echo "::notice::tools with no fresh docs/site this run (fetch/IO failure, last-good preserved): ${site_failed[*]}"
+          fi
+          # As with the README step: never fail the job. One bad tool must not poison
+          # the others; closure violations are committed with a `::warning::`.
+
       # DIRECT COMMIT to main. Under report-only this commits the canonical README
-      # slice for every tool that was fetchable (divergences carry a `::warning::`
-      # in the run log, not an exclusion). Uses the default GITHUB_TOKEN (no PR, no
-      # auto-merge, no SHLLAI_TOKEN). Commits only when there is an actual change.
-      # The push to main then triggers the EXISTING deploy.yml deploy
-      # (Constitution IV) — no deploy logic lives here.
-      - name: Commit refreshed README slices
+      # slice AND the docs/site tree for every tool that was fetchable (divergences
+      # / closure violations carry a `::warning::` in the run log, not an exclusion).
+      # Uses the default GITHUB_TOKEN (no PR, no auto-merge, no SHLLAI_TOKEN). Commits
+      # only when there is an actual change. The push to main then triggers the
+      # EXISTING deploy.yml deploy (Constitution IV) — no deploy logic lives here.
+      - name: Commit refreshed content slices
         run: |
           set -euo pipefail
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # Stage only content/ — nothing else should change in this workflow.
-          git add content/
+          # Stage all of content/ — README slices and docs/site trees. `-A` so an
+          # upstream-DELETED docs/site page is removed from the mount too (the tree
+          # stays a faithful mirror of canonical), not just additions/modifications.
+          # Nothing else should change in this workflow.
+          git add -A content/
 
           if git diff --cached --quiet; then
-            echo "No README-slice changes to commit."
+            echo "No content-slice changes to commit."
             exit 0
           fi
 
-          git commit -m "chore(content): refresh README slices via scheduled puller"
+          git commit -m "chore(content): refresh README + docs/site slices via scheduled puller"
           git push

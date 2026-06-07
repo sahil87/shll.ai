@@ -425,3 +425,290 @@ export function findUnknownTokens(slice: string, doc: HelpDoc): string[] {
 
   return [...unknown].sort();
 }
+
+// ── §9 docs/site link resolution + closure lint (change x0br) ────────────────
+//
+// The consumer side of the `docs/site/` closed-set contract. THREE pure,
+// exported functions, all dependency-free and build-time (Constitution I/VI),
+// the same single-machine-anchor discipline as extractReadme/findUnknownTokens:
+//
+//   - rewriteDocsSiteLinks(md, slug, mountPath) — a docs/site PAGE: resolve each
+//                                      RELATIVE link/image target against the page's
+//                                      own directory within the docs/site tree,
+//                                      strip `.md`, emit the SITE-ABSOLUTE path
+//                                      `/tools/<slug>/<resolved>`.
+//   - rewriteReadmeDocsSiteLinks(md, slug) — the README slice: a relative target
+//                                      `docs/site/<p>.md` → `/tools/<slug>/<p>`.
+//   - findClosureViolations(rel, md) — REPORT-ONLY detector: relative link/image
+//                                      targets that escape docs/site (`..` climb)
+//                                      or relative images (must be absolute, §3).
+//
+// SITE-ABSOLUTE rewrite (reworked by change x0br review): every intra-set link
+// target becomes a site-absolute path `/tools/<slug>/<resolved-path>`. This is
+// serving-model-proof — the site serves each page as a trailing-slash directory
+// (`/tools/<slug>/<path>/`, i.e. `<path>/index.html`), so a RELATIVE rewrite
+// (`./<p>` or a bare `.md`-strip) resolves one segment too deep (a README at
+// `/tools/idea/readme/` + `./install` → `/tools/idea/readme/install`, but the page
+// is at `/tools/idea/install/`). A site-absolute target is immune to trailingSlash
+// and matches Starlight's own sibling links (which are absolute, e.g.
+// `/tools/idea/install/`). Both transforms are therefore SLUG-AWARE (and the
+// docs/site transform is also mount-path-aware to resolve `.`/`..`) — intended.
+//
+// ALL link-target editing flows through one scanner (`rewriteLinkTargets`) so the
+// rewrite guard (the correctness boundary) lives in exactly one place: we only
+// ever touch the `(...)` target of a markdown link/image and the href/src of raw
+// HTML, and only when the target is RELATIVE. Absolute URLs (even ones whose path
+// contains the literal `docs/site`), prose, and fenced/inline code that merely
+// mention the text are never rewritten.
+
+/** The repo-relative prefix a README uses to link into a docs/site page. */
+const DOCS_SITE_PREFIX = 'docs/site/';
+
+/**
+ * A markdown inline link or image target: the `(...)` of `[text](target)` or
+ * `![alt](target)`. Capture groups: 1 = the leading `[...]` (or `![...]`) plus
+ * the opening `(` and any leading whitespace inside it; 2 = the bare target
+ * (up to whitespace — a markdown `(url "title")` title is left in group 3);
+ * 3 = the trailing remainder (optional title + closing `)`). A target containing
+ * `)` or whitespace is matched up to that delimiter, which is correct for URL
+ * targets (an unencoded `)` in a URL is not representable in this inline form).
+ */
+const MD_LINK_RE = /(!?\[[^\]]*\]\(\s*)([^\s)]+)(\s*(?:"[^"]*"|'[^']*')?\s*\))/g;
+
+/** A raw-HTML `href="…"` / `src="…"` attribute (single or double quoted).
+ *  Group 1 = `href=`/`src=` + opening quote; 2 = the target; 3 = closing quote. */
+const HTML_ATTR_RE = /\b(href|src)\s*=\s*(["'])([^"']*)(\2)/gi;
+
+/** True when `target` is an ABSOLUTE/non-relative URL the guard must NOT touch:
+ *  a scheme (`https:`, `mailto:`), a protocol-relative `//host`, a root-absolute
+ *  `/path`, or a pure `#fragment`. Everything else is a relative path target. */
+function isAbsoluteTarget(target: string): boolean {
+  return (
+    /^[a-z][a-z0-9+.-]*:/i.test(target) || // scheme: https:, mailto:, data:
+    target.startsWith('//') || // protocol-relative
+    target.startsWith('/') || // root-absolute
+    target.startsWith('#') // pure fragment (same-page anchor)
+  );
+}
+
+/**
+ * Split a relative link target into its path part and a trailing `#fragment`
+ * and/or `?query` suffix, so rewrites apply to the PATH only (a `#section`
+ * anchor or `?v=1` query must survive verbatim). Returns `[path, suffix]`.
+ */
+function splitTargetSuffix(target: string): [string, string] {
+  const m = /[#?]/.exec(target);
+  if (!m) return [target, ''];
+  return [target.slice(0, m.index), target.slice(m.index)];
+}
+
+/**
+ * The one scanner all link rewriting goes through (the rewrite guard lives here).
+ * Applies `fn` to every markdown link/image target and raw-HTML href/src target
+ * in `markdown`, ABSOLUTE targets excluded (fn never sees them). `fn` returns the
+ * replacement target (return the input unchanged to leave it as-is). Prose and
+ * code that merely mention a path are never passed to `fn` — only real targets.
+ *
+ * Note on code fences: an inline `[x](y)` inside a fenced code block is rendered
+ * as literal text by markdown, not a link, so rewriting it would be a (harmless)
+ * over-reach. In practice docs/site link targets we care about are real links in
+ * prose; we keep the scanner simple (no fence tracking) because the guard already
+ * restricts edits to link/image-target SHAPES and relative paths — a code sample
+ * showing a *relative* `[x](docs/site/y.md)` is vanishingly unlikely and would at
+ * worst render the same resolved path. Absolute-URL code samples (the common case)
+ * are untouched by the isAbsoluteTarget guard.
+ */
+function rewriteLinkTargets(
+  markdown: string,
+  fn: (target: string) => string,
+): string {
+  const applyToTarget = (target: string): string => {
+    if (isAbsoluteTarget(target)) return target; // guard: never touch absolute
+    const [path, suffix] = splitTargetSuffix(target);
+    if (path === '') return target; // pure `?`/`#` target — nothing to rewrite
+    return fn(path) + suffix;
+  };
+
+  let out = markdown.replace(
+    MD_LINK_RE,
+    (_m, lead: string, target: string, tail: string) =>
+      lead + applyToTarget(target) + tail,
+  );
+  out = out.replace(
+    HTML_ATTR_RE,
+    (_m, attr: string, q: string, target: string) =>
+      `${attr}=${q}${applyToTarget(target)}${q}`,
+  );
+  return out;
+}
+
+/** Strip a single trailing `.md` (case-insensitive) from a relative path. */
+function stripMdExt(path: string): string {
+  return path.replace(/\.md$/i, '');
+}
+
+/**
+ * Normalize a `/`-joined POSIX path of segments, resolving `.` and `..` against a
+ * starting segment stack (`base`, the segments of the directory the target is
+ * relative to). Returns the resolved segment array. A `..` that would pop above
+ * `base` is clamped at the root (drops the `..`) — a best-effort resolution for a
+ * closure-escaping target, which the §closure lint reports separately (the page
+ * still commits, so the rewriter must still emit a usable path). Pure.
+ */
+function resolveSegments(base: string[], target: string): string[] {
+  const stack = [...base];
+  for (const seg of target.split('/')) {
+    if (seg === '' || seg === '.') continue;
+    if (seg === '..') {
+      if (stack.length > 0) stack.pop(); // clamp at root on over-climb (best effort)
+      continue;
+    }
+    stack.push(seg);
+  }
+  return stack;
+}
+
+/**
+ * Build the site-absolute mount URL for a resolved docs/site page path under a
+ * tool slug: `/tools/<slug>/<segments…>` (no trailing slash, no `.md`). An empty
+ * resolved path (target resolved to the tool root) yields `/tools/<slug>`.
+ */
+function toolMountUrl(slug: string, segments: string[]): string {
+  const tail = segments.join('/');
+  return tail === '' ? `/tools/${slug}` : `/tools/${slug}/${tail}`;
+}
+
+/**
+ * R5 — a docs/site PAGE transform (SITE-ABSOLUTE). Resolve every RELATIVE
+ * link/image target against the page's OWN directory within the docs/site tree
+ * (`mountPath`, the page's path under `site/` without `.md`, e.g. `advanced/hooks`),
+ * normalize `.`/`..`, strip `.md`, and emit the site-absolute mount URL
+ * `/tools/<slug>/<resolved>`. Closure (§9.1.1) guarantees relative targets are
+ * intra-set; a `..`-escape is reported by the §closure lint and best-effort-clamped
+ * here. Absolute URLs, prose, and code are untouched; a `#`/`?` suffix is preserved.
+ * Pure and total. Example: page `advanced/hooks` linking `../install.md` →
+ * `/tools/<slug>/install`; `./sibling.md` → `/tools/<slug>/advanced/sibling`.
+ */
+export function rewriteDocsSiteLinks(
+  markdown: string,
+  slug: string,
+  mountPath: string,
+): string {
+  // The page's directory segments within the docs/site tree (drop the filename).
+  const baseDir = mountPath.split('/').slice(0, -1);
+  return rewriteLinkTargets(markdown, (path) => {
+    const resolved = resolveSegments(baseDir, stripMdExt(path));
+    return toolMountUrl(slug, resolved);
+  });
+}
+
+/**
+ * R6 — the README SLICE transform (SITE-ABSOLUTE). A relative target of the form
+ * `docs/site/<p>.md` → the site-absolute mount URL `/tools/<slug>/<p>` (the
+ * `docs/site/` prefix maps to the tool root, `.md` stripped, nested `<p>` subtree
+ * preserved). Example: `[guide](docs/site/install.md)` → `[guide](/tools/<slug>/install)`;
+ * `docs/site/advanced/hooks.md` → `/tools/<slug>/advanced/hooks`. Relative targets
+ * NOT under `docs/site/` are left as-is (a README's own relative links into
+ * non-docs/site files are out of scope and self-heal via the absolute-by-author
+ * producer rule). Absolute URLs / prose / code untouched; `#`/`?` suffix preserved.
+ * Pure and total.
+ */
+export function rewriteReadmeDocsSiteLinks(markdown: string, slug: string): string {
+  return rewriteLinkTargets(markdown, (path) => {
+    if (!path.startsWith(DOCS_SITE_PREFIX)) return path;
+    const sub = stripMdExt(path.slice(DOCS_SITE_PREFIX.length));
+    // The README links into the tree as if from the tree ROOT; resolve `.`/`..`
+    // within the sub-path so a (rare) `docs/site/a/../b.md` still normalizes.
+    return toolMountUrl(slug, resolveSegments([], sub));
+  });
+}
+
+// ── §closure-lint detector (R8) ──────────────────────────────────────────────
+
+/** A single closure violation: the offending relative target and why it broke. */
+export interface ClosureViolation {
+  /** The relative link/image target as written in the source. */
+  target: string;
+  /** `escape` = a relative link/image that resolves OUT of docs/site (`..` climb);
+   *  `relative-image` = a relative IMAGE target (images must be absolute, §3). */
+  kind: 'escape' | 'relative-image';
+}
+
+/**
+ * Resolve `target` (a relative path) against `fromRel` (the offending file's path
+ * RELATIVE TO docs/site root, e.g. `advanced/hooks.md`) and return true when it
+ * climbs OUT of docs/site — i.e. the resolved, normalized path begins with `..`.
+ * Pure POSIX-segment math (no fs); a `#`/`?` suffix is ignored by the caller.
+ */
+function escapesDocsSite(fromRel: string, target: string): boolean {
+  // Start from the offending file's DIRECTORY segments within docs/site.
+  const dir = fromRel.split('/').slice(0, -1);
+  const segs = target.split('/');
+  const stack = [...dir];
+  for (const seg of segs) {
+    if (seg === '' || seg === '.') continue;
+    if (seg === '..') {
+      if (stack.length === 0) return true; // climbed above docs/site root
+      stack.pop();
+      continue;
+    }
+    stack.push(seg);
+  }
+  return false;
+}
+
+/**
+ * R8 — REPORT-ONLY closure detector. Given a docs/site file's path relative to
+ * the docs/site root (`relPath`, e.g. `install.md` or `advanced/hooks.md`) and its
+ * markdown, return the relative link/image targets that violate closure:
+ *   - a relative LINK or IMAGE whose resolved path escapes docs/site (`..` climb), or
+ *   - a relative IMAGE (images MUST be absolute everywhere, §3).
+ * Absolute URLs and intra-set relative links are clean (not returned). Pure and
+ * total — never throws. Mirrors findUnknownTokens: detection only; the CLI decides
+ * the consequence (a `::warning::`, never withholding the slice).
+ */
+export function findClosureViolations(
+  relPath: string,
+  markdown: string,
+): ClosureViolation[] {
+  const violations: ClosureViolation[] = [];
+  const seen = new Set<string>();
+
+  const record = (target: string, isImage: boolean) => {
+    if (isAbsoluteTarget(target)) return; // absolute → clean
+    const [path] = splitTargetSuffix(target);
+    if (path === '') return; // pure `#`/`?` anchor → clean
+    // A relative image is a violation regardless of where it resolves (§3).
+    if (isImage) {
+      const key = `relative-image ${target}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        violations.push({ target, kind: 'relative-image' });
+      }
+      return;
+    }
+    if (escapesDocsSite(relPath, path)) {
+      const key = `escape ${target}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        violations.push({ target, kind: 'escape' });
+      }
+    }
+  };
+
+  // Markdown links/images. The leading `!` distinguishes an image from a link.
+  let m: RegExpExecArray | null;
+  MD_LINK_RE.lastIndex = 0;
+  while ((m = MD_LINK_RE.exec(markdown)) !== null) {
+    const isImage = m[1].startsWith('!');
+    record(m[2], isImage);
+  }
+  // Raw-HTML href (link) / src (image). `src` is treated as an image target.
+  HTML_ATTR_RE.lastIndex = 0;
+  while ((m = HTML_ATTR_RE.exec(markdown)) !== null) {
+    const isImage = m[1].toLowerCase() === 'src';
+    record(m[3], isImage);
+  }
+
+  return violations;
+}

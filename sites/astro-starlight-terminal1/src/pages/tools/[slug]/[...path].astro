@@ -1,0 +1,111 @@
+---
+/**
+ * docs/site dynamic route — renders each tool's pulled `docs/site/` documentation
+ * tree as its own page at BUILD TIME (the §9 closed-set escape hatch, activated by
+ * change x0br). This is the FIRST dynamic route in the codebase: every other page
+ * is a static MDX stub. It exists because the docs/site page SET is author-variable
+ * (a tool ships any number of nested pages), so a static-stub-per-page would need
+ * per-page maintenance the dynamic route eliminates.
+ *
+ * Mount: content/<slug>/site/<path>.md  →  URL /tools/<slug>/<path>
+ *   content/idea/site/install.md         → /tools/idea/install
+ *   content/idea/site/advanced/hooks.md  → /tools/idea/advanced/hooks
+ * The `docs/site/` prefix is collapsed to `site/` in the collector (the CLI), and
+ * the `site/` segment is stripped from the URL here; the subtree shape is preserved.
+ *
+ * Coexistence with Starlight's `[...slug]` catch-all: Astro routes a more-specific
+ * pattern (`tools/[slug]/[...path]`) ahead of the catch-all, so the per-tool static
+ * pages (overview/readme/commands/…) keep being served by Starlight while the
+ * docs/site pages are served here. getStaticPaths emits ONLY paths that exist under
+ * content/<slug>/site/, so a tool with no tree contributes no pages — the build
+ * succeeds with nothing emitted (the same degrade-cleanly discipline as a missing
+ * README slice; Constitution I keeps it all build-time, no client JS).
+ *
+ * Render reuses the EXACT path ReadmeSlice.astro proved:
+ *   - cross-boundary read of the repo-root `content/` via the `help/`-anchored
+ *     `import.meta.url` ascent (repo-root.ts) — NOT process.cwd, NOT import.meta.glob,
+ *     NOT a fixed depth (which does not survive `astro build`'s bundling).
+ *   - `@astrojs/markdown-remark` `createMarkdownProcessor` (a build-time dep already
+ *     pulled by astro core + declared in package.json; Constitution VI — no new dep).
+ *   - link resolution: rewriteDocsSiteLinks(raw, slug, mountPath) rewrites relative
+ *     link/image targets to the SITE-ABSOLUTE path /tools/<slug>/<resolved> (resolved
+ *     against this page's mount path), correct under trailing-slash directory serving.
+ * The rendered HTML is wrapped in Starlight's <StarlightPage> so it inherits the
+ * sidebar, prose styles, and dark-mode parity (Constitution V) — the documented
+ * Starlight pattern for a custom route in a content-collection site.
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+import { createMarkdownProcessor } from '@astrojs/markdown-remark';
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { repoRootFromModuleUrl } from '../../../lib/repo-root.ts';
+import { rewriteDocsSiteLinks } from '../../../lib/extract-readme.ts';
+import { collectDocsSitePages } from '../../../lib/docs-site-tree.ts';
+
+export async function getStaticPaths() {
+  const repoRoot = repoRootFromModuleUrl(import.meta.url);
+  // One entry per committed docs/site page across all tools. `slug` is the tool,
+  // `path` is the page path under site/ (no leading slash, no `.md`).
+  return collectDocsSitePages(repoRoot).map((page) => ({
+    params: { slug: page.slug, path: page.path },
+    props: {
+      absPath: page.absPath,
+      title: page.title,
+      slug: page.slug,
+      mountPath: page.path,
+    },
+  }));
+}
+
+interface Props {
+  /** Absolute path to the committed markdown page on disk. */
+  absPath: string;
+  /** Page title (derived from the first H1, falling back to the path tail). */
+  title: string;
+  /** Tool slug — names the site-absolute mount root `/tools/<slug>/`. */
+  slug: string;
+  /** This page's path under `site/` (no `.md`, e.g. `advanced/hooks`) — the base
+   *  a relative link's `.`/`..` resolve against. */
+  mountPath: string;
+}
+
+const { absPath, title, slug, mountPath } = Astro.props as Props;
+
+// A present-but-unreadable/unrenderable page is a committed defect that must not
+// deploy: let it fail the build (mirrors ReadmeSlice). ENOENT cannot occur here —
+// getStaticPaths only emits files it found on disk.
+const raw = fs.readFileSync(absPath, 'utf8');
+const processor = await createMarkdownProcessor({});
+let html: string;
+try {
+  // R5: rewrite relative link/image targets to a SITE-ABSOLUTE path
+  // `/tools/<slug>/<resolved>` BEFORE render. Site-absolute (not a relative
+  // `.md`-strip) because pages are served as trailing-slash directories, so a
+  // relative target on this page (`/tools/<slug>/<mountPath>/`) would resolve one
+  // segment too deep. The target is resolved against THIS page's directory within
+  // the docs/site tree (mountPath), so `../install.md` and `./sibling.md` land on
+  // the correct sibling pages. The slice on disk stays a verbatim copy of the
+  // canonical source; the rewrite is render-side.
+  const rendered = await processor.render(
+    rewriteDocsSiteLinks(raw, slug, mountPath),
+  );
+  html = rendered.code;
+} catch (err) {
+  const detail = err instanceof Error ? err.message : String(err);
+  throw new Error(`Failed to render docs/site page at ${absPath}:\n${detail}`);
+}
+---
+
+<StarlightPage frontmatter={{ title }}>
+  <div class="docs-site-page" set:html={html} />
+</StarlightPage>
+
+<style>
+  /* The rendered docs/site page is ordinary Starlight markdown — it deliberately
+     does NOT carry `not-content`, so it inherits Starlight's prose styles and
+     dark-mode parity follows the site's data-theme automatically (Constitution V).
+     Mirrors ReadmeSlice's spacing nudge. */
+  .docs-site-page {
+    margin: 1.25rem 0;
+  }
+</style>

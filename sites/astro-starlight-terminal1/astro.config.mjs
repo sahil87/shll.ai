@@ -2,6 +2,7 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import mdx from '@astrojs/mdx';
+import { docsSiteSidebarItems } from './src/lib/docs-site-sidebar.mjs';
 
 export default defineConfig({
   site: 'https://shll.ai',
@@ -95,6 +96,9 @@ export default defineConfig({
                 { label: 'Install', slug: 'tools/idea/install' },
                 { label: 'Commands', slug: 'tools/idea/commands' },
                 { label: 'Workflows', slug: 'tools/idea/workflows' },
+                // Build-time-generated entries for the tool's pulled docs/site tree
+                // (content/idea/site/**). Empty until the daily pull lands a tree.
+                ...docsSiteSidebarItems('idea'),
               ],
             },
             {
@@ -104,6 +108,7 @@ export default defineConfig({
                 { label: 'Overview', slug: 'tools/hop/overview' },
                 { label: 'Readme', slug: 'tools/hop/readme' },
                 { label: 'Commands', slug: 'tools/hop/commands' },
+                ...docsSiteSidebarItems('hop'),
               ],
             },
             {
@@ -115,6 +120,7 @@ export default defineConfig({
                 { label: 'Install', slug: 'tools/fab-kit/install' },
                 { label: 'Commands', slug: 'tools/fab-kit/commands' },
                 { label: 'Workflows', slug: 'tools/fab-kit/workflows' },
+                ...docsSiteSidebarItems('fab-kit'),
               ],
             },
             {
@@ -124,6 +130,7 @@ export default defineConfig({
                 { label: 'Overview', slug: 'tools/wt/overview' },
                 { label: 'Readme', slug: 'tools/wt/readme' },
                 { label: 'Commands', slug: 'tools/wt/commands' },
+                ...docsSiteSidebarItems('wt'),
               ],
             },
             {
@@ -133,6 +140,7 @@ export default defineConfig({
                 { label: 'Overview', slug: 'tools/run-kit/overview' },
                 { label: 'Readme', slug: 'tools/run-kit/readme' },
                 { label: 'Commands', slug: 'tools/run-kit/commands' },
+                ...docsSiteSidebarItems('run-kit'),
               ],
             },
             {
@@ -142,6 +150,7 @@ export default defineConfig({
                 { label: 'Overview', slug: 'tools/tu/overview' },
                 { label: 'Readme', slug: 'tools/tu/readme' },
                 { label: 'Commands', slug: 'tools/tu/commands' },
+                ...docsSiteSidebarItems('tu'),
               ],
             },
             {
@@ -151,6 +160,7 @@ export default defineConfig({
                 { label: 'Overview', slug: 'tools/shll/overview' },
                 { label: 'Readme', slug: 'tools/shll/readme' },
                 { label: 'Commands', slug: 'tools/shll/commands' },
+                ...docsSiteSidebarItems('shll'),
               ],
             },
           ],

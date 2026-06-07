@@ -32,7 +32,13 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve as resolvePath } from 'node:path';
 
-import { extractReadme, findUnknownTokens } from '../src/lib/extract-readme.ts';
+import {
+  extractReadme,
+  findUnknownTokens,
+  rewriteDocsSiteLinks,
+  rewriteReadmeDocsSiteLinks,
+  findClosureViolations,
+} from '../src/lib/extract-readme.ts';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 // scripts/ -> site root -> sites/ -> repo root -> help/
@@ -399,4 +405,193 @@ test('gate (M2): fabricated subcommands are STILL flagged (true positives preser
     findUnknownTokens(['```bash', 'hop config bogus', '```'].join('\n'), hop).includes('hop config bogus'),
     'hop config bogus flagged',
   );
+});
+
+// ── §9 docs/site link resolution (change x0br) — SITE-ABSOLUTE model ─────────
+// Reworked (x0br review): both transforms now emit a SITE-ABSOLUTE target
+// `/tools/<slug>/<resolved>` (not a relative `./<p>` / bare `.md`-strip), because
+// the site serves pages as trailing-slash directories — a relative target resolves
+// one segment too deep. Transforms are slug-aware; the docs/site transform also
+// takes the page's mount path to resolve `.`/`..` against the page's directory.
+//
+// R5: a docs/site PAGE — resolve RELATIVE link/image targets against the page's
+// directory within the tree, strip `.md`, emit `/tools/<slug>/<resolved>`.
+
+test('docs/site page: a sibling ./ link resolves site-absolute against the page dir (R5)', () => {
+  // page advanced/hooks.md → ./sibling.md resolves in advanced/ → /tools/idea/advanced/sibling
+  assert.equal(
+    rewriteDocsSiteLinks('See [s](./sibling.md) for details.', 'idea', 'advanced/hooks'),
+    'See [s](/tools/idea/advanced/sibling) for details.',
+  );
+});
+
+test('docs/site page: a ../ link resolves up one level then site-absolute (R5)', () => {
+  // page advanced/hooks.md → ../install.md pops advanced/ → /tools/idea/install
+  assert.equal(
+    rewriteDocsSiteLinks('[i](../install.md)', 'idea', 'advanced/hooks'),
+    '[i](/tools/idea/install)',
+  );
+});
+
+test('docs/site page: a bare-relative target from a top-level page is site-absolute (R5)', () => {
+  // page install.md (top-level) → [b](advanced/hooks.md) → /tools/idea/advanced/hooks
+  assert.equal(
+    rewriteDocsSiteLinks('[a](other.md) [b](advanced/hooks.md)', 'idea', 'install'),
+    '[a](/tools/idea/other) [b](/tools/idea/advanced/hooks)',
+  );
+});
+
+test('docs/site page: a #fragment / ?query suffix survives the site-absolute rewrite (R5)', () => {
+  assert.equal(
+    rewriteDocsSiteLinks('[x](./guide.md#section)', 'idea', 'install'),
+    '[x](/tools/idea/guide#section)',
+  );
+  assert.equal(
+    rewriteDocsSiteLinks('[x](./guide.md?v=2)', 'idea', 'install'),
+    '[x](/tools/idea/guide?v=2)',
+  );
+});
+
+// R6: the README SLICE — `docs/site/<p>.md` → `/tools/<slug>/<p>` (site-absolute).
+
+test('readme slice: docs/site/ link becomes a site-absolute /tools/<slug>/ path (R6)', () => {
+  assert.equal(
+    rewriteReadmeDocsSiteLinks('Read the [guide](docs/site/install.md).', 'idea'),
+    'Read the [guide](/tools/idea/install).',
+  );
+});
+
+test('readme slice: nested docs/site path preserves subtree shape site-absolute (R6)', () => {
+  assert.equal(
+    rewriteReadmeDocsSiteLinks('[hooks](docs/site/advanced/hooks.md)', 'idea'),
+    '[hooks](/tools/idea/advanced/hooks)',
+  );
+});
+
+test('readme slice: an anchor on a docs/site link is preserved site-absolute (R6)', () => {
+  assert.equal(
+    rewriteReadmeDocsSiteLinks('[flags](docs/site/install.md#flags)', 'idea'),
+    '[flags](/tools/idea/install#flags)',
+  );
+});
+
+test('readme slice: a relative link NOT under docs/site/ is left as-is (R6)', () => {
+  // README→external relative links self-heal via the absolute-by-author producer
+  // rule (deferred consumer rewrite); this transform only touches docs/site/.
+  assert.equal(
+    rewriteReadmeDocsSiteLinks('[spec](docs/specs/overview.md)', 'idea'),
+    '[spec](docs/specs/overview.md)',
+  );
+});
+
+// R7: the rewrite guard — the correctness boundary. Absolute URLs containing the
+// literal `docs/site`, prose, and code that merely mention the text are untouched;
+// only relative link/image TARGETS are rewritten (markdown + raw-HTML href/src).
+
+test('guard: an absolute URL containing docs/site is NOT rewritten (R7)', () => {
+  const md = 'Blob: [src](https://github.com/sahil87/idea/blob/main/docs/site/x.md)';
+  assert.equal(rewriteReadmeDocsSiteLinks(md, 'idea'), md, 'absolute URL untouched by README transform');
+  assert.equal(rewriteDocsSiteLinks(md, 'idea', 'install'), md, 'absolute URL untouched by docs/site transform');
+});
+
+test('guard: prose / code mentioning docs/site is NOT rewritten (R7)', () => {
+  const prose = 'Put site-only docs in docs/site/ — they end in .md, like install.md.';
+  assert.equal(rewriteReadmeDocsSiteLinks(prose, 'idea'), prose);
+  assert.equal(rewriteDocsSiteLinks(prose, 'idea', 'install'), prose);
+  const code = '`mv notes.md docs/site/notes.md`';
+  // The inline-code path is prose to the link scanner (no `[](...)` shape), so
+  // its mention of docs/site/notes.md is not a link target → untouched.
+  assert.equal(rewriteReadmeDocsSiteLinks(code, 'idea'), code);
+});
+
+test('guard: raw-HTML href/src relative targets ARE rewritten site-absolute; absolute ones are not (R7)', () => {
+  assert.equal(
+    rewriteReadmeDocsSiteLinks('<a href="docs/site/install.md">install</a>', 'idea'),
+    '<a href="/tools/idea/install">install</a>',
+  );
+  assert.equal(
+    rewriteDocsSiteLinks('<a href="./advanced/hooks.md">hooks</a>', 'idea', 'install'),
+    '<a href="/tools/idea/advanced/hooks">hooks</a>',
+  );
+  const abs = '<img src="https://raw.githubusercontent.com/x/y/docs/site/a.png">';
+  assert.equal(rewriteDocsSiteLinks(abs, 'idea', 'install'), abs, 'absolute src untouched');
+});
+
+test('guard: only the link target is rewritten, link TEXT mentioning .md is preserved (R7)', () => {
+  assert.equal(
+    rewriteDocsSiteLinks('[see install.md here](./install.md)', 'idea', 'guide'),
+    '[see install.md here](/tools/idea/install)',
+    'the .md in the link TEXT survives; only the target is rewritten',
+  );
+});
+
+test('transforms are total: empty input does not throw (R5/R6)', () => {
+  assert.equal(rewriteDocsSiteLinks('', 'idea', 'install'), '');
+  assert.equal(rewriteReadmeDocsSiteLinks('', 'idea'), '');
+});
+
+// A docs/site relative link that `..`-escapes the tree root is a closure violation
+// (reported by findClosureViolations); the rewriter still best-effort-emits a path
+// (clamped at the tool root) since the page commits anyway — consistent + tested.
+test('docs/site page: a ..-escape is best-effort clamped to the tool root (R5/R8 interaction)', () => {
+  // page install.md (top-level) → ../../secret.md climbs above the tree root.
+  // findClosureViolations flags it; the rewriter clamps the over-climb at root.
+  assert.equal(
+    rewriteDocsSiteLinks('[x](../../secret.md)', 'idea', 'install'),
+    '[x](/tools/idea/secret)',
+  );
+  // And the same target is independently reported as a closure escape:
+  const v = findClosureViolations('install.md', '[x](../../secret.md)');
+  assert.equal(v.length, 1);
+  assert.equal(v[0].kind, 'escape');
+});
+
+// ── §closure lint detector (R8) — report-only ───────────────────────────────
+
+test('closure: a relative link escaping docs/site (.. climb) is flagged (R8)', () => {
+  const v = findClosureViolations('install.md', '[secret](../../secret.md)');
+  assert.equal(v.length, 1);
+  assert.equal(v[0].kind, 'escape');
+  assert.equal(v[0].target, '../../secret.md');
+});
+
+test('closure: a .. climb from a NESTED page that escapes the root is flagged (R8)', () => {
+  // advanced/hooks.md → `../../x.md` pops [advanced] then climbs above root → escape.
+  const v = findClosureViolations('advanced/hooks.md', '[x](../../x.md)');
+  assert.equal(v.length, 1);
+  assert.equal(v[0].kind, 'escape');
+});
+
+test('closure: a .. that stays INSIDE docs/site is clean (R8)', () => {
+  // advanced/hooks.md → `../install.md` pops [advanced], resolves to install.md (intra-set).
+  assert.deepEqual(findClosureViolations('advanced/hooks.md', '[i](../install.md)'), []);
+});
+
+test('closure: a relative IMAGE is flagged (images must be absolute, §3) (R8)', () => {
+  const v = findClosureViolations('install.md', '![diagram](./diagram.png)');
+  assert.equal(v.length, 1);
+  assert.equal(v[0].kind, 'relative-image');
+});
+
+test('closure: a raw-HTML relative <img src> is flagged as relative-image (R8)', () => {
+  const v = findClosureViolations('install.md', '<img src="shot.png" alt="x">');
+  assert.equal(v.length, 1);
+  assert.equal(v[0].kind, 'relative-image');
+});
+
+test('closure: an intra-set relative link is clean (R8)', () => {
+  assert.deepEqual(findClosureViolations('install.md', '[other](./other.md)'), []);
+  assert.deepEqual(findClosureViolations('install.md', '[deep](sub/page.md)'), []);
+});
+
+test('closure: an absolute link and an absolute image are clean (R8)', () => {
+  const md = [
+    '[gh](https://github.com/sahil87/idea)',
+    '![arch](https://raw.githubusercontent.com/x/y/arch.svg)',
+  ].join('\n');
+  assert.deepEqual(findClosureViolations('install.md', md), []);
+});
+
+test('closure detector is total: empty input → no violations (R8)', () => {
+  assert.deepEqual(findClosureViolations('install.md', ''), []);
 });
