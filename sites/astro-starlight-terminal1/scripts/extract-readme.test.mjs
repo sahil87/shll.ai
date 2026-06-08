@@ -811,7 +811,8 @@ test('docs/site mount MIRRORS upstream: a stale page is pruned, fresh page kept 
   await mkdir(src, { recursive: true });
   await writeFile(join(src, 'install.md'), '# new install\n', 'utf8');
 
-  execFileSync('node', [docsSiteCli, MIRROR_SLUG, src], { stdio: 'pipe' });
+  // process.execPath = the exact Node binary running the test (immune to PATH/alias drift in CI).
+  execFileSync(process.execPath, [docsSiteCli, MIRROR_SLUG, src], { stdio: 'pipe' });
 
   assert.equal(await exists(join(mirrorOut, 'README.md')), false, 'stale README.md pruned');
   assert.equal(await exists(join(mirrorOut, 'install.md')), true, 'fresh install.md present');
@@ -834,7 +835,7 @@ test('docs/site mount MIRRORS upstream: a zero-page pull empties the mount (e52v
   const emptySrc = join(repoRoot, '.test-tmp', 'e52v-src-empty', 'docs', 'site');
   await mkdir(emptySrc, { recursive: true });
 
-  execFileSync('node', [docsSiteCli, MIRROR_SLUG, emptySrc], { stdio: 'pipe' });
+  execFileSync(process.execPath, [docsSiteCli, MIRROR_SLUG, emptySrc], { stdio: 'pipe' });
 
   assert.equal(await exists(join(mirrorOut, 'install.md')), false, 'prior page removed on a zero-page pull');
 });
