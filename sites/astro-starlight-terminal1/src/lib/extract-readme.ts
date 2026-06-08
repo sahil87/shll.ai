@@ -61,17 +61,37 @@ const HEADING_RE = /^#{2,3}\s+(.+?)\s*#*\s*$/;
 /** A single leading H1 (`# tool-name`). Only the FIRST line may be the H1. */
 const H1_RE = /^#\s+\S/;
 
+/** A leading HTML heading used as the title (`<h1 …>…</h1>`, possibly with an
+ *  `align` attr). Some READMEs center the title with raw HTML instead of a
+ *  markdown `#` — this is head chrome equivalent to the markdown H1 (§1, R5).
+ *  Matches an opening `<h1…>` so a multi-line `<h1>\n…\n</h1>` block is consumed
+ *  by the head loop (which continues skipping until the closing `</h1>`). */
+const HTML_H1_OPEN_RE = /^\s*<h1\b[^>]*>/i;
+const HTML_H1_CLOSE_RE = /<\/h1>\s*$/i;
+
+/** A leading YAML frontmatter fence (`---` on the very first non-blank line).
+ *  The block runs to the next `---` line and is skipped as chrome (§1, R5) so it
+ *  never leaks into the slice. */
+const FRONTMATTER_FENCE_RE = /^---\s*$/;
+
 /** A blockquote line (`>` …) — the toolkit blockquote and its wrapped lines. */
 const BLOCKQUOTE_RE = /^>\s?/;
+
+/** A leading HTML comment opener (`<!-- …`). A leading comment (e.g. a
+ *  markdownlint pragma) above the content is head chrome (§1, R5); the head loop
+ *  skips from the opener through the closing `-->`. */
+const HTML_COMMENT_OPEN_RE = /^\s*<!--/;
+const HTML_COMMENT_CLOSE_RE = /-->/;
 
 /**
  * A head-chrome image/badge line: a markdown image `![alt](url)`, a linked badge
  * `[![alt](img)](href)`, or an HTML image wrapper (`<p …><img …>`, bare `<img …>`,
- * `<picture>`/`<source>`). The whole line must be chrome (possibly several images
- * on one line) — a prose line that merely contains an inline image is NOT chrome.
+ * `<picture>`/`<source>`, and the badge-row separators `<br>`/`<hr>`/`<span>`).
+ * The whole line must be chrome (possibly several images on one line) — a prose
+ * line that merely contains an inline image is NOT chrome.
  */
 const BADGE_LINE_RE =
-  /^(?:\s*(?:\[!\[[^\]]*\]\([^)]*\)\]\([^)]*\)|!\[[^\]]*\]\([^)]*\)|<\/?(?:p|img|picture|source|a|div)\b[^>]*>))+\s*$/i;
+  /^(?:\s*(?:\[!\[[^\]]*\]\([^)]*\)\]\([^)]*\)|!\[[^\]]*\]\([^)]*\)|<\/?(?:p|img|picture|source|a|div|br|hr|span)\b[^>]*\/?>))+\s*$/i;
 
 /** Opening fence of an inline mermaid block: ```mermaid (any indent, any fence
  *  char run length). The matching close is the next fence of the same family
@@ -126,10 +146,23 @@ function isClosingFence(line: string, open: OpenFence): boolean {
 const GH_THEME_IMG_RE =
   /!\[[^\]]*\]\([^)]*#gh-(?:dark|light)-mode-only[^)]*\)/gi;
 
+/** An HTML `<img …>` or `<source …>` tag (self-closing or not) carrying the
+ *  gh-theme fragment in any attribute (`src`/`srcset`). Removed on strip (§4/§6,
+ *  R4). `g` so multiple per line are removed; `i` for tag + fragment casing. */
+const GH_THEME_HTML_IMG_RE =
+  /<(?:img|source)\b[^>]*#gh-(?:dark|light)-mode-only[^>]*\/?>/gi;
+
+/** An opening `<picture …>` / closing `</picture>` tag (used to drop a wrapper
+ *  left empty after its gh-theme `<source>`/`<img>` children are stripped, R4). */
+const PICTURE_OPEN_RE = /<picture\b[^>]*>/i;
+const PICTURE_CLOSE_RE = /<\/picture\s*>/i;
+
 /**
  * Compute the head boundary (contract §1): the index of the first slice line.
- * Skips a contiguous leading run of blank lines, the single H1, a single
- * blockquote (including its wrapped continuation lines), and image/badge lines.
+ * Skips a contiguous leading run of blank lines; a single leading YAML
+ * frontmatter block; the single H1 (markdown `#` OR an HTML `<h1>` title); a
+ * single blockquote (including its wrapped continuation lines); leading HTML
+ * comments; and image/badge lines (incl. `<br>`/`<hr>`/`<span>` separators).
  * Stops at the first non-blank line that is none of those.
  */
 function headBoundary(lines: string[]): number {
@@ -137,6 +170,9 @@ function headBoundary(lines: string[]): number {
   // Only the FIRST leading heading is treated as the tool-name H1 chrome; a
   // later `# …` is a real section and must NOT be skipped, so it stops the head.
   let h1Consumed = false;
+  // Whether we have yet passed the very top (frontmatter is ONLY valid as the
+  // first non-blank line — a later `---` is a thematic break, not frontmatter).
+  let seenContent = false;
 
   while (i < lines.length) {
     const line = lines[i];
@@ -144,9 +180,44 @@ function headBoundary(lines: string[]): number {
       i += 1;
       continue;
     }
+    // YAML frontmatter — only when it is the very first non-blank line (§1, R5).
+    // Consume from the opening `---` through the closing `---`.
+    if (!seenContent && FRONTMATTER_FENCE_RE.test(line)) {
+      i += 1;
+      while (i < lines.length && !FRONTMATTER_FENCE_RE.test(lines[i])) i += 1;
+      if (i < lines.length) i += 1; // consume the closing `---`
+      seenContent = true;
+      continue;
+    }
+    seenContent = true;
+    // Leading HTML comment (e.g. a markdownlint pragma) — skip through `-->`.
+    if (HTML_COMMENT_OPEN_RE.test(line)) {
+      if (HTML_COMMENT_CLOSE_RE.test(line)) {
+        i += 1;
+      } else {
+        i += 1;
+        while (i < lines.length && !HTML_COMMENT_CLOSE_RE.test(lines[i])) i += 1;
+        if (i < lines.length) i += 1; // consume the line with `-->`
+      }
+      continue;
+    }
+    // The tool-name H1 — markdown `#` form.
     if (!h1Consumed && H1_RE.test(line)) {
       h1Consumed = true;
       i += 1;
+      continue;
+    }
+    // The tool-name H1 — HTML `<h1>…</h1>` form (possibly multi-line). Treated
+    // as equivalent to the markdown H1 (still first-heading-only).
+    if (!h1Consumed && HTML_H1_OPEN_RE.test(line)) {
+      h1Consumed = true;
+      if (HTML_H1_CLOSE_RE.test(line)) {
+        i += 1;
+      } else {
+        i += 1;
+        while (i < lines.length && !HTML_H1_CLOSE_RE.test(lines[i])) i += 1;
+        if (i < lines.length) i += 1; // consume the closing `</h1>` line
+      }
       continue;
     }
     if (BLOCKQUOTE_RE.test(line)) {
@@ -161,7 +232,7 @@ function headBoundary(lines: string[]): number {
       i += 1;
       continue;
     }
-    // First line that is none of {blank, H1, blockquote, badge/image}: slice start.
+    // First line that is none of the recognized chrome: slice start.
     break;
   }
   return i;
@@ -227,22 +298,67 @@ function stripMermaid(lines: string[]): string[] {
 }
 
 /**
- * Strip GitHub theme-only images (contract §4/§6) line-by-line. A line that
- * becomes empty after removing its only (theme-only) image is dropped entirely
- * so the slice does not accumulate blank residue.
+ * Strip GitHub theme-only images (contract §4/§6, R4) — both markdown
+ * `![](…#gh-*-mode-only)` AND HTML `<img>`/`<source>` whose `src`/`srcset` carries
+ * the fragment. Operates line-by-line: a line that becomes empty after removing
+ * its only theme-only image is dropped so the slice does not accumulate blank
+ * residue. A second pass drops any `<picture>` wrapper left with no remaining
+ * `<source>`/`<img>` child (a gh-theme `<picture>` pair collapses entirely).
  */
 function stripGhThemeImages(lines: string[]): string[] {
-  const out: string[] = [];
+  // Pass 1: per-line removal of markdown + HTML gh-theme images.
+  const stripped: string[] = [];
   for (const line of lines) {
-    if (!GH_THEME_IMG_RE.test(line)) {
+    let out = line;
+    if (GH_THEME_IMG_RE.test(out)) {
+      GH_THEME_IMG_RE.lastIndex = 0;
+      out = out.replace(GH_THEME_IMG_RE, '');
+    }
+    GH_THEME_IMG_RE.lastIndex = 0;
+    if (GH_THEME_HTML_IMG_RE.test(out)) {
+      GH_THEME_HTML_IMG_RE.lastIndex = 0;
+      out = out.replace(GH_THEME_HTML_IMG_RE, '');
+    }
+    GH_THEME_HTML_IMG_RE.lastIndex = 0;
+    // Drop a line that held only theme-only image(s) (now empty); keep `<picture>`
+    // / `</picture>` wrapper lines for Pass 2 to decide.
+    const trimmed = out.trim();
+    if (trimmed === '' && line.trim() !== '') continue;
+    stripped.push(out === line ? line : trimmed);
+  }
+
+  // Pass 2: drop a `<picture>…</picture>` wrapper that no longer contains any
+  // `<source>`/`<img>` child (its only children were gh-theme, now stripped).
+  const out: string[] = [];
+  for (let i = 0; i < stripped.length; i += 1) {
+    const line = stripped[i];
+    if (!PICTURE_OPEN_RE.test(line)) {
       out.push(line);
       continue;
     }
-    // Reset lastIndex (the test above advanced it on the `g` regex) before replace.
-    GH_THEME_IMG_RE.lastIndex = 0;
-    const stripped = line.replace(GH_THEME_IMG_RE, '').trim();
-    if (stripped !== '') out.push(stripped);
-    GH_THEME_IMG_RE.lastIndex = 0;
+    // Find the matching `</picture>` and inspect the block in between.
+    let j = i;
+    let closeIdx = -1;
+    while (j < stripped.length) {
+      if (PICTURE_CLOSE_RE.test(stripped[j])) {
+        closeIdx = j;
+        break;
+      }
+      j += 1;
+    }
+    if (closeIdx === -1) {
+      out.push(line); // unbalanced — leave as-is
+      continue;
+    }
+    const block = stripped.slice(i, closeIdx + 1).join('\n');
+    const hasChild = /<(?:source|img)\b/i.test(block.replace(PICTURE_OPEN_RE, '').replace(PICTURE_CLOSE_RE, ''));
+    if (!hasChild) {
+      i = closeIdx; // skip the whole empty wrapper
+      continue;
+    }
+    // Keep the wrapper (it still has a non-theme child).
+    for (let k = i; k <= closeIdx; k += 1) out.push(stripped[k]);
+    i = closeIdx;
   }
   return out;
 }
@@ -480,6 +596,13 @@ const MD_LINK_RE = /(!?\[[^\]]*\]\(\s*)([^\s)]+)(\s*(?:"[^"]*"|'[^']*')?\s*\))/g
  *  3 = the target; 4 = the closing quote (backreference to group 2). */
 const HTML_ATTR_RE = /\b(href|src)\s*=\s*(["'])([^"']*)(\2)/gi;
 
+/** A raw-HTML `srcset="…"` attribute (e.g. on `<source>`/`<img>`). Its value is a
+ *  comma-separated candidate list (`url 1x, url2 2x`); group 2 = the whole value.
+ *  Scanned ONLY by the closure lint (R4) — each candidate's URL is checked for a
+ *  relative image. NOT used by the rewriter (the rewriter handles single-URL
+ *  href/src only). */
+const HTML_SRCSET_RE = /\bsrcset\s*=\s*(["'])([^"']*)(\1)/gi;
+
 /** True when `target` is an ABSOLUTE/non-relative URL the guard must NOT touch:
  *  a scheme (`https:`, `mailto:`), a protocol-relative `//host`, a root-absolute
  *  `/path`, or a pure `#fragment`. Everything else is a relative path target. */
@@ -548,25 +671,38 @@ function stripMdExt(path: string): string {
   return path.replace(/\.md$/i, '');
 }
 
+/** The mount segment a closure-escaping docs/site target is rewritten under
+ *  (R3). It is reserved-by-construction: not a static tool slug, and no real
+ *  `docs/site/` page can mount here (this rewrite + the §closure lint own it), so
+ *  the resulting `/tools/<slug>/__unresolved__/…` URL cannot collide with a real
+ *  page — it reads as broken-on-purpose, consistent with the lint's `escape`
+ *  warning. (Was previously a silent clamp to the tool root, which produced a
+ *  confidently-wrong link to a real page.) */
+const UNRESOLVED_MARKER = '__unresolved__';
+
 /**
- * Normalize a `/`-joined POSIX path of segments, resolving `.` and `..` against a
- * starting segment stack (`base`, the segments of the directory the target is
- * relative to). Returns the resolved segment array. A `..` that would pop above
- * `base` is clamped at the root (drops the `..`) — a best-effort resolution for a
- * closure-escaping target, which the §closure lint reports separately (the page
- * still commits, so the rewriter must still emit a usable path). Pure.
+ * The SINGLE shared `.`/`..` resolver (R3). Normalize `target` against `base` (the
+ * directory segments the target is relative to) and report whether it climbs OUT
+ * of `base` (a closure escape). Returns `{ segments, escaped }`:
+ *   - `segments` — the resolved path segments (over-climbs that escape are clamped
+ *     at the root so a usable path is still available).
+ *   - `escaped` — true iff some `..` popped above the root (the closure-violating
+ *     case). Both the rewriter (to emit the marker) and the §closure detector
+ *     (to flag) consume THIS function, so "escape" means exactly one thing. Pure.
  */
-function resolveSegments(base: string[], target: string): string[] {
+function resolvePath(base: string[], target: string): { segments: string[]; escaped: boolean } {
   const stack = [...base];
+  let escaped = false;
   for (const seg of target.split('/')) {
     if (seg === '' || seg === '.') continue;
     if (seg === '..') {
-      if (stack.length > 0) stack.pop(); // clamp at root on over-climb (best effort)
+      if (stack.length > 0) stack.pop();
+      else escaped = true; // climbed above the root
       continue;
     }
     stack.push(seg);
   }
-  return stack;
+  return { segments: stack, escaped };
 }
 
 /**
@@ -585,10 +721,13 @@ function toolMountUrl(slug: string, segments: string[]): string {
  * (`mountPath`, the page's path under `site/` without `.md`, e.g. `advanced/hooks`),
  * normalize `.`/`..`, strip `.md`, and emit the site-absolute mount URL
  * `/tools/<slug>/<resolved>`. Closure (§9.1.1) guarantees relative targets are
- * intra-set; a `..`-escape is reported by the §closure lint and best-effort-clamped
- * here. Absolute URLs, prose, and code are untouched; a `#`/`?` suffix is preserved.
+ * intra-set; a `..`-escape is flagged by the §closure lint AND, here, rewritten to
+ * a non-colliding `/tools/<slug>/__unresolved__/…` marker (R3) — NOT clamped to a
+ * real page (which would misroute the broken link to a confidently-wrong page).
+ * Absolute URLs, prose, and code are untouched; a `#`/`?` suffix is preserved.
  * Pure and total. Example: page `advanced/hooks` linking `../install.md` →
- * `/tools/<slug>/install`; `./sibling.md` → `/tools/<slug>/advanced/sibling`.
+ * `/tools/<slug>/install`; `./sibling.md` → `/tools/<slug>/advanced/sibling`;
+ * an escaping `../../x.md` → `/tools/<slug>/__unresolved__/x`.
  */
 export function rewriteDocsSiteLinks(
   markdown: string,
@@ -598,8 +737,12 @@ export function rewriteDocsSiteLinks(
   // The page's directory segments within the docs/site tree (drop the filename).
   const baseDir = mountPath.split('/').slice(0, -1);
   return rewriteLinkTargets(markdown, (path) => {
-    const resolved = resolveSegments(baseDir, stripMdExt(path));
-    return toolMountUrl(slug, resolved);
+    const { segments, escaped } = resolvePath(baseDir, stripMdExt(path));
+    // An escape is rewritten under the reserved marker segment so the broken
+    // link is visibly dead (matching the §closure `escape` warning), never a
+    // plausible-but-wrong real page.
+    const mountSegs = escaped ? [UNRESOLVED_MARKER, ...segments] : segments;
+    return toolMountUrl(slug, mountSegs);
   });
 }
 
@@ -620,7 +763,9 @@ export function rewriteReadmeDocsSiteLinks(markdown: string, slug: string): stri
     const sub = stripMdExt(path.slice(DOCS_SITE_PREFIX.length));
     // The README links into the tree as if from the tree ROOT; resolve `.`/`..`
     // within the sub-path so a (rare) `docs/site/a/../b.md` still normalizes.
-    return toolMountUrl(slug, resolveSegments([], sub));
+    const { segments, escaped } = resolvePath([], sub);
+    const mountSegs = escaped ? [UNRESOLVED_MARKER, ...segments] : segments;
+    return toolMountUrl(slug, mountSegs);
   });
 }
 
@@ -638,24 +783,13 @@ export interface ClosureViolation {
 /**
  * Resolve `target` (a relative path) against `fromRel` (the offending file's path
  * RELATIVE TO docs/site root, e.g. `advanced/hooks.md`) and return true when it
- * climbs OUT of docs/site — i.e. the resolved, normalized path begins with `..`.
- * Pure POSIX-segment math (no fs); a `#`/`?` suffix is ignored by the caller.
+ * climbs OUT of docs/site. Delegates to the SHARED {@link resolvePath} so the
+ * detector and `rewriteDocsSiteLinks` agree on what "escape" means (R3). Pure.
  */
 function escapesDocsSite(fromRel: string, target: string): boolean {
   // Start from the offending file's DIRECTORY segments within docs/site.
   const dir = fromRel.split('/').slice(0, -1);
-  const segs = target.split('/');
-  const stack = [...dir];
-  for (const seg of segs) {
-    if (seg === '' || seg === '.') continue;
-    if (seg === '..') {
-      if (stack.length === 0) return true; // climbed above docs/site root
-      stack.pop();
-      continue;
-    }
-    stack.push(seg);
-  }
-  return false;
+  return resolvePath(dir, target).escaped;
 }
 
 /**
@@ -709,6 +843,103 @@ export function findClosureViolations(
   while ((m = HTML_ATTR_RE.exec(markdown)) !== null) {
     const isImage = m[1].toLowerCase() === 'src';
     record(m[3], isImage);
+  }
+  // Raw-HTML srcset (image, e.g. `<source srcset="dark.png 1x, dark2.png 2x">`).
+  // The value is a comma-separated candidate list; each candidate is
+  // `<url> [descriptor]` — record the URL part of each as an image target (R4).
+  HTML_SRCSET_RE.lastIndex = 0;
+  while ((m = HTML_SRCSET_RE.exec(markdown)) !== null) {
+    for (const candidate of m[2].split(',')) {
+      const url = candidate.trim().split(/\s+/)[0];
+      if (url) record(url, true);
+    }
+  }
+
+  return violations;
+}
+
+// ── README-slice link lint (R1/R2) ───────────────────────────────────────────
+//
+// The README slice's sibling of findClosureViolations: a REPORT-ONLY detector for
+// links/images in a deduced README slice that would NOT resolve on the site. The
+// README slice is the DEFAULT pulled surface (§9) yet — unlike the docs/site tree —
+// had no link lint, so a site-escaping relative link (e.g. `[x](docs/specs/y.md)`,
+// `[c](CONTRIBUTING.md)`) rendered as a live 404 with no warning. This closes that
+// gap by surfacing the same kind of `::warning::` the docs/site CLI already emits.
+//
+// What counts as a violation:
+//   - a RELATIVE link target that is NOT a `docs/site/<p>.md` link — the only
+//     relative README links the consumer rewrites are `docs/site/` ones (via
+//     rewriteReadmeDocsSiteLinks); every other relative link target reaches the
+//     rendered page unrewritten and 404s. (Scope decision, intake assumption #9:
+//     a relative link to a non-`.md` docs/site asset is NOT special-cased.)
+//   - a RELATIVE image target (images MUST be absolute everywhere, §3).
+// Absolute URLs, `docs/site/<p>.md` links, and pure `#`/`?` anchors are clean.
+
+/** A single README-slice link violation: the offending relative target + why. */
+export interface ReadmeLinkViolation {
+  /** The relative link/image target as written in the slice. */
+  target: string;
+  /** `relative-link` = a relative LINK that is not a `docs/site/` link (renders a
+   *  404 — the consumer rewrites only `docs/site/` relative links);
+   *  `relative-image` = a relative IMAGE (images must be absolute, §3). */
+  kind: 'relative-link' | 'relative-image';
+}
+
+/**
+ * R1/R2 — REPORT-ONLY README-slice link detector. Given a deduced slice, return
+ * the relative link/image targets that will not resolve on the site. Reuses the
+ * same `isAbsoluteTarget` guard + `MD_LINK_RE`/`HTML_ATTR_RE` scanning as the
+ * rewriter/closure lint, so detection and the rewrite guard cannot drift. Pure and
+ * total — never throws. The CLI decides the consequence (a `::warning::`, never
+ * withholding the slice).
+ */
+export function findReadmeLinkViolations(slice: string): ReadmeLinkViolation[] {
+  const violations: ReadmeLinkViolation[] = [];
+  const seen = new Set<string>();
+
+  const record = (target: string, isImage: boolean) => {
+    if (isAbsoluteTarget(target)) return; // absolute → clean
+    const [path] = splitTargetSuffix(target);
+    if (path === '') return; // pure `#`/`?` anchor → clean
+    if (isImage) {
+      const key = `relative-image|${target}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        violations.push({ target, kind: 'relative-image' });
+      }
+      return;
+    }
+    // A relative LINK is fine ONLY if it is a `docs/site/<p>.md` link (the one
+    // relative shape the consumer rewrites). Anything else 404s.
+    if (path.startsWith(DOCS_SITE_PREFIX)) return;
+    const key = `relative-link|${target}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      violations.push({ target, kind: 'relative-link' });
+    }
+  };
+
+  // Markdown links/images. The leading `!` distinguishes an image from a link.
+  let m: RegExpExecArray | null;
+  MD_LINK_RE.lastIndex = 0;
+  while ((m = MD_LINK_RE.exec(slice)) !== null) {
+    const isImage = m[1].startsWith('!');
+    record(m[2], isImage);
+  }
+  // Raw-HTML href (link) / src (image).
+  HTML_ATTR_RE.lastIndex = 0;
+  while ((m = HTML_ATTR_RE.exec(slice)) !== null) {
+    const isImage = m[1].toLowerCase() === 'src';
+    record(m[3], isImage);
+  }
+  // Raw-HTML srcset (image) — each candidate URL.
+  HTML_SRCSET_RE.lastIndex = 0;
+  while ((m = HTML_SRCSET_RE.exec(slice)) !== null) {
+    for (const candidate of m[2].split(',')) {
+      const url = candidate.trim().split(/\s+/)[0];
+      if (url) record(url, true);
+    }
   }
 
   return violations;

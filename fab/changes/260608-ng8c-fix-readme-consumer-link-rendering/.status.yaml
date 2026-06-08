@@ -1,0 +1,49 @@
+id: ng8c
+name: 260608-ng8c-fix-readme-consumer-link-rendering
+created: 2026-06-08T09:21:57Z
+created_by: sahil-noon
+change_type: fix
+issues: []
+progress:
+    intake: done
+    apply: done
+    review: done
+    hydrate: done
+    ship: active
+    review-pr: pending
+plan:
+    generated: true
+    task_count: 17
+    acceptance_count: 18
+    acceptance_completed: 18
+confidence:
+    certain: 5
+    confident: 4
+    tentative: 1
+    unresolved: 0
+    score: 2.8
+    fuzzy: true
+    dimensions:
+        signal: 86.9
+        reversibility: 72.7
+        competence: 86.0
+        disambiguation: 83.4
+stage_metrics:
+    intake: {started_at: "2026-06-08T09:21:57Z", driver: fab-new, iterations: 1, completed_at: "2026-06-08T10:18:32Z"}
+    apply: {started_at: "2026-06-08T10:18:32Z", driver: fab-continue, iterations: 1, completed_at: "2026-06-08T10:30:20Z"}
+    review: {started_at: "2026-06-08T10:30:20Z", driver: fab-continue, iterations: 1, completed_at: "2026-06-08T10:40:21Z"}
+    hydrate: {started_at: "2026-06-08T10:40:21Z", driver: fab-continue, iterations: 1, completed_at: "2026-06-08T10:42:56Z"}
+    ship: {started_at: "2026-06-08T10:42:56Z", driver: fab-continue, iterations: 1}
+prs: []
+true_impact:
+    added: 0
+    deleted: 0
+    net: 0
+    excluding:
+        added: 0
+        deleted: 0
+        net: 0
+    computed_at: "2026-06-08T10:42:56Z"
+    computed_at_stage: hydrate
+# true_impact: lazily created on first apply-finish (no placeholder here).
+last_updated: 2026-06-08T10:42:56Z
