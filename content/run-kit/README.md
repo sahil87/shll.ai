@@ -49,6 +49,8 @@ The new workspace appears in the dashboard's sidebar; click into it to drive the
 
 To upgrade later, run `rk update` — pulls the latest version via Homebrew and restarts the daemon so the new binary takes effect immediately.
 
+See the [install & access guide](docs/site/install.md) for prerequisites, `rk doctor`, development setup, and driving rk from your phone over Tailscale HTTPS.
+
 ## `rk riff` — the spawner
 
 The headline command. One invocation gives you a git worktree, a tmux window inside it, and one or more Claude Code panes ready to go.
@@ -77,7 +79,7 @@ rk riff -- --worktree-name pacing-canyon             # name the worktree
 
 **Prerequisites:** must be inside a tmux session, [`wt`](https://github.com/sahil87/wt) on `PATH`, and the launcher (default `claude --dangerously-skip-permissions`) available. Override the launcher per-project via `agent.spawn_command` in `fab/project/config.yaml`.
 
-See the [riff guide](docs/wiki/riff.md) for the full reference.
+See the [riff guide](docs/site/workflows.md) for the full reference.
 
 ## `rk serve` — the dashboard daemon
 
@@ -120,7 +122,7 @@ Some browser features (clipboard, secure context) require HTTPS. Accessing rk fr
 2. Run `tailscale serve --bg http://localhost:3000`.
 3. Open `https://<machine>.<tailnet>.ts.net` on your phone or another laptop.
 
-For a stable custom hostname or public access via Funnel, see the [Tailscale guide](docs/wiki/tailscale.md).
+For a stable custom hostname or public access via Funnel, see the [Tailscale guide](docs/site/install.md).
 
 ## Shell completion
 
@@ -149,7 +151,7 @@ Supports `zsh`, `bash`, `fish`, and `powershell`. Completion-only — rk has no 
 | `rk completion` | Generate shell completion scripts (or use `rk shell-init` for eval-safe output). |
 | `rk help` | Help about any command. |
 
-Run `rk <command> --help` for full flag details.
+Run `rk <command> --help` for full flag details, or see the [full command reference](https://shll.ai/tools/run-kit/commands/) for every command and flag.
 
 ## Troubleshooting
 

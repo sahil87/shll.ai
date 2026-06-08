@@ -22,6 +22,8 @@ exec $SHELL                         # reload so the shell integration takes effe
 
 That's it. `hop`, `wt`, and the other tools are now installed and their shell integration is live.
 
+For the deeper install guide — brew vs the `all` meta-formula, from-source builds, the full `shll shell-setup` rc-wiring, and the tap-trust matrix — see [docs/site/install.md](docs/site/install.md).
+
 `--trust-tap` records genuine Homebrew trust for `sahil87/tap` so brew stops nagging about non-official taps — it also opts brew into `HOMEBREW_REQUIRE_TAP_TRUST=1`, which means *other* untrusted third-party taps you use will then need explicit trust too. Drop the flag (`shll shell-setup`) if you'd rather not change brew's tap-trust posture; see [Troubleshooting](#tap-sahil87tap-is-allowed-by-default-warning) for the lighter alternatives.
 
 ## Install
@@ -31,6 +33,8 @@ brew install sahil87/tap/shll
 ```
 
 `shll` is also installed transitively via the `all` meta-formula (`brew install sahil87/tap/all`), which pulls in every roster tool at once.
+
+For the full guide — brew vs `all`, from-source builds, shell wiring, and the `--trust-tap` ceremony — see [docs/site/install.md](docs/site/install.md).
 
 ### From source
 
@@ -185,8 +189,10 @@ shll will **not** set these for you. Trusting a tap — or opting out of the war
 
 ## Reference
 
+- [docs/site/install.md](docs/site/install.md) — install & shell-wiring guide (brew vs `all`, from-source, `shll shell-setup`, tap-trust)
+- [docs/site/workflows.md](docs/site/workflows.md) — task-oriented walkthroughs (clean-machine bootstrap, day-to-day `shll update`, version dumps, the composition model)
 - `shll --help` — full subcommand listing
-- **Command reference on [shll.ai](https://shll.ai)** — on every release, shll's CI exports its CLI help tree as a machine-readable `help/shll.json` and publishes it to the [shll.ai](https://shll.ai) site, which renders it as an always-current command reference. The export is produced by a hidden `help-dump` subcommand (internal build tooling, not a user command).
+- **Command reference at [shll.ai/tools/shll/commands](https://shll.ai/tools/shll/commands/)** — a browsable, always-current command tree. On every release, shll's CI exports its CLI help tree as a machine-readable `help/shll.json` and publishes it to [shll.ai](https://shll.ai), which renders it at that page. The export is produced by a hidden `help-dump` subcommand (internal build tooling, not a user command).
 - Per-tool repos for the wrapped CLIs:
   [fab-kit](https://github.com/sahil87/fab-kit) ·
   [run-kit](https://github.com/sahil87/run-kit) ·

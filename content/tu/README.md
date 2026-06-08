@@ -1,9 +1,11 @@
 AI coding assistant cost tracking CLI.
 Track your token usage in style!
 
-<img width="1025" height="675" alt="image" src="https://github.com/user-attachments/assets/d6d1c930-8230-4910-ba1b-985e7df17e7c" />
+<img width="1025" height="675" alt="tu terminal output showing today's AI coding assistant costs across Claude Code, Codex, and OpenCode" src="https://github.com/user-attachments/assets/d6d1c930-8230-4910-ba1b-985e7df17e7c" />
 
 ## Install
+
+> 📖 Full walkthrough: the [install guide](docs/site/install.md) covers install, shell completions, and multi-machine setup in depth.
 
 ```bash
 brew tap sahil87/tap
@@ -34,6 +36,8 @@ tu update
 ```
 
 ## Usage
+
+> 📖 See [workflows](docs/site/workflows.md) for end-to-end recipes, and the full [command reference](https://shll.ai/tools/tu/commands/) for every command and flag.
 
 ```bash
 tu                   # Today's cost, all tools
@@ -68,10 +72,12 @@ tu sync              # Push/pull metrics
 tu status            # Show config and sync state
 ```
 
+For end-to-end recipes — daily snapshots, history pivots, multi-machine sync, and watch mode — see [workflows](docs/site/workflows.md).
+
 ## CI / branch protection
 
 `main` is gated by a required status check named **`ci-gate`**. The
-[`CI` workflow](.github/workflows/ci.yml) runs the build and the test suite on
+[`CI` workflow](https://github.com/sahil87/tu/blob/main/.github/workflows/ci.yml) runs the build and the test suite on
 every pull request targeting `main` (and on pushes to `main`); the aggregating
 `ci-gate` job passes only when `build-and-test` succeeds. A branch ruleset on
 `main` requires `ci-gate` to be green before a PR can be merged.
@@ -86,7 +92,7 @@ just test
 
 Applying or adjusting the ruleset is an admin action (needs a `gh` token with
 admin scope on the repo). The exact, idempotent command is captured in
-[`scripts/ci-gate-ruleset.sh`](scripts/ci-gate-ruleset.sh):
+[`scripts/ci-gate-ruleset.sh`](https://github.com/sahil87/tu/blob/main/scripts/ci-gate-ruleset.sh):
 
 ```bash
 scripts/ci-gate-ruleset.sh           # dry-run: preview the ruleset payload

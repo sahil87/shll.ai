@@ -2,7 +2,7 @@ A development toolkit for AI-assisted coding. It includes a 6-stage pipeline (in
 
 AI agents write code fast. The bottleneck is now your clarity: did you define the problem well enough? Fab Kit sits at that bottleneck — it forces structured thinking before implementation, grounds every session in your project's actual context, and gets cheaper to run as agents improve.
 
-> **[Try it now](#quick-start)** | **[Understand the concepts](#why-fab-kit)** | **[Glossary](https://github.com/sahil87/fab-kit/blob/main/docs/specs/glossary.md)** (new to Fab terminology?)
+> **[Try it now](#quick-start)** | **[Understand the concepts](#why-fab-kit)** | **[Install guide](docs/site/install.md)** | **[Workflows guide](docs/site/workflows.md)** | **[Glossary](https://github.com/sahil87/fab-kit/blob/main/docs/specs/glossary.md)** (new to Fab terminology?)
 
 **Contents:** [The 6 Stages](#the-6-stages) · [Prerequisites](#prerequisites) · [Quick Start](#quick-start) · [Why Fab Kit](#why-fab-kit) · [The 5 Cs](#the-5-cs-of-quality) · [Commands](#command-quick-reference)
 
@@ -11,6 +11,11 @@ AI agents write code fast. The bottleneck is now your clarity: did you define th
 Every change (a self-contained feature or fix with its own folder) moves through six stages:
 
 ![Fab Kit 6-stage pipeline: 1 Intake → Execution (2 Apply → 3 Review) → Completion (4 Hydrate) → Shipping (5 Ship → 6 Review-PR)](https://raw.githubusercontent.com/sahil87/fab-kit/main/docs/img/pipeline-stages.svg)
+
+<details>
+<summary>Mermaid source</summary>
+
+</details>
 
 | # | Stage | Purpose | Artifact |
 |---|-------|---------|----------|
@@ -35,6 +40,8 @@ fab/changes/260101-abcd-add-spinner/
 ```
 
 ## Prerequisites
+
+> 📦 For the full, tool-specific install walkthrough — companion utilities, shell completion, and the new-project / existing-repo / upgrade flows — see the **[Install guide](docs/site/install.md)**.
 
 ### Using Fab Kit
 
@@ -173,6 +180,8 @@ fab sync
 > **Note:** `fab sync` runs automatically in every new worktree created by [`wt create`](https://github.com/sahil87/fab-kit/blob/main/docs/specs/companions.md#wt--worktree-isolation).
 
 ### 2. Your first change
+
+> 🛠️ For a task-oriented walkthrough of driving the pipeline — the per-stage command sequence, the apply⇄review auto-rework loop, `/fab-ff` vs `/fab-fff` vs `/fab-proceed`, and going parallel with worktrees — see the **[Workflows guide](docs/site/workflows.md)**.
 
 Fab Kit skills are slash commands you type into an AI agent's chat, not the terminal. Open a session in your project directory:
 
@@ -362,6 +371,8 @@ Grades aggregate into a **confidence score** that gates `/fab-ff`. If ambiguity 
 ## Command Quick Reference
 
 > **Prefix:** Use `/fab-*` in Claude Code, `$fab-*` in Codex.
+
+> 📖 The tables below are a quick reference. For the full, auto-generated command reference — every subcommand, flag, and usage string — see **[shll.ai/tools/fab-kit/commands](https://shll.ai/tools/fab-kit/commands/)**.
 
 ### Pipeline
 
