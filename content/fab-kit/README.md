@@ -435,3 +435,58 @@ The operator (`/fab-operator`) is a long-running coordination layer that sits in
 | `fab batch new` | Create worktree tabs from backlog items |
 | `fab batch switch` | Open tmux tabs in worktrees for one or more changes |
 | `fab batch archive` | Archive multiple completed changes in one session |
+
+## Stage Coverage by Command
+
+Which pipeline stages each command covers. Taller bars = more automation. Read left-to-right from most manual to most automated. **▶** marks typical entry points — start with `/fab-discuss` (exploratory) or `/fab-new` (ready to build). Arrows show the typical path from idea to PR. Dashed borders indicate optional/utility stages. Empty cells = not covered by that command.
+
+| Color | Category | Commands |
+|-------|----------|----------|
+| 🟦 Cyan | Explore (read-only) | `/fab-discuss` |
+| 🟧 Amber | Manual (single action) | `/fab-draft`, `/fab-switch`, `/fab-continue` |
+| ⬜ Blue-grey (dashed) | Git utilities | `/git-branch`, `/git-pr`, `/git-pr-review` |
+| 🟩 Green | Automated pipeline (multi-stage) | `/fab-new`, `/fab-ff`, `/fab-fff`, `/fab-proceed` |
+| ◻️ Grey | Fab pipeline stage (row label) | intake, change active, apply, review, hydrate |
+| ▶ | Typical entry point | `/fab-discuss`, `/fab-new` |
+
+![Stage coverage by command: a matrix of pipeline stages (rows) by command (columns), color-coded — cyan Explore, amber Manual, blue-grey dashed Git utilities, green Automated pipeline. fab-discuss covers context; fab-draft intake; fab-switch change active; git-branch branch name; fab-new intake/change active/branch name; fab-continue, fab-ff, fab-fff, fab-proceed each cover apply/review/hydrate; fab-fff and fab-proceed also ship and review-pr; git-pr ship; git-pr-review review-pr](https://raw.githubusercontent.com/sahil87/fab-kit/main/docs/img/stage-coverage.svg)
+
+<details>
+<summary>Mermaid source</summary>
+
+</details>
+
+**Quick reference** — which stages does each command cover?
+
+| Stage | `/fab-discuss` | `/fab-draft` | `/fab-switch` | `/git-branch` | `/fab-new` | `/fab-continue` | `/fab-ff` | `/git-pr` | `/git-pr-review` | `/fab-fff` | `/fab-proceed` |
+|-------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| context | ✅ | | | | | | | | | | |
+| intake | | ✅ | | | ✅ | | | | | | ✅ |
+| change active | | | ✅ | | ✅ | | | | | | ✅ |
+| branch name | | | | ✅ | ✅ | | | | | | ✅ |
+| apply | | | | | | ✅ | ✅ | | | ✅ | ✅ |
+| review | | | | | | ✅ | ✅ | | | ✅ | ✅ |
+| hydrate | | | | | | ✅ | ✅ | | | ✅ | ✅ |
+| ship | | | | | | | | ✅ | | ✅ | ✅ |
+| review-pr | | | | | | | | | ✅ | ✅ | ✅ |
+
+## Companion tools
+
+fab-kit's Homebrew formula declares **wt** and **idea** as dependencies, so `brew install sahil87/tap/fab-kit` installs all four CLIs (`fab`, `fab-kit`, `wt`, `idea`) on PATH transitively. They're independent projects with their own release cadences:
+
+| Tool | Role in the fab workflow | Repo |
+|------|--------------------------|------|
+| **wt** | Worktree isolation — each change runs in its own worktree (the foundation of [parallel changes](#parallel-by-default)). Used by `fab batch new` and `fab batch switch`. | [sahil87/wt](https://github.com/sahil87/wt) |
+| **idea** | Per-repo backlog (`fab/backlog.md`) that feeds `/fab-new`. `fab batch new` reads open ideas and creates a worktree per item. | [sahil87/idea](https://github.com/sahil87/idea) |
+
+See [companions.md](docs/specs/companions.md) for the integration architecture.
+
+## Learn More
+
+- **[The Assembly Line](docs/specs/assembly-line.md)** - batch scripts, Gantt charts, and the full numbers behind parallel development
+- **[Design & Workflow Details](docs/specs/overview.md)** - principles, detailed stage descriptions, example workflows
+- **[User Flow Diagrams](docs/specs/user-flow.md)** - visual maps of the full pipeline, shortcuts, rework paths, and state machine
+- **[Full Command Reference](docs/specs/skills.md)** - detailed behavior for every `/fab-*` skill
+- **[SRAD Autonomy Framework](docs/specs/srad.md)** - how the pipeline handles ambiguity, confidence scoring, and autonomous execution gates
+- **[Glossary](docs/specs/glossary.md)** - all Fab terminology defined
+- **[Contributing](CONTRIBUTING.md)** - developing, extending, and releasing Fab Kit
