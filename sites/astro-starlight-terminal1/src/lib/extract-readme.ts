@@ -476,7 +476,8 @@ const DOCS_SITE_PREFIX = 'docs/site/';
 const MD_LINK_RE = /(!?\[[^\]]*\]\(\s*)([^\s)]+)(\s*(?:"[^"]*"|'[^']*')?\s*\))/g;
 
 /** A raw-HTML `href="…"` / `src="…"` attribute (single or double quoted).
- *  Group 1 = `href=`/`src=` + opening quote; 2 = the target; 3 = closing quote. */
+ *  Group 1 = the attribute name (`href`/`src`); 2 = the opening quote char;
+ *  3 = the target; 4 = the closing quote (backreference to group 2). */
 const HTML_ATTR_RE = /\b(href|src)\s*=\s*(["'])([^"']*)(\2)/gi;
 
 /** True when `target` is an ABSOLUTE/non-relative URL the guard must NOT touch:
@@ -680,7 +681,7 @@ export function findClosureViolations(
     if (path === '') return; // pure `#`/`?` anchor → clean
     // A relative image is a violation regardless of where it resolves (§3).
     if (isImage) {
-      const key = `relative-image ${target}`;
+      const key = `relative-image|${target}`;
       if (!seen.has(key)) {
         seen.add(key);
         violations.push({ target, kind: 'relative-image' });
@@ -688,7 +689,7 @@ export function findClosureViolations(
       return;
     }
     if (escapesDocsSite(relPath, path)) {
-      const key = `escape ${target}`;
+      const key = `escape|${target}`;
       if (!seen.has(key)) {
         seen.add(key);
         violations.push({ target, kind: 'escape' });
