@@ -1,0 +1,51 @@
+id: x0br
+name: 260607-x0br-activate-docs-site-tree
+created: 2026-06-07T15:41:41Z
+created_by: sahil-noon
+change_type: feat
+issues: []
+progress:
+  intake: done
+  apply: done
+  review: done
+  hydrate: done
+  ship: done
+  review-pr: done
+plan:
+  generated: true
+  task_count: 11
+  acceptance_count: 25
+  acceptance_completed: 25
+confidence:
+  certain: 11
+  confident: 2
+  tentative: 0
+  unresolved: 0
+  score: 4.4
+  fuzzy: true
+  dimensions:
+    signal: 92.0
+    reversibility: 64.2
+    competence: 81.8
+    disambiguation: 79.3
+stage_metrics:
+  intake: {started_at: "2026-06-07T15:41:41Z", driver: fab-new, iterations: 1, completed_at: "2026-06-07T16:45:46Z"}
+  apply: {started_at: "2026-06-07T17:10:32Z", driver: fab-continue, iterations: 2, completed_at: "2026-06-07T18:07:50Z"}
+  review: {started_at: "2026-06-07T18:07:50Z", driver: fab-fff, iterations: 1, completed_at: "2026-06-07T18:11:31Z"}
+  hydrate: {started_at: "2026-06-07T18:11:31Z", driver: fab-continue, iterations: 1, completed_at: "2026-06-07T18:16:11Z"}
+  ship: {started_at: "2026-06-07T18:16:11Z", driver: fab-continue, iterations: 1, completed_at: "2026-06-07T18:19:29Z"}
+  review-pr: {started_at: "2026-06-07T18:19:29Z", driver: git-pr, iterations: 1, completed_at: "2026-06-07T18:21:05Z", phase: replying, reviewer: '@copilot-pull-request-reviewer'}
+prs:
+  - https://github.com/sahil87/shll.ai/pull/40
+true_impact:
+  added: 0
+  deleted: 0
+  net: 0
+  excluding:
+    added: 0
+    deleted: 0
+    net: 0
+  computed_at: "2026-06-07T18:16:11Z"
+  computed_at_stage: hydrate
+# true_impact: lazily created on first apply-finish (no placeholder here).
+last_updated: 2026-06-07T18:21:05Z

@@ -1,0 +1,27 @@
+{"action":"enter","driver":"fab-new","event":"stage-transition","stage":"intake","ts":"2026-06-07T15:41:41Z"}
+{"args":"Activate the docs/site/ escape hatch (readme-extraction-contract §9: RESERVED → active) — pull, link-resolve, and render each tool's docs/site/*.md multi-file documentation tree; publish the forward producer contract + shll.ai consumer implementation.","cmd":"fab-new","event":"command","ts":"2026-06-07T15:41:41Z"}
+{"delta":"+1.4","event":"confidence","score":1.4,"trigger":"calc-score","ts":"2026-06-07T15:43:20Z"}
+{"delta":"+0.0","event":"confidence","score":1.4,"trigger":"calc-score","ts":"2026-06-07T15:43:30Z"}
+{"cmd":"fab-clarify","event":"command","ts":"2026-06-07T16:29:53Z"}
+{"delta":"+3.0","event":"confidence","score":4.4,"trigger":"calc-score","ts":"2026-06-07T16:38:59Z"}
+{"delta":"+0.0","event":"confidence","score":4.4,"trigger":"calc-score","ts":"2026-06-07T16:39:16Z"}
+{"delta":"+0.0","event":"confidence","score":4.4,"trigger":"calc-score","ts":"2026-06-07T16:39:33Z"}
+{"delta":"+0.0","event":"confidence","score":4.4,"trigger":"calc-score","ts":"2026-06-07T16:39:36Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"apply","ts":"2026-06-07T16:45:46Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-06-07T16:46:58Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"review","ts":"2026-06-07T17:02:24Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-06-07T17:03:22Z"}
+{"event":"review","result":"failed","ts":"2026-06-07T17:10:32Z"}
+{"action":"re-entry","driver":"fab-continue","event":"stage-transition","stage":"apply","ts":"2026-06-07T17:10:32Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-06-07T17:58:47Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"review","ts":"2026-06-07T18:07:50Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-06-07T18:08:37Z"}
+{"action":"enter","driver":"fab-continue","event":"stage-transition","stage":"hydrate","ts":"2026-06-07T18:11:31Z"}
+{"event":"review","result":"passed","ts":"2026-06-07T18:11:31Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-06-07T18:12:50Z"}
+{"action":"enter","driver":"fab-continue","event":"stage-transition","stage":"ship","ts":"2026-06-07T18:16:11Z"}
+{"cmd":"git-pr","event":"command","ts":"2026-06-07T18:17:56Z"}
+{"action":"enter","driver":"git-pr","event":"stage-transition","stage":"review-pr","ts":"2026-06-07T18:19:29Z"}
+{"cmd":"git-pr-review","event":"command","ts":"2026-06-07T18:20:38Z"}
+{"event":"review","result":"passed","ts":"2026-06-07T18:21:05Z"}
+{"cmd":"git-pr-review","event":"command","ts":"2026-06-08T01:47:02Z"}

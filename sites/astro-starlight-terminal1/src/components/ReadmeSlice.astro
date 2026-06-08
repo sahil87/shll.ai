@@ -53,6 +53,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createMarkdownProcessor } from '@astrojs/markdown-remark';
+import { rewriteReadmeDocsSiteLinks } from '../lib/extract-readme.ts';
 
 interface Props {
   /** Tool slug — names the slice at `<repo-root>/content/<tool>/README.md`. */
@@ -133,7 +134,17 @@ if (!missing) {
     // shares `commandSlug` with CommandReference, but single-sourced through
     // Astro's own markdown processor rather than a hand-rolled slugger.
     const processor = await createMarkdownProcessor({});
-    const rendered = await processor.render(raw!);
+    // Resolve README links INTO docs/site/ pages to a SITE-ABSOLUTE path:
+    // `[x](docs/site/install.md)` → `[x](/tools/<tool>/install)` — the mounted
+    // dynamic-route page. Site-absolute (not relative `./install`) because pages
+    // are served as trailing-slash directories: this README page lives at
+    // `/tools/<tool>/readme/`, so a relative `./install` would resolve to
+    // `/tools/<tool>/readme/install` (one segment too deep). The slice on disk stays
+    // a verbatim copy of the canonical README; the rewrite is render-side, mirroring
+    // the docs/site route's rewriteDocsSiteLinks call ([...path].astro). The guard
+    // ensures only relative link/image targets are touched (absolute URLs / prose /
+    // code untouched). The slug is required to build the absolute target.
+    const rendered = await processor.render(rewriteReadmeDocsSiteLinks(raw!, tool));
     html = rendered.code;
   } catch (err) {
     // A present-but-unrenderable slice is a committed defect that must not
