@@ -2,7 +2,7 @@ agent:
     spawn_command: claude --dangerously-skip-permissions --effort xhigh -n "$(basename "$(pwd)")"
 checklist:
     extra_categories: []
-fab_version: 2.0.3
+fab_version: 2.1.1
 project:
     description: Landing page for the shll AI coding toolkit — multi-site repo (live build under sites/, experiments in sites/_playground/)
     name: ai.shll.in
