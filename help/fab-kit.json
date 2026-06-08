@@ -1,14 +1,14 @@
 {
   "tool": "fab",
-  "version": "2.0.3",
-  "captured_at": "2026-06-08T08:50:09Z",
+  "version": "2.1.1",
+  "captured_at": "2026-06-08T11:13:48Z",
   "schema_version": 1,
   "root": {
     "name": "fab",
     "path": "fab",
     "short": "Fab workflow engine — single binary replacement for kit shell scripts",
     "usage": "fab",
-    "text": "Usage:\n  fab [command]\n\nAvailable Commands:\n  batch       Multi-target batch operations\n  change      Change lifecycle management\n  completion  Generate the autocompletion script for the specified shell\n  fab-help    Show fab workflow overview and available commands\n  help        Help about any command\n  hook        Claude Code hook subcommands\n  impact      Compute git diff line counts (added/deleted/net) between two refs\n  kit-path    Print the resolved kit directory path\n  log         Append-only JSON logging to .history.jsonl\n  operator    Launch operator in a dedicated tmux tab (singleton)\n  pane        Tmux pane operations\n  preflight   Validate project state and output structured YAML\n  resolve     Resolve a change reference to a canonical output\n  score       Compute confidence score from Assumptions table\n  shell-init  Emit shell completion script for sourcing (alias for 'completion <shell>')\n  status      Manage workflow stages, states, and .status.yaml\n\nUse \"fab [command] --help\" for more information about a command.\n",
+    "text": "Usage:\n  fab [command]\n\nAvailable Commands:\n  batch         Multi-target batch operations\n  change        Change lifecycle management\n  completion    Generate the autocompletion script for the specified shell\n  fab-help      Show fab workflow overview and available commands\n  help          Help about any command\n  hook          Claude Code hook subcommands\n  impact        Compute git diff line counts (added/deleted/net) between two refs\n  kit-path      Print the resolved kit directory path\n  log           Append-only JSON logging to .history.jsonl\n  memory-index  Deterministically (re)generate docs/memory index files\n  operator      Launch operator in a dedicated tmux tab (singleton)\n  pane          Tmux pane operations\n  pr-meta       Render the `## Meta` block of a fab-generated PR as final markdown\n  preflight     Validate project state and output structured YAML\n  resolve       Resolve a change reference to a canonical output\n  score         Compute confidence score from Assumptions table\n  shell-init    Emit shell completion script for sourcing (alias for 'completion <shell>')\n  spawn-command Print a repo's configured agent spawn command\n  status        Manage workflow stages, states, and .status.yaml\n\nUse \"fab [command] --help\" for more information about a command.\n",
     "commands": [
       {
         "name": "batch",
@@ -231,16 +231,24 @@
         ]
       },
       {
+        "name": "memory-index",
+        "path": "fab memory-index",
+        "short": "Deterministically (re)generate docs/memory index files",
+        "usage": "fab memory-index [flags]",
+        "text": "Usage:\n  fab memory-index [flags]\n\nFlags:\n      --check   Exit non-zero (writing nothing) if any index file is out of date\n",
+        "commands": []
+      },
+      {
         "name": "operator",
         "path": "fab operator",
         "short": "Launch operator in a dedicated tmux tab (singleton)",
         "usage": "fab operator",
-        "text": "Usage:\n  fab operator\n  fab operator [command]\n\nAvailable Commands:\n  tick-start  Increment tick_count and record last_tick_at in .fab-operator.yaml\n  time        Print current time and optionally next-tick time\n\nUse \"fab operator [command] --help\" for more information about a command.\n",
+        "text": "Usage:\n  fab operator\n  fab operator [command]\n\nAvailable Commands:\n  tick-start  Increment tick_count and record last_tick_at in the server-keyed operator state file\n  time        Print current time and optionally next-tick time\n\nUse \"fab operator [command] --help\" for more information about a command.\n",
         "commands": [
           {
             "name": "tick-start",
             "path": "fab operator tick-start",
-            "short": "Increment tick_count and record last_tick_at in .fab-operator.yaml",
+            "short": "Increment tick_count and record last_tick_at in the server-keyed operator state file",
             "usage": "fab operator tick-start",
             "text": "Usage:\n  fab operator tick-start\n",
             "commands": []
@@ -322,6 +330,14 @@
         ]
       },
       {
+        "name": "pr-meta",
+        "path": "fab pr-meta",
+        "short": "Render the `## Meta` block of a fab-generated PR as final markdown",
+        "usage": "fab pr-meta <change> [flags]",
+        "text": "Usage:\n  fab pr-meta <change> [flags]\n\nFlags:\n      --issues string   Space-joined issue IDs (e.g. \"DEV-1 DEV-2\") — optional\n      --type string     Resolved PR type (feat|fix|refactor|docs|test|ci|chore) — required\n",
+        "commands": []
+      },
+      {
         "name": "preflight",
         "path": "fab preflight",
         "short": "Validate project state and output structured YAML",
@@ -351,6 +367,14 @@
         "short": "Emit shell completion script for sourcing (alias for 'completion <shell>')",
         "usage": "fab shell-init <bash|zsh|fish>",
         "text": "Usage:\n  fab shell-init <bash|zsh|fish>\n",
+        "commands": []
+      },
+      {
+        "name": "spawn-command",
+        "path": "fab spawn-command",
+        "short": "Print a repo's configured agent spawn command",
+        "usage": "fab spawn-command [flags]",
+        "text": "Usage:\n  fab spawn-command [flags]\n\nFlags:\n      --repo string   Repo root to read agent.spawn_command from (default: current repo)\n",
         "commands": []
       },
       {
