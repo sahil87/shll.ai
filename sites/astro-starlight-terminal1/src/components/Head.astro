@@ -22,6 +22,10 @@
  * scoped to analytics only, `defer`red — never blocks primary content. Cookieless,
  * so no consent gate. The token is a public site token (ships in page HTML), not a
  * secret — hardcoded by design.
+ *
+ * Production only: gated on `import.meta.env.PROD` (true during `astro build`, false
+ * during `astro dev`) so local dev / preview sessions don't pollute the Cloudflare
+ * dashboard with localhost traffic. The beacon still ships site-wide in `dist/`.
  */
 import Default from '@astrojs/starlight/components/Head.astro';
 
@@ -30,4 +34,4 @@ const beacon =
 ---
 
 <Default />
-<Fragment set:html={beacon} />
+{import.meta.env.PROD && <Fragment set:html={beacon} />}

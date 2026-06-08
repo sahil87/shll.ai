@@ -7,4 +7,4 @@ description: "How the site is built and deployed"
 
 | File | Description | Last Updated |
 |------|-------------|-------------|
-| [deployment](deployment.md) | GitHub Pages workflow, pnpm/Node versions, custom-domain CNAME, permissions, the two inbound scheduled pull paths (help refresh — gated commit; README refresh — always-commit / report-only, fetch-failure-only isolation), and the site-wide Cloudflare Web Analytics beacon (cookieless, public token, Head-override injection, deliberate Constitution I exception) | 2026-06-04 |
+| [deployment](deployment.md) | GitHub Pages workflow, pnpm/Node versions, custom-domain CNAME, permissions, the two inbound scheduled pull paths (help refresh — gated commit; README refresh — always-commit / report-only, fetch-failure-only isolation), and the site-wide Cloudflare Web Analytics beacon (cookieless, public token, Head-override injection, deliberate Constitution I exception) | 2026-06-08 |
