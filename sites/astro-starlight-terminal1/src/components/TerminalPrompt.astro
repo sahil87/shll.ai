@@ -27,18 +27,11 @@
   // The 7 tools, in the canonical order used across the site.
   const TOOLS = ['idea', 'hop', 'fab-kit', 'wt', 'run-kit', 'tu', 'shll'] as const;
 
-  // Version rows — mirror the hand-written block in index.mdx (the no-JS source
-  // of truth). Re-declared here so `version` can re-print structured output
-  // without scraping the DOM (Design Decision 5 / Assumption 4).
-  const VERSIONS: Array<{ name: string; version: string }> = [
-    { name: 'shll', version: 'v0.0.11' },
-    { name: 'idea', version: 'v0.0.6' },
-    { name: 'hop', version: 'v0.1.11' },
-    { name: 'fab-kit', version: 'v2.0.3' },
-    { name: 'wt', version: 'v1.4.2' },
-    { name: 'run-kit', version: 'v2.2.1' },
-    { name: 'tu', version: 'v0.2.1' },
-  ];
+  // NOTE: `version` does NOT keep a hardcoded version list. As of #47 the homepage
+  // `$ shll version` block is rendered by <VersionTable/> (build-time, self-updating
+  // from help/*.json). The terminal's `version` command captures those already-
+  // rendered rows from the DOM at init (see initTerminal → versionRowsHtml) so it
+  // re-prints exactly what the page shows and the two can never drift.
 
   // One-line synopsis per tool, for `man`.
   const SYNOPSIS: Record<string, string> = {
@@ -74,12 +67,25 @@
     const session = promptLine.closest<HTMLElement>('pre.shell-session');
     if (!session) return;
 
-    // The active prompt line: replace the static "$ ▊" with a prompt + caret-bearing
-    // input region. We use a real, focusable, keyboard-navigable control: a span
-    // with role/tabindex plus a <span contenteditable> for the typed text, so the
-    // text echoes inline with the blinking cursor at the caret. A visible focus
-    // state is provided in terminal.css (.shell-input:focus-visible).
+    // Snapshot the already-rendered version rows from the static transcript so the
+    // `version` command re-prints EXACTLY what the page shows. These rows are
+    // emitted by <VersionTable/> (build-time, self-updating from help/*.json) — we
+    // must NOT keep a parallel hardcoded list here or the two would drift (the page
+    // self-updates; a constant wouldn't). A version row is a .shell-line carrying a
+    // [git] link; we capture each row's innerHTML before the prompt is rebuilt.
+    const versionRowsHtml: string[] = Array.from(
+      session.querySelectorAll<HTMLElement>('span.shell-line'),
+    )
+      .filter((el) => /\[git\]/.test(el.textContent ?? ''))
+      .map((el) => el.innerHTML);
+
+    // The active prompt line: replace the static "$ ▊" with a prompt + typeable
+    // input region, followed by a block cursor (▊) that matches the static skin.
+    // We hide the OS text-caret (caret-color: transparent in terminal.css) and
+    // render our own block instead, so the prompt reads like a TTY rather than a
+    // form field. The block blinks only while the input is focused.
     let input: HTMLElement;
+    let cursor: HTMLElement;
 
     // `focus` defaults to true: after the user runs a command (Enter / clear),
     // moving focus to the next prompt is the desired terminal behavior. At initial
@@ -108,14 +114,26 @@
       input.setAttribute('autocapitalize', 'off');
       input.setAttribute('autocorrect', 'off');
 
+      // Block cursor (▊) trailing the input — our terminal-style caret. Reuses
+      // the static skin's .shell-cursor (same glyph + blink). `is-active` gates
+      // the blink to focused state (set on focus, cleared on blur).
+      cursor = document.createElement('span');
+      cursor.className = 'shell-cursor shell-input-cursor';
+      cursor.setAttribute('aria-hidden', 'true');
+      cursor.textContent = '▊';
+
       line.appendChild(prompt);
       line.appendChild(document.createTextNode(' '));
       line.appendChild(input);
+      line.appendChild(cursor);
       session!.appendChild(line);
 
       input.addEventListener('keydown', onKeydown);
       input.addEventListener('paste', onPaste);
+      input.addEventListener('focus', onFocus);
+      input.addEventListener('blur', onBlur);
       caretToEnd();
+      scrollToBottom();
       if (focus) input.focus();
     }
 
@@ -129,6 +147,12 @@
       sel.addRange(range);
     }
 
+    // The session is a fixed-height scroll viewport (terminal.css). Keep the
+    // newest line in view as content grows — like a real terminal scrolling up.
+    function scrollToBottom(): void {
+      session!.scrollTop = session!.scrollHeight;
+    }
+
     // Print output lines as new spans appended to the SAME stream, reusing the
     // existing .shell-* classes. `html: true` allows handler-authored anchors
     // (e.g. man/version links) from our own trusted, static strings only.
@@ -140,6 +164,7 @@
         else el.textContent = ln.text;
         session!.appendChild(el);
       }
+      scrollToBottom();
     }
 
     function clear(): void {
@@ -166,6 +191,15 @@
       }
     }
 
+    // The block cursor blinks only while the input is focused — an unfocused
+    // terminal shouldn't pulse. Toggled via an `is-active` class on the cursor.
+    function onFocus(): void {
+      cursor?.classList.add('is-active');
+    }
+    function onBlur(): void {
+      cursor?.classList.remove('is-active');
+    }
+
     function onKeydown(e: KeyboardEvent): void {
       if (e.key !== 'Enter') return;
       e.preventDefault();
@@ -179,7 +213,12 @@
       input.removeAttribute('aria-label');
       input.removeEventListener('keydown', onKeydown);
       input.removeEventListener('paste', onPaste);
+      input.removeEventListener('focus', onFocus);
+      input.removeEventListener('blur', onBlur);
       input.classList.remove('shell-input');
+      // The just-committed line becomes static history — drop its block cursor;
+      // only the live prompt carries one.
+      cursor?.remove();
 
       if (raw === '') {
         freshPrompt();
@@ -255,19 +294,16 @@
       },
 
       version() {
-        // Re-print the same 7 rows as the static block in index.mdx, with the
-        // same short-URL tool links (e.g. /shll, which redirects to the tool
-        // overview) and [git] links — mirroring the no-JS block exactly.
-        const pad = Math.max(...VERSIONS.map((v) => v.name.length)) + 2;
-        return VERSIONS.map((v) => {
-          const name = `<a href="/${v.name}">${v.name}</a>`;
-          const gap = ' '.repeat(pad - v.name.length);
-          const ver = `<span class="shell-dim">${v.version}</span>`;
-          const verGap = ' '.repeat(Math.max(2, 10 - v.version.length));
-          const git = `<a class="shell-dim" href="https://github.com/sahil87/${v.name}">[git]</a>`;
-          // `print()` already adds the base `shell-line` class — no extra class here.
-          return { text: `${name}${gap}${ver}${verGap}${git}`, html: true };
-        });
+        // Re-print the rows captured from the static <VersionTable/> output — the
+        // single source of truth (build-time, self-updating from help/*.json). No
+        // hardcoded list here, so the terminal and the page can never drift, and a
+        // version bump or roster/label change (e.g. run-kit → "rk") flows through
+        // automatically. The captured innerHTML already carries the tool/version/
+        // [git] markup; `print()` adds the base `shell-line` class.
+        if (versionRowsHtml.length === 0) {
+          return [{ text: 'version: no data', classes: 'shell-out shell-dim' }];
+        }
+        return versionRowsHtml.map((html) => ({ text: html, html: true }));
       },
 
       theme(args) {
@@ -408,10 +444,26 @@
       return [{ text: `theme → ${target}`, classes: 'shell-out shell-ok' }];
     }
 
+    // Click anywhere in the terminal focuses the live prompt (caret to end) —
+    // matching how a real terminal grabs the cursor. We skip when the click
+    // landed on a link (let it navigate) or when the user is selecting text
+    // (don't steal a copy-selection), so the affordance never fights the user.
+    function onClick(e: MouseEvent): void {
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('a')) return;
+      if ((window.getSelection()?.toString() ?? '') !== '') return;
+      if (target === input) return; // native click already places the caret
+      input.focus();
+      caretToEnd();
+    }
+
     // ── Activate ─────────────────────────────────────────────────────────────
     // Replace the static "$ ▊" line with a live, focusable prompt. The static
     // markup (with its blinking cursor) was the no-JS source of truth; we now
     // remove it and emit the first interactive prompt in its place.
+    const clickSurface = session.closest<HTMLElement>('.terminal-window') ?? session;
+    clickSurface.addEventListener('click', onClick);
+    clickSurface.style.cursor = 'text'; // hint the whole area is typeable
     promptLine.remove();
     freshPrompt(false);
   }

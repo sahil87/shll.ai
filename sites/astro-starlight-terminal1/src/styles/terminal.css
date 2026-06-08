@@ -480,25 +480,52 @@ starlight-readme-toc .readme-toc-sublist {
   background: var(--c-accent-2);
 } /* muted green */
 
-/* Inside the frame, the transcript drops its own outer margin (the frame owns
-   the spacing) and gains a little breathing room from the border. */
+/* Inside the frame, the transcript becomes a FIXED-HEIGHT scroll viewport: as
+   commands print output the stream scrolls up like a real terminal, instead of
+   the panel growing unbounded. The frame owns the outer spacing. Height is sized
+   to match the initial transcript so the resting page is unchanged; `min-height`
+   keeps a short session from collapsing. JS keeps the newest line in view. */
 .terminal-window .shell-session {
   margin: 0;
   padding: 0.85rem 1rem;
+  height: 22rem;
+  max-height: 60vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-border) transparent;
+}
+.terminal-window .shell-session::-webkit-scrollbar {
+  width: 8px;
+}
+.terminal-window .shell-session::-webkit-scrollbar-thumb {
+  background: var(--c-border);
+  border-radius: 4px;
 }
 
 /* The now-focusable input region (progressive enhancement). The static skin had
-   no focusable control; this is the only behavioral CSS the skin lacks. A real
-   visible focus state (Accessibility / WCAG AA in both themes via --c-accent). */
+   no focusable control; this is the only behavioral CSS the skin lacks. We hide
+   the OS text-caret and render our own block cursor (.shell-input-cursor below)
+   so the prompt reads like a TTY, not a form field — hence NO box outline. */
 .shell-session .shell-input {
   display: inline;
   outline: none;
-  caret-color: var(--c-accent);
-  min-width: 0.6em; /* keep the caret clickable even when empty */
+  caret-color: transparent; /* native I-beam off; the block cursor stands in */
+  white-space: pre-wrap;
+  word-break: break-word;
 }
-.shell-session .shell-input:focus-visible {
-  outline: 1px solid var(--c-accent);
-  outline-offset: 2px;
+
+/* Block cursor trailing the input — the terminal-style caret. It reuses the
+   static skin's .shell-cursor glyph + color; the blink is gated to focus via the
+   `is-active` class (an unfocused terminal doesn't pulse). When not active, the
+   block is dimmed and steady, signalling the prompt is idle but typeable. */
+.shell-session .shell-input-cursor {
+  margin-left: -0.1em; /* hug the last typed glyph */
+  animation: none; /* off until focused */
+  opacity: 0.35;
+}
+.shell-session .shell-input-cursor.is-active {
+  opacity: 1;
+  animation: shell-blink 1.1s steps(2, start) infinite;
 }
 
 /* Caption block — a single-line shell-comment used as a label above/below
