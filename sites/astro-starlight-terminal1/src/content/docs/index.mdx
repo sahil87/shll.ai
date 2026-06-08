@@ -17,23 +17,22 @@ hero:
 
 import Diagram from '../../components/Diagram.astro';
 import TerminalPrompt from '../../components/TerminalPrompt.astro';
+import VersionTable from '../../components/VersionTable.astro';
 
 <div class="terminal-window not-content">
 <div class="terminal-titlebar" aria-hidden="true"><span class="terminal-dot terminal-dot-1"></span><span class="terminal-dot terminal-dot-2"></span><span class="terminal-dot terminal-dot-3"></span></div>
 <pre class="shell-session not-content">
 <span class="shell-line"><span class="shell-prompt">$</span> shll install</span>
-<span class="shell-line shell-out">==&gt; tapping sahil87/tap</span>
-<span class="shell-line shell-out">==&gt; installing idea, hop, fab-kit, wt, run-kit, tu</span>
+<span class="shell-line shell-out">==&gt; [1/6] wt</span>
+<span class="shell-line shell-out">==&gt; [2/6] idea</span>
+<span class="shell-line shell-out">==&gt; [3/6] tu</span>
+<span class="shell-line shell-out">==&gt; [4/6] rk</span>
+<span class="shell-line shell-out">==&gt; [5/6] hop</span>
+<span class="shell-line shell-out">==&gt; [6/6] fab-kit</span>
 <span class="shell-line shell-out shell-ok">==&gt; done in 12.3s</span>
 <span class="shell-line"> </span>
 <span class="shell-line"><span class="shell-prompt">$</span> shll version</span>
-<span class="shell-line"><a href="/shll">shll</a>     <span class="shell-dim">v0.0.11</span>   <a class="shell-dim" href="https://github.com/sahil87/shll">[git]</a></span>
-<span class="shell-line"><a href="/idea">idea</a>     <span class="shell-dim">v0.0.6</span>    <a class="shell-dim" href="https://github.com/sahil87/idea">[git]</a></span>
-<span class="shell-line"><a href="/hop">hop</a>      <span class="shell-dim">v0.1.11</span>   <a class="shell-dim" href="https://github.com/sahil87/hop">[git]</a></span>
-<span class="shell-line"><a href="/fab-kit">fab-kit</a>  <span class="shell-dim">v2.0.3</span>    <a class="shell-dim" href="https://github.com/sahil87/fab-kit">[git]</a></span>
-<span class="shell-line"><a href="/wt">wt</a>       <span class="shell-dim">v1.4.2</span>    <a class="shell-dim" href="https://github.com/sahil87/wt">[git]</a></span>
-<span class="shell-line"><a href="/run-kit">run-kit</a>  <span class="shell-dim">v2.2.1</span>    <a class="shell-dim" href="https://github.com/sahil87/run-kit">[git]</a></span>
-<span class="shell-line"><a href="/tu">tu</a>       <span class="shell-dim">v0.2.1</span>    <a class="shell-dim" href="https://github.com/sahil87/tu">[git]</a></span>
+<VersionTable />
 <span class="shell-line"> </span>
 <span class="shell-line" data-terminal-prompt><span class="shell-prompt">$</span> <span class="shell-cursor">▊</span></span>
 </pre>
@@ -54,7 +53,7 @@ import TerminalPrompt from '../../components/TerminalPrompt.astro';
 />
 
 <pre class="shell-session shell-caption not-content">
-<span class="shell-line shell-comment"># inside:  <a href="/tools/idea/overview/">idea</a> captures · <a href="/tools/fab-kit/overview/">fab-kit</a> specs · <a href="/tools/wt/overview/">wt</a> isolates · <a href="/tools/run-kit/overview/">run-kit</a> watches</span>
+<span class="shell-line shell-comment"># inside:  <a href="/tools/idea/overview/">idea</a> captures · <a href="/tools/fab-kit/overview/">fab-kit</a> plans · <a href="/tools/wt/overview/">wt</a> isolates · <a href="/tools/run-kit/overview/">run-kit</a> watches</span>
 <span class="shell-line shell-comment"># around: <a href="/tools/hop/overview/">hop</a> navigates · <a href="/tools/tu/overview/">tu</a> tracks cost · <a href="/tools/shll/overview/">shll</a> bootstraps</span>
 </pre>
 

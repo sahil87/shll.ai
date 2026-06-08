@@ -12,13 +12,13 @@ idea "add CSV export to reports page"
 # captured as [k3m1]
 
 idea list
-# [k3m1] add CSV export to reports page
+# [k3m1] 2026-06-08: add CSV export to reports page
 
 wt create csv-export
 # new worktree + branch at ../<repo>.worktrees/csv-export/
 
 cd ../<repo>.worktrees/csv-export
-fab change new --slug csv-export   # seed the fab change from the [k3m1] idea
+fab change new --slug csv-export   # create the fab change folder for this work
 rk riff --skill /fab-fff
 ```
 
@@ -31,9 +31,9 @@ That's it. The agent is now driving the pipeline; you watch in the dashboard.
    - Creates a git worktree at `../<repo>.worktrees/csv-export/`
    - Creates a git branch `csv-export`
    - Runs the per-worktree init script you've configured (e.g. to sync `.claude/` skills into the new worktree)
-3. `fab change new --slug csv-export` creates `fab/changes/<YYMMDD>-<XXXX>-csv-export/intake.md`, ready for the pipeline to fill in from the `[k3m1]` backlog item.
+3. `fab change new --slug csv-export` creates the change folder `fab/changes/<YYMMDD>-<XXXX>-csv-export/` and its `.status.yaml`, starting the intake stage. The `/fab-new` skill (or the pipeline's first prompt) then generates `intake.md` from the `[k3m1]` backlog item.
 4. `rk riff --skill /fab-fff`:
-   - Spawns a Claude Code agent in a new tmux pane
+   - Creates a git worktree + a new tmux window (the Claude Code agent runs as pane 0 of that window)
    - Sends `/fab-fff` as the first input
    - Agent runs the full pipeline autonomously
 
@@ -67,4 +67,4 @@ fab change new --slug csv-export
 # then: /fab-new "add CSV export to reports page"   (or just /fab-fff)
 ```
 
-`fab change new --slug <slug>` produces an empty intake; the slash command's first prompt fills it in.
+`fab change new --slug <slug>` produces the change folder and `.status.yaml` (no `intake.md` yet); the slash command's first prompt generates the intake.
