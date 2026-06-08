@@ -11,12 +11,12 @@ The **shll toolkit** is seven small CLIs that work together to make AI-assisted 
 idea  →  fab-kit  →  wt        →  run-kit
  ↑          ↓           ↓             ↓
  │       constitution  worktree     dashboard
- │       spec/plan     per change   for agents
+ │       plan          per branch   for agents
  │
  └── backlog feeds /fab-new
 ```
 
-`tu` watches the cost of all of it. `hop` is the navigator that ties unrelated repos together. `shll` is the bootstrap.
+`tu` watches the cost of all of it. `hop` is a personal directory of your git repos — jump between them and batch-update them from anywhere. `shll` is the bootstrap.
 
 ## What's on this site
 

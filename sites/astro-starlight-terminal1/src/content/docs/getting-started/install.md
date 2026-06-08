@@ -10,7 +10,7 @@ shll shell-setup --trust-tap        # wire your shell + record trust for sahil87
 exec $SHELL                          # reload so the shell integration takes effect
 ```
 
-That's it. `shll install` is idempotent and safe to re-run; it will only update tools that have moved.
+That's it. `shll install` is idempotent and safe to re-run: it installs only the roster tools you're missing and does **not** upgrade what's already there. To upgrade installed tools, use `shll update`.
 
 ## Verify
 

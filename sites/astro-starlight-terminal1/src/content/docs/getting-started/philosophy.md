@@ -7,13 +7,13 @@ The shll toolkit is built on a few opinions about how AI-assisted coding should 
 
 ## Plain text, not databases
 
-Every persistent artifact in this toolkit is a file you can `cat`, `grep`, and `git diff`. The backlog (`idea`) is a markdown file. Specs and plans (`fab-kit`) are markdown files. Worktree state (`wt`) lives in your filesystem. Cost data (`tu`) is JSON you can dump.
+Every persistent artifact in this toolkit is a file you can `cat`, `grep`, and `git diff`. The backlog (`idea`) is a markdown file. Plans (`fab-kit`) are markdown files. Worktree state (`wt`) lives in your filesystem. Cost data (`tu`) is JSON you can dump.
 
 Rationale: AI agents are good at editing files. They're terrible at hidden state. Keep the contract in the file.
 
 ## Plan before you code
 
-`fab-kit`'s 7-stage pipeline (intake → spec → apply → review → hydrate → ship → review-PR) exists because letting an agent code straight from a one-line prompt produces predictable garbage. Forcing intake and spec stages adds 10 minutes; saves 2 hours of rework.
+`fab-kit`'s 6-stage pipeline (intake → apply → review → hydrate → ship → review-PR) exists because letting an agent code straight from a one-line prompt produces predictable garbage. Forcing an intake stage adds 10 minutes; saves 2 hours of rework.
 
 ## Composition over integration
 

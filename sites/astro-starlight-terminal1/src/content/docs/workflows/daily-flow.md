@@ -8,29 +8,29 @@ This is the cross-tool flow that the toolkit is designed around. Use it as a tem
 ## Morning
 
 ```bash
-hop pull --all      # sync every tracked repo
-tu                  # check yesterday's cost
+hop --all pull      # pull every cloned repo in hop.yaml
+tu                  # check today's cost so far
 idea list           # what's on the docket today
 ```
 
 ## Pick a change
 
 ```bash
-idea list            # tags are #word substrings — grep for the ones you care about
-# [a7q2] flaky timezone #bug in user-profile.tsx
+idea list            # the backlog (open items); pipe to grep to narrow
+# [a7q2] 2026-06-08: flaky timezone in user-profile.tsx
 
 wt create flaky-tz-test          # new worktree at ../<repo>.worktrees/flaky-tz-test/
 cd ../<repo>.worktrees/flaky-tz-test
-fab change new --slug flaky-tz-test   # seed the fab change from the idea above
+fab change new --slug flaky-tz-test   # create the fab change folder for this work
 ```
 
 ## Drive the change with fab-kit
 
 ```bash
-rk riff --skill /fab-fff       # in the worktree: spawns Claude Code, runs the pipeline
+rk riff --skill /fab-fff       # from this worktree: opens a tmux window, spawns Claude Code, runs the pipeline
 ```
 
-`/fab-fff` runs intake → spec → apply → review → hydrate → ship. You watch in `rk`'s browser dashboard; intervene only at gates.
+`/fab-fff` runs apply → review → hydrate → ship → review-PR (everything after intake). You watch in `rk`'s browser dashboard; intervene only at gates.
 
 ## Review the PR
 
@@ -45,13 +45,13 @@ rk riff --skill /git-pr-review     # triages and fixes review comments
 ## End of day
 
 ```bash
-hop status --all     # show dirty repos
+hop ls --trees       # per-repo worktree status across the registry
 tu                   # today's spend
-wt list --stale      # worktrees idle >7 days
+wt list              # see worktrees; wt delete --stale prunes those idle >7d
 ```
 
 ## Variants
 
 - **Multiple changes in parallel**: `wt create` more worktrees; `rk riff` agents in each. The dashboard is the cross-pane view.
-- **Long-running change**: when the spec stage produces a lot of `[NEEDS CLARIFICATION]` markers, run `/fab-clarify` between turns and answer them in batches.
+- **Long-running change**: when the intake has a lot of `[NEEDS CLARIFICATION]` markers, run `/fab-clarify` to resolve them in batches.
 - **Cost-conscious mode**: `tu --watch` in a side pane keeps the running cost visible.

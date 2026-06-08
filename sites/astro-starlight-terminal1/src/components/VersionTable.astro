@@ -1,0 +1,103 @@
+---
+/**
+ * VersionTable — the homepage `$ shll version` dump, self-updating at BUILD TIME.
+ *
+ * Renders one `<span class="shell-line">` per tool, reproducing the terminal-themed
+ * markup the homepage used to hand-write (route link · version · [git] link). The
+ * ONLY value pulled from data is the `version` string: it is read from each tool's
+ * `<repo-root>/help/<slug>.json` and validated against `HelpDocSchema`. Everything
+ * else — the roster, display order, display labels, route links, and repo URLs — is
+ * SITE-AUTHORED here in the component. Reading versions from the already-synced
+ * `help/*.json` (committed by the scheduled puller) makes the block self-correcting:
+ * a future version bump shows up on the next rebuild with no source edit, and there
+ * is no runtime fetch (Constitution I, static-first).
+ *
+ * The repo-root `help/` dir is resolved by ascending from `import.meta.url` — the
+ * same marker-search pattern CommandIndex/CommandReference use, for the same Vite
+ * bundled-chunk-depth reason. A rostered `help/<slug>.json` that is MISSING or fails
+ * schema validation is a build-stopping condition (a committed defect must not
+ * deploy) — mirroring CommandIndex.astro.
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+import { HelpDocSchema } from '../lib/schemas.ts';
+import { repoRootFromModuleUrl } from '../lib/repo-root.ts';
+
+interface RosterEntry {
+  /** help/<slug>.json file slug + docs route segment (e.g. "run-kit"). */
+  slug: string;
+  /** Site-authored display label (e.g. "rk" for the run-kit binary). */
+  label: string;
+  /** Docs route on this site. */
+  route: string;
+  /** Canonical repo URL. */
+  repo: string;
+}
+
+/**
+ * Site-authored roster (order, labels, routes, repos live HERE, not in JSON).
+ * `run-kit` is the repo/route/section name; its CLI + brew identity is `rk`, so the
+ * displayed label is `rk` while the route + repo URL stay `run-kit`.
+ */
+const ROSTER: RosterEntry[] = [
+  { slug: 'shll', label: 'shll', route: '/shll', repo: 'https://github.com/sahil87/shll' },
+  { slug: 'idea', label: 'idea', route: '/idea', repo: 'https://github.com/sahil87/idea' },
+  { slug: 'hop', label: 'hop', route: '/hop', repo: 'https://github.com/sahil87/hop' },
+  { slug: 'fab-kit', label: 'fab-kit', route: '/fab-kit', repo: 'https://github.com/sahil87/fab-kit' },
+  { slug: 'wt', label: 'wt', route: '/wt', repo: 'https://github.com/sahil87/wt' },
+  { slug: 'run-kit', label: 'rk', route: '/run-kit', repo: 'https://github.com/sahil87/run-kit' },
+  { slug: 'tu', label: 'tu', route: '/tu', repo: 'https://github.com/sahil87/tu' },
+];
+
+/** Column widths reproducing the original hand-written alignment (white-space: pre). */
+const LABEL_COL = 9;
+const VERSION_COL = 10;
+
+/** Prepend `v` if the version string doesn't already start with one. */
+function normalizeVersion(version: string): string {
+  return version.startsWith('v') ? version : `v${version}`;
+}
+
+const repoRoot = repoRootFromModuleUrl(import.meta.url);
+const helpDir = path.join(repoRoot, 'help');
+
+interface VersionRow extends RosterEntry {
+  version: string;
+}
+
+const rows: VersionRow[] = ROSTER.map((entry) => {
+  const file = path.join(helpDir, `${entry.slug}.json`);
+  let raw: string;
+  try {
+    raw = fs.readFileSync(file, 'utf8');
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `VersionTable: required help document missing at ${file} (rostered tool "${entry.slug}"):\n${detail}`,
+    );
+  }
+  let doc;
+  try {
+    doc = HelpDocSchema.parse(JSON.parse(raw));
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `VersionTable: invalid help document at ${file} — does not match HelpDocSchema:\n${detail}`,
+    );
+  }
+  return { ...entry, version: normalizeVersion(doc.version) };
+});
+
+/** Trailing padding so the version column starts at LABEL_COL. */
+function labelPad(label: string): string {
+  return ' '.repeat(Math.max(1, LABEL_COL - label.length));
+}
+/** Trailing padding so the [git] link starts at VERSION_COL after the version. */
+function versionPad(version: string): string {
+  return ' '.repeat(Math.max(1, VERSION_COL - version.length));
+}
+---
+
+{rows.map((row) => (
+  <span class="shell-line"><a href={row.route}>{row.label}</a>{labelPad(row.label)}<span class="shell-dim">{row.version}</span>{versionPad(row.version)}<a class="shell-dim" href={row.repo}>[git]</a></span>
+))}
