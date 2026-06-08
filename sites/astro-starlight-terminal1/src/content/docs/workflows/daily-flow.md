@@ -27,7 +27,7 @@ fab change new --slug flaky-tz-test   # create the fab change folder for this wo
 ## Drive the change with fab-kit
 
 ```bash
-rk riff --skill /fab-fff       # creates a worktree + tmux window, spawns Claude Code, runs the pipeline
+rk riff --skill /fab-fff       # from this worktree: opens a tmux window, spawns Claude Code, runs the pipeline
 ```
 
 `/fab-fff` runs apply → review → hydrate → ship → review-PR (everything after intake). You watch in `rk`'s browser dashboard; intervene only at gates.

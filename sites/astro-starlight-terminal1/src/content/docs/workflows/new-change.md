@@ -33,7 +33,7 @@ That's it. The agent is now driving the pipeline; you watch in the dashboard.
    - Runs the per-worktree init script you've configured (e.g. to sync `.claude/` skills into the new worktree)
 3. `fab change new --slug csv-export` creates the change folder `fab/changes/<YYMMDD>-<XXXX>-csv-export/` and its `.status.yaml`, starting the intake stage. The `/fab-new` skill (or the pipeline's first prompt) then generates `intake.md` from the `[k3m1]` backlog item.
 4. `rk riff --skill /fab-fff`:
-   - Creates a git worktree + a new tmux window (the Claude Code agent runs as pane 0 of that window)
+   - Opens a new tmux window in the worktree from step 2 (the Claude Code agent runs as pane 0 of that window)
    - Sends `/fab-fff` as the first input
    - Agent runs the full pipeline autonomously
 
