@@ -280,9 +280,11 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # Stage all of content/ — README slices and docs/site trees. `-A` so an
-          # upstream-DELETED docs/site page is removed from the mount too (the tree
-          # stays a faithful mirror of canonical), not just additions/modifications.
+          # Stage all of content/ — README slices and docs/site trees. The docs/site
+          # CLI CLEARS content/<slug>/site/ before writing the fresh pages (it mirrors
+          # the upstream tree, not accumulates), so an upstream-renamed/DELETED page is
+          # already removed from the working tree here; `-A` then stages that deletion
+          # (alongside additions/modifications), keeping the mount a faithful mirror.
           # Nothing else should change in this workflow.
           git add -A content/
 

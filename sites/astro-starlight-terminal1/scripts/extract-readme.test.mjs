@@ -28,9 +28,10 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, mkdir, writeFile, rm, access } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve as resolvePath } from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 import {
   extractReadme,
@@ -769,4 +770,72 @@ test('head: a badge row using <br> separators stays contiguous chrome (R5)', () 
   ].join('\n');
   const { slice } = extractReadme(md);
   assert.ok(slice.startsWith('Prose.'), `<br> badge row skipped; got: ${slice.slice(0, 40)}`);
+});
+
+// ── docs/site mount mirrors upstream (clear-before-write, change e52v) ────────
+//
+// extract-docs-site-cli.mjs writes to the REAL repo-root content/<slug>/site/
+// (its repo-root is a fixed ascent from scriptDir). We exercise the real CLI as a
+// subprocess against a THROWAWAY slug so the output dir (content/<throwaway>/site/)
+// is isolated from real tool content, and clean it up after. This pins the
+// filesystem mirror behavior (a stale page is pruned; a zero-page pull empties the
+// mount) — the bug fab-kit/site/README.md exposed (the mount was purely additive).
+
+const repoRoot = resolvePath(scriptDir, '..', '..', '..');
+const docsSiteCli = join(scriptDir, 'extract-docs-site-cli.mjs');
+const MIRROR_SLUG = '__e52v_mirror_test__';
+const mirrorOut = join(repoRoot, 'content', MIRROR_SLUG, 'site');
+
+async function exists(p) {
+  try {
+    await access(p);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+test('docs/site mount MIRRORS upstream: a stale page is pruned, fresh page kept (e52v)', async (t) => {
+  t.after(async () => {
+    await rm(join(repoRoot, 'content', MIRROR_SLUG), { recursive: true, force: true });
+    await rm(join(repoRoot, '.test-tmp'), { recursive: true, force: true });
+  });
+
+  // Pre-seed the mount with a stale page (as if pulled last run) + a current one.
+  await mkdir(mirrorOut, { recursive: true });
+  await writeFile(join(mirrorOut, 'README.md'), '# stale ghost\n', 'utf8');
+  await writeFile(join(mirrorOut, 'install.md'), '# old install\n', 'utf8');
+
+  // A fresh upstream docs/site dir that contains ONLY install.md (README.md removed upstream).
+  const src = join(repoRoot, '.test-tmp', 'e52v-src', 'docs', 'site');
+  await mkdir(src, { recursive: true });
+  await writeFile(join(src, 'install.md'), '# new install\n', 'utf8');
+
+  // process.execPath = the exact Node binary running the test (immune to PATH/alias drift in CI).
+  execFileSync(process.execPath, [docsSiteCli, MIRROR_SLUG, src], { stdio: 'pipe' });
+
+  assert.equal(await exists(join(mirrorOut, 'README.md')), false, 'stale README.md pruned');
+  assert.equal(await exists(join(mirrorOut, 'install.md')), true, 'fresh install.md present');
+  assert.equal(
+    await readFile(join(mirrorOut, 'install.md'), 'utf8'),
+    '# new install\n',
+    'install.md overwritten with the fresh upstream copy',
+  );
+});
+
+test('docs/site mount MIRRORS upstream: a zero-page pull empties the mount (e52v)', async (t) => {
+  t.after(async () => {
+    await rm(join(repoRoot, 'content', MIRROR_SLUG), { recursive: true, force: true });
+    await rm(join(repoRoot, '.test-tmp'), { recursive: true, force: true });
+  });
+
+  // Pre-seed a mount, then pull from a docs/site dir with NO markdown (repo dropped its tree).
+  await mkdir(mirrorOut, { recursive: true });
+  await writeFile(join(mirrorOut, 'install.md'), '# old\n', 'utf8');
+  const emptySrc = join(repoRoot, '.test-tmp', 'e52v-src-empty', 'docs', 'site');
+  await mkdir(emptySrc, { recursive: true });
+
+  execFileSync(process.execPath, [docsSiteCli, MIRROR_SLUG, emptySrc], { stdio: 'pipe' });
+
+  assert.equal(await exists(join(mirrorOut, 'install.md')), false, 'prior page removed on a zero-page pull');
 });
