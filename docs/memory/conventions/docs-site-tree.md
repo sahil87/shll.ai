@@ -1,3 +1,6 @@
+---
+description: "The `docs/site/**` documentation-tree consume/pull side (sibling of readme-extraction; contract §9 now active — change `x0br`): the closed-set producer contract, **site-absolute** link resolution (`rewriteDocsSiteLinks`/`rewriteReadmeDocsSiteLinks`, trailing-slash-directory-proof), the single-scanner rewrite guard, the report-only closure + reserved-slug lints (`findClosureViolations`, `extract-docs-site-cli.mjs`, never withhold), the repo-tarball pull step in `scheduled-readme-refresh.yml`, the first dynamic route (`tools/[slug]/[...path].astro`, build-time `getStaticPaths` → `<StarlightPage>`), and the `docs-site-tree.ts` / `.mjs` sidebar split (config-eval boundary)"
+---
 # docs/site Documentation Tree
 
 ## Overview

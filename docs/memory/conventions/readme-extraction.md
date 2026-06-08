@@ -1,3 +1,6 @@
+---
+description: "The README consume/pull side (sibling of help-collection): deduction rules (head/tail/strips) in `extract-readme.ts`, the `content/<slug>/` collector, `ReadmeSlice.astro` rendered on a parallel per-tool `readme` page, the `readme-toc.ts` rail builder (second slice consumer, slugs single-sourced through the one `createMarkdownProcessor` render — `id === href`, no `github-slugger` dep), the `scheduled-readme-refresh.yml` always-commit daily pull, the report-only `vn39` divergence reporter + the CLI's four exit behaviors, and the `@astrojs/markdown-remark` reconciliation (forward contract in `docs/specs/readme-extraction-contract.md`)"
+---
 # README Extraction
 
 ## Overview

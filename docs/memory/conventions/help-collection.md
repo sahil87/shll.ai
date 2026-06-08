@@ -1,3 +1,6 @@
+---
+description: "The `help/<tool>.json` consume/pull side: Zod anchor, `help/` collector, rendering consumer (build-time `parseHelp` structured render + cross-tool index), the scheduled brew + `help-dump` pull refresh (forward contract in `docs/specs/help-dump-contract.md`), the command/flag cross-check's two modes (hard rule for hand-written prose, report-only lint for pulled README prose), and the sibling README-pull consumer"
+---
 # Help Collection
 
 ## Overview

@@ -34,7 +34,7 @@ src/
 ├── components/
 │   └── Diagram.astro    # theme-aware SVG <img> swap
 ├── assets/
-│   └── prompt.svg       # site logo (caret > prompt)
+│   └── logo.svg         # site logo (run-kit hexagon)
 └── styles/terminal.css  # palette + terminal aesthetic overrides
 public/
 ├── CNAME                # shll.ai custom domain

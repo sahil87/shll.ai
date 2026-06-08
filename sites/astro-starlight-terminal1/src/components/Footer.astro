@@ -1,0 +1,32 @@
+---
+/**
+ * Footer — site-wide footer override (`components.Footer` in astro.config.mjs).
+ *
+ * Starlight's single Footer override REPLACES the built-in footer, which carries
+ * the prev/next pagination (and edit-link / last-updated). To add a copyright
+ * line WITHOUT discarding pagination, we render the built-in <Default /> first,
+ * then append the copyright below it.
+ *
+ * Installed @astrojs/starlight 0.39.2's default Footer takes NO props and renders
+ * NO <slot /> — it self-renders EditLink / LastUpdated / Pagination from virtual
+ * modules and Astro.locals. So the version-correct override is a bare <Default />
+ * (no `{...Astro.props}`, no child slot — neither is consumed by this version).
+ *
+ * The copyright color comes from the site's --c-* tokens (src/styles/terminal.css),
+ * which flip with Starlight's data-theme, so dark-mode parity is automatic
+ * (Constitution V) — no hardcoded color.
+ */
+import Default from '@astrojs/starlight/components/Footer.astro';
+---
+
+<Default />
+<div class="site-copyright not-content">© Sahil Ahuja 2026</div>
+
+<style>
+  .site-copyright {
+    margin-top: 1.5rem;
+    font-family: var(--sl-font-mono);
+    font-size: var(--sl-text-xs);
+    color: var(--c-fg-dim);
+  }
+</style>
