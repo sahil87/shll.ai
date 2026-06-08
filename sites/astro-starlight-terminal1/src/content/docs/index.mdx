@@ -16,7 +16,10 @@ hero:
 ---
 
 import Diagram from '../../components/Diagram.astro';
+import TerminalPrompt from '../../components/TerminalPrompt.astro';
 
+<div class="terminal-window not-content">
+<div class="terminal-titlebar" aria-hidden="true"><span class="terminal-dot terminal-dot-1"></span><span class="terminal-dot terminal-dot-2"></span><span class="terminal-dot terminal-dot-3"></span></div>
 <pre class="shell-session not-content">
 <span class="shell-line"><span class="shell-prompt">$</span> shll install</span>
 <span class="shell-line shell-out">==&gt; tapping sahil87/tap</span>
@@ -32,8 +35,11 @@ import Diagram from '../../components/Diagram.astro';
 <span class="shell-line"><a href="/run-kit">run-kit</a>  <span class="shell-dim">v2.2.1</span>    <a class="shell-dim" href="https://github.com/sahil87/run-kit">[git]</a></span>
 <span class="shell-line"><a href="/tu">tu</a>       <span class="shell-dim">v0.2.1</span>    <a class="shell-dim" href="https://github.com/sahil87/tu">[git]</a></span>
 <span class="shell-line"> </span>
-<span class="shell-line"><span class="shell-prompt">$</span> <span class="shell-cursor">▊</span></span>
+<span class="shell-line" data-terminal-prompt><span class="shell-prompt">$</span> <span class="shell-cursor">▊</span></span>
 </pre>
+</div>
+
+<TerminalPrompt />
 
 <hr />
 
