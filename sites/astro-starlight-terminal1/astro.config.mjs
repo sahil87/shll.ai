@@ -57,7 +57,7 @@ export default defineConfig({
           },
         },
       },
-      logo: { src: './src/assets/prompt.svg', replacesTitle: false },
+      logo: { src: './src/assets/logo.svg', replacesTitle: false },
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/sahil87' },
         { icon: 'discord', label: 'Discord', href: 'https://discord.gg/32XHh5mJYn' },
@@ -74,6 +74,15 @@ export default defineConfig({
       components: {
         TableOfContents: './src/components/TocDispatcher.astro',
         MobileTableOfContents: './src/components/MobileTocDispatcher.astro',
+        // Override the built-in footer to append a site-wide copyright line.
+        // The override renders Starlight's <Default /> footer first so prev/next
+        // pagination is preserved — see src/components/Footer.astro.
+        Footer: './src/components/Footer.astro',
+        // Override the head to emit the Cloudflare Web Analytics beacon with its
+        // `data-cf-beacon` JSON un-escaped. Starlight's `head:` config array spreads
+        // attrs as Astro attributes, which HTML-escapes the JSON quotes to &quot;;
+        // this override renders the literal <script> instead — see Head.astro.
+        Head: './src/components/Head.astro',
       },
       sidebar: [
         {

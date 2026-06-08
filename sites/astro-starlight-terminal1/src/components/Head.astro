@@ -1,0 +1,33 @@
+---
+/**
+ * Head — site-wide <head> override (`components.Head` in astro.config.mjs).
+ *
+ * Purpose: emit the Cloudflare Web Analytics beacon site-wide with its
+ * `data-cf-beacon` JSON token un-escaped.
+ *
+ * Why an override and not Starlight's `head:` config array: the `head:` array
+ * renders each entry via `<Tag {...attrs}>`, and Astro HTML-escapes attribute
+ * values — so `data-cf-beacon='{"token": "..."}'` comes out as
+ * `data-cf-beacon="{&quot;token&quot;: &quot;...&quot;}"`. Browsers decode that
+ * back to valid JSON at runtime, but to ship the exact literal tag we render the
+ * `<script>` via Fragment set:html here instead.
+ *
+ * Installed @astrojs/starlight 0.39.2's default Head takes NO props and renders
+ * NO <slot /> — it maps over Astro.locals.starlightRoute.head. So the
+ * version-correct override is a bare <Default /> (which still emits Starlight's
+ * title/meta/canonical/favicon/fonts and any `head:` config entries), followed by
+ * the literal beacon tag.
+ *
+ * Constitution I exception (client-side runtime JS): deliberate, user-approved,
+ * scoped to analytics only, `defer`red — never blocks primary content. Cookieless,
+ * so no consent gate. The token is a public site token (ships in page HTML), not a
+ * secret — hardcoded by design.
+ */
+import Default from '@astrojs/starlight/components/Head.astro';
+
+const beacon =
+  '<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon=\'{"token": "11bda8377391420f9138b4cf3128dc6e"}\'></script>';
+---
+
+<Default />
+<Fragment set:html={beacon} />
