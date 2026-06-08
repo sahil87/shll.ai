@@ -96,7 +96,11 @@
 
       input = document.createElement('span');
       input.className = 'shell-input';
-      input.setAttribute('contenteditable', 'plaintext-only');
+      // `contenteditable="true"` + an explicit plain-text paste handler (below):
+      // `plaintext-only` is not consistently supported (e.g. older Firefox falls
+      // back to rich contenteditable), which would let a formatted/multiline paste
+      // distort the single prompt line. We normalize paste ourselves instead.
+      input.setAttribute('contenteditable', 'true');
       input.setAttribute('role', 'textbox');
       input.setAttribute('aria-multiline', 'false');
       input.setAttribute('aria-label', 'Terminal command input. Type a command and press Enter. Type help to list commands.');
@@ -110,6 +114,7 @@
       session!.appendChild(line);
 
       input.addEventListener('keydown', onKeydown);
+      input.addEventListener('paste', onPaste);
       caretToEnd();
       if (focus) input.focus();
     }
@@ -142,6 +147,25 @@
       freshPrompt();
     }
 
+    // Force plain text on paste and flatten any newlines, so a multi-line or
+    // formatted clipboard payload can't break the single-line prompt — robust
+    // regardless of contenteditable plaintext support.
+    function onPaste(e: ClipboardEvent): void {
+      e.preventDefault();
+      const text = (e.clipboardData?.getData('text/plain') ?? '').replace(/\r?\n/g, ' ');
+      const sel = window.getSelection();
+      if (!sel || !sel.rangeCount) {
+        input.textContent = (input.textContent ?? '') + text;
+      } else {
+        const range = sel.getRangeAt(0);
+        range.deleteContents();
+        range.insertNode(document.createTextNode(text));
+        range.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+    }
+
     function onKeydown(e: KeyboardEvent): void {
       if (e.key !== 'Enter') return;
       e.preventDefault();
@@ -154,6 +178,7 @@
       input.removeAttribute('aria-multiline');
       input.removeAttribute('aria-label');
       input.removeEventListener('keydown', onKeydown);
+      input.removeEventListener('paste', onPaste);
       input.classList.remove('shell-input');
 
       if (raw === '') {
@@ -240,7 +265,8 @@
           const ver = `<span class="shell-dim">${v.version}</span>`;
           const verGap = ' '.repeat(Math.max(2, 10 - v.version.length));
           const git = `<a class="shell-dim" href="https://github.com/sahil87/${v.name}">[git]</a>`;
-          return { text: `${name}${gap}${ver}${verGap}${git}`, classes: 'shell-line', html: true };
+          // `print()` already adds the base `shell-line` class — no extra class here.
+          return { text: `${name}${gap}${ver}${verGap}${git}`, html: true };
         });
       },
 
