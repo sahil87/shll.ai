@@ -24,22 +24,28 @@
  *   STILL committed. The fix belongs in the tool repo, never a silent exclusion here.
  *
  *   1. Walk <docs-site-dir> recursively for `*.md` files.
- *   2. For each, run findClosureViolations(relPath, markdown) and emit a
+ *   2. CLEAR content/<slug>/site/ (rm recursive+force) so the mount MIRRORS the
+ *      upstream tree — a page renamed/removed upstream is pruned, not stranded
+ *      (the mount was formerly purely additive, which left ghost pages forever).
+ *   3. For each file, run findClosureViolations(relPath, markdown) and emit a
  *      `::warning::` per offending target (file + target + reason). Never withhold.
- *   3. Copy each file VERBATIM to content/<slug>/site/<relPath>. Link rewriting
+ *   4. Copy each file VERBATIM to content/<slug>/site/<relPath>. Link rewriting
  *      (the .md-strip, R5) happens at RENDER time in the dynamic route, not here —
  *      the committed slice stays a faithful copy of the canonical source (the same
  *      discipline as the README slice, whose link rewrite is also render-side).
- *   4. An EMPTY or MISSING tree dir is not an error — the tool simply has no
- *      docs/site (an expected interim state); exit 0 having written nothing.
- *   5. Exit 0 (report-only). There is no failure mode here except an I/O error
+ *   5. An EMPTY or MISSING tree dir is not an error — the tool simply has no
+ *      docs/site now; the clear (step 2) still runs, so content/<slug>/site/ is
+ *      emptied (mirror = empty) and the CLI exits 0. Clearing on empty is safe
+ *      because the workflow only invokes this CLI on a SUCCESSFUL fetch (a fetch
+ *      failure `continue`s before the call, keeping last-good).
+ *   6. Exit 0 (report-only). There is no failure mode here except an I/O error
  *      while copying a file that genuinely exists (which propagates as a non-zero
  *      exit so the workflow's per-tool isolation keeps the last-good tree).
  *
  * Imports `extract-readme.ts` (dependency-free; TYPE-ONLY from schemas.ts, stripped
  * by Node's native type-stripping) — runs under plain `node`, no astro:content hook.
  */
-import { readFile, writeFile, mkdir, readdir, stat } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, readdir, rm } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, relative, resolve as resolvePath } from 'node:path';
 
@@ -59,6 +65,16 @@ const args = process.argv.slice(2);
 const slug = args[0];
 const docsSiteDir = args[1];
 if (!slug || !docsSiteDir) usage('both <slug> and <docs-site-dir> are required');
+
+// Guard the slug to a single plain path segment BEFORE it is interpolated into the
+// destructive `rm` target (content/<slug>/site/). Defense-in-depth: the only real
+// caller passes a trusted hardcoded slug, but this CLI now does an irreversible
+// recursive delete, so a slug with a path separator or `..` (which would let
+// `outRoot` escape content/<slug>/site/ — e.g. `..` → rm content/site) is rejected
+// outright rather than relying solely on the caller.
+if (!/^[A-Za-z0-9._-]+$/.test(slug) || slug === '.' || slug === '..') {
+  usage(`invalid slug "${slug}" — must be a single path segment (no "/", "\\", or "..")`);
+}
 
 // Static per-tool page slugs OWNED BY THE SITE under src/content/docs/tools/<slug>/.
 // A docs/site page that mounts at /tools/<slug>/<reserved> collides with one of
@@ -100,12 +116,25 @@ async function collectMarkdown(dir) {
 
 const files = await collectMarkdown(docsSiteDir);
 
+// MIRROR, not accumulate. Clear the per-tool mount BEFORE writing the fresh pages
+// so a page that was renamed/removed upstream is pruned locally (which then lets
+// the workflow's `git add -A content/` stage the deletion). Without this the mount
+// was purely additive — mkdir+writeFile per pulled page, never removing a stale one
+// — so an upstream delete stranded a ghost page forever (e.g. fab-kit/site/README.md
+// at /tools/fab-kit/README). `force: true` makes a first-ever pull (no dir yet) a
+// no-op. This targets ONLY content/<slug>/site/ — never the README slice or any
+// other path. Clearing on an EMPTY pull is correct AND safe: the workflow invokes
+// this CLI only when the tarball fetch SUCCEEDED (a fetch failure `continue`s before
+// the call, keeping last-good), so zero files means the repo genuinely has no
+// docs/site tree now and the correct mirror is empty.
+const outRoot = join(repoRoot, 'content', slug, 'site');
+await rm(outRoot, { recursive: true, force: true });
+
 if (files.length === 0) {
-  console.error(`no docs/site/*.md found for ${slug} at ${docsSiteDir} — nothing to commit.`);
+  console.error(`no docs/site/*.md found for ${slug} at ${docsSiteDir} — cleared content/${slug}/site/ (mount mirrors upstream: empty).`);
   process.exit(0);
 }
 
-const outRoot = join(repoRoot, 'content', slug, 'site');
 let written = 0;
 
 for (const rel of files) {

@@ -6,6 +6,12 @@ dist/
 # dependencies
 node_modules/
 
+# test scratch (belt-and-suspenders: the docs/site CLI mirror test writes to the
+# real repo root under a throwaway slug + a .test-tmp/ dir, cleaned by t.after;
+# ignore them so a hard crash mid-test can't strand them next to real content)
+/.test-tmp/
+/content/__*test*__/
+
 # logs
 npm-debug.log*
 yarn-debug.log*

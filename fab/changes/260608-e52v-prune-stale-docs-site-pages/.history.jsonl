@@ -1,0 +1,10 @@
+{"action":"enter","driver":"fab-new","event":"stage-transition","stage":"intake","ts":"2026-06-08T11:06:48Z"}
+{"args":"Fix the docs/site pull so it mirrors the upstream tree instead of accumulating: extract-docs-site-cli.mjs must clear content/\u003cslug\u003e/site/ before writing the freshly-pulled pages, so a page deleted/renamed upstream (e.g. fab-kit's stale docs/site/README.md, already gone upstream but stranded at content/fab-kit/site/README.md rendering at /tools/fab-kit/README) is removed locally and git add -A stages the deletion. Today the CLI only mkdir+writeFile per pulled page and never removes stale files, so the pull is purely additive — confirmed: git add -A content/ cannot stage a deletion the CLI never makes in the working tree. Clearing on an empty/no-tree pull is safe because the workflow only invokes the CLI when the tarball fetch succeeded (fetch failure → continue, keeps last-good); so 'CLI runs with zero files' means the repo genuinely has no docs/site now. Also delete the existing stray content/fab-kit/site/README.md. change_type: fix.","cmd":"fab-new","event":"command","ts":"2026-06-08T11:06:48Z"}
+{"delta":"+3.4","event":"confidence","score":3.4,"trigger":"calc-score","ts":"2026-06-08T11:07:58Z"}
+{"delta":"+0.0","event":"confidence","score":3.4,"trigger":"calc-score","ts":"2026-06-08T11:08:05Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-06-08T11:08:15Z"}
+{"action":"enter","driver":"fab-continue","event":"stage-transition","stage":"apply","ts":"2026-06-08T11:08:15Z"}
+{"action":"enter","driver":"fab-continue","event":"stage-transition","stage":"review","ts":"2026-06-08T11:11:47Z"}
+{"action":"enter","driver":"fab-continue","event":"stage-transition","stage":"hydrate","ts":"2026-06-08T11:17:28Z"}
+{"event":"review","result":"passed","ts":"2026-06-08T11:17:28Z"}
+{"action":"enter","driver":"fab-continue","event":"stage-transition","stage":"ship","ts":"2026-06-08T11:18:54Z"}
