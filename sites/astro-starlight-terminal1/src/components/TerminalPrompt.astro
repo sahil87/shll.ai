@@ -167,9 +167,12 @@
       scrollToBottom();
     }
 
+    // Wipe the transcript only. We do NOT emit a prompt here — onKeydown emits
+    // exactly one trailing prompt after every command (including clear), so
+    // emitting one here too would leave two prompts. (clear is dispatched via
+    // run() inside onKeydown, before that single trailing freshPrompt().)
     function clear(): void {
       session!.replaceChildren();
-      freshPrompt();
     }
 
     // Force plain text on paste and flatten any newlines, so a multi-line or
