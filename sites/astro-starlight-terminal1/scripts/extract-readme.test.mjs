@@ -38,6 +38,7 @@ import {
   rewriteDocsSiteLinks,
   rewriteReadmeDocsSiteLinks,
   findClosureViolations,
+  findReadmeLinkViolations,
 } from '../src/lib/extract-readme.ts';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
@@ -475,12 +476,31 @@ test('readme slice: an anchor on a docs/site link is preserved site-absolute (R6
   );
 });
 
+test('readme slice: a docs/site link that ..-escapes the tree gets the unresolved marker (R3)', () => {
+  // Shared resolvePath means the README side emits the same __unresolved__ marker
+  // as the docs/site page side on an escape — a visibly-dead link, not a real page.
+  assert.equal(
+    rewriteReadmeDocsSiteLinks('[x](docs/site/../../etc/passwd.md)', 'idea'),
+    '[x](/tools/idea/__unresolved__/etc/passwd)',
+  );
+});
+
 test('readme slice: a relative link NOT under docs/site/ is left as-is (R6)', () => {
   // README→external relative links self-heal via the absolute-by-author producer
   // rule (deferred consumer rewrite); this transform only touches docs/site/.
   assert.equal(
     rewriteReadmeDocsSiteLinks('[spec](docs/specs/overview.md)', 'idea'),
     '[spec](docs/specs/overview.md)',
+  );
+});
+
+test('readme slice: a NON-.md docs/site target is NOT rewritten (only .md pages mount) (R6)', () => {
+  // docs/site/img/logo.png is not a mounted page — rewriting it would silently
+  // produce a dead /tools/idea/img/logo URL. Leave it relative so the README link
+  // lint catches it instead. (Copilot PR #43 finding.)
+  assert.equal(
+    rewriteReadmeDocsSiteLinks('![logo](docs/site/img/logo.png)', 'idea'),
+    '![logo](docs/site/img/logo.png)',
   );
 });
 
@@ -531,19 +551,31 @@ test('transforms are total: empty input does not throw (R5/R6)', () => {
 });
 
 // A docs/site relative link that `..`-escapes the tree root is a closure violation
-// (reported by findClosureViolations); the rewriter still best-effort-emits a path
-// (clamped at the tool root) since the page commits anyway — consistent + tested.
-test('docs/site page: a ..-escape is best-effort clamped to the tool root (R5/R8 interaction)', () => {
+// (reported by findClosureViolations) AND is rewritten to a non-colliding
+// `__unresolved__` marker (R3) — NOT clamped to a real page. The marker and the
+// closure escape use the SAME predicate, so they agree on what "escape" means.
+test('docs/site page: a ..-escape rewrites to a non-colliding marker, not a real page (R3/R8)', () => {
   // page install.md (top-level) → ../../secret.md climbs above the tree root.
-  // findClosureViolations flags it; the rewriter clamps the over-climb at root.
+  // The rewriter emits the reserved __unresolved__ segment (a visibly-dead link),
+  // NOT `/tools/idea/secret` (which would misroute to a plausible-but-wrong page).
   assert.equal(
     rewriteDocsSiteLinks('[x](../../secret.md)', 'idea', 'install'),
-    '[x](/tools/idea/secret)',
+    '[x](/tools/idea/__unresolved__/secret)',
   );
   // And the same target is independently reported as a closure escape:
   const v = findClosureViolations('install.md', '[x](../../secret.md)');
   assert.equal(v.length, 1);
   assert.equal(v[0].kind, 'escape');
+});
+
+test('docs/site page: a non-escaping .. still resolves normally (R3)', () => {
+  // advanced/hooks → ../install.md pops [advanced], stays intra-set → real page.
+  assert.equal(
+    rewriteDocsSiteLinks('[i](../install.md)', 'idea', 'advanced/hooks'),
+    '[i](/tools/idea/install)',
+  );
+  // ...and is NOT reported as an escape.
+  assert.deepEqual(findClosureViolations('advanced/hooks.md', '[i](../install.md)'), []);
 });
 
 // ── §closure lint detector (R8) — report-only ───────────────────────────────
@@ -594,4 +626,147 @@ test('closure: an absolute link and an absolute image are clean (R8)', () => {
 
 test('closure detector is total: empty input → no violations (R8)', () => {
   assert.deepEqual(findClosureViolations('install.md', ''), []);
+});
+
+test('closure: a relative <source srcset> image is flagged (R4)', () => {
+  // §4 invites <picture><source srcset>; a RELATIVE srcset candidate is a §3 violation.
+  const v = findClosureViolations('install.md', '<source srcset="dark.png 1x, dark2.png 2x">');
+  assert.ok(v.some((x) => x.kind === 'relative-image' && x.target === 'dark.png'));
+  assert.ok(v.some((x) => x.kind === 'relative-image' && x.target === 'dark2.png'));
+});
+
+test('closure: an absolute <source srcset> is clean (R4)', () => {
+  assert.deepEqual(
+    findClosureViolations('install.md', '<source srcset="https://x/y/dark.png 1x">'),
+    [],
+  );
+});
+
+// ── README-slice link lint (R1/R2) — report-only ────────────────────────────
+
+test('readme lint: a site-escaping relative link is flagged relative-link (R1)', () => {
+  // The exact live "line-85" 404 class: a README relative link to docs/specs/*.
+  const v = findReadmeLinkViolations('See [overview](docs/specs/overview.md).');
+  assert.equal(v.length, 1);
+  assert.equal(v[0].kind, 'relative-link');
+  assert.equal(v[0].target, 'docs/specs/overview.md');
+});
+
+test('readme lint: a CONTRIBUTING-style relative link is flagged (R1)', () => {
+  const v = findReadmeLinkViolations('[contributing](CONTRIBUTING.md)');
+  assert.equal(v.length, 1);
+  assert.equal(v[0].kind, 'relative-link');
+});
+
+test('readme lint: a docs/site link and absolute links are clean (R1)', () => {
+  const md = [
+    '[guide](docs/site/install.md)', // rewritten by the consumer → clean
+    '[gh](https://github.com/sahil87/idea)', // absolute → clean
+    '[anchor](#section)', // pure fragment → clean
+  ].join('\n');
+  assert.deepEqual(findReadmeLinkViolations(md), []);
+});
+
+test('readme lint: a NON-.md docs/site link IS flagged (only .md pages mount) (R1)', () => {
+  // docs/site/img/logo.png is under docs/site/ but not a mounted page; it is
+  // neither rewritten nor resolvable, so it MUST be flagged, not exempted.
+  // (Copilot PR #43 finding.)
+  const v = findReadmeLinkViolations('[asset](docs/site/data/sample.json)');
+  assert.equal(v.length, 1);
+  assert.equal(v[0].kind, 'relative-link');
+  assert.equal(v[0].target, 'docs/site/data/sample.json');
+});
+
+test('readme lint: a relative image is flagged relative-image; absolute image is clean (R2)', () => {
+  const v = findReadmeLinkViolations('![dash](docs/img/dash.png)');
+  assert.equal(v.length, 1);
+  assert.equal(v[0].kind, 'relative-image');
+  assert.deepEqual(
+    findReadmeLinkViolations('![dash](https://raw.githubusercontent.com/x/y/dash.png)'),
+    [],
+  );
+});
+
+test('readme lint is total: empty input → no violations (R1/R2)', () => {
+  assert.deepEqual(findReadmeLinkViolations(''), []);
+});
+
+// ── §6 gh-theme strip: HTML images (R4) ──────────────────────────────────────
+
+test('strip: a gh-theme HTML <img> is removed, a plain <img> survives (R4)', () => {
+  const md = [
+    '# tool',
+    '> Part of the toolkit',
+    '',
+    'Intro paragraph.',
+    '',
+    '<img src="https://x/dark.svg#gh-dark-mode-only" alt="dark">',
+    '<img src="https://x/plain.svg" alt="plain">',
+  ].join('\n');
+  const { slice } = extractReadme(md);
+  assert.ok(!slice.includes('#gh-dark-mode-only'), 'gh-theme HTML img stripped');
+  assert.ok(slice.includes('plain.svg'), 'plain HTML img survives');
+});
+
+test('strip: a gh-theme <picture> pair collapses with no empty wrapper residue (R4)', () => {
+  const md = [
+    '# tool',
+    '',
+    'Intro.',
+    '',
+    '<picture>',
+    '  <source srcset="https://x/dark.svg#gh-dark-mode-only" media="(prefers-color-scheme: dark)">',
+    '  <source srcset="https://x/light.svg#gh-light-mode-only" media="(prefers-color-scheme: light)">',
+    '</picture>',
+    '',
+    'After.',
+  ].join('\n');
+  const { slice } = extractReadme(md);
+  assert.ok(!slice.includes('#gh-'), 'both gh-theme sources stripped');
+  assert.ok(!/<\/?picture/i.test(slice), 'empty <picture> wrapper removed');
+  assert.ok(slice.includes('Intro.') && slice.includes('After.'), 'surrounding prose kept');
+});
+
+// ── §1 head-chrome hardening (R5) ────────────────────────────────────────────
+
+test('head: a leading YAML frontmatter block is skipped, not leaked (R5)', () => {
+  const md = [
+    '---',
+    'title: tool',
+    'sidebar: false',
+    '---',
+    '# tool',
+    '[![badge](b.svg)](href)',
+    '',
+    'First prose line.',
+    '## Section',
+  ].join('\n');
+  const { slice } = extractReadme(md);
+  assert.ok(slice.startsWith('First prose line.'), `frontmatter/H1/badge skipped; got: ${slice.slice(0, 40)}`);
+  assert.ok(!slice.includes('title: tool'), 'frontmatter did not leak');
+});
+
+test('head: an HTML <h1> title + following badge row are skipped (R5)', () => {
+  const md = [
+    '<h1 align="center">Idea</h1>',
+    '<p align="center"><img src="https://x/logo.svg"></p>',
+    '',
+    'Tagline paragraph.',
+    '## Why',
+  ].join('\n');
+  const { slice } = extractReadme(md);
+  assert.ok(slice.startsWith('Tagline paragraph.'), `HTML h1 + badge skipped; got: ${slice.slice(0, 40)}`);
+  assert.ok(!/<h1/i.test(slice), 'HTML h1 did not leak');
+});
+
+test('head: a badge row using <br> separators stays contiguous chrome (R5)', () => {
+  const md = [
+    '# tool',
+    '[![a](a.svg)](x)<br>',
+    '[![b](b.svg)](y)',
+    '',
+    'Prose.',
+  ].join('\n');
+  const { slice } = extractReadme(md);
+  assert.ok(slice.startsWith('Prose.'), `<br> badge row skipped; got: ${slice.slice(0, 40)}`);
 });

@@ -1,0 +1,19 @@
+{"action":"enter","driver":"fab-new","event":"stage-transition","stage":"intake","ts":"2026-06-08T09:21:57Z"}
+{"args":"Fix consumer-side README/docs-site content-rendering gaps in extract-readme.ts and the CLIs: (1) no closure/link lint on the README slice so site-escaping relative links render as live 404s (e.g. content/idea/README.md:85 docs/specs/overview.md); (2) findClosureViolations flags a ..-escape while rewriteDocsSiteLinks silently clamps it, misrouting to a wrong real page; (3) gh-theme-only HTML images not stripped though contract promises all; (4) head-chrome detection misses YAML frontmatter, HTML \u003ch1\u003e titles, and \u003cbr\u003e/\u003chr\u003e badge-row variants, leaking into the slice. These are consumer bugs no repo conformance can fix.","cmd":"fab-new","event":"command","ts":"2026-06-08T09:21:57Z"}
+{"delta":"+2.8","event":"confidence","score":2.8,"trigger":"calc-score","ts":"2026-06-08T09:23:50Z"}
+{"delta":"+0.0","event":"confidence","score":2.8,"trigger":"calc-score","ts":"2026-06-08T09:23:57Z"}
+{"delta":"+0.0","event":"confidence","score":2.8,"trigger":"calc-score","ts":"2026-06-08T10:17:21Z"}
+{"delta":"+0.0","event":"confidence","score":2.8,"trigger":"calc-score","ts":"2026-06-08T10:17:31Z"}
+{"delta":"+0.0","event":"confidence","score":2.8,"trigger":"calc-score","ts":"2026-06-08T10:17:39Z"}
+{"delta":"+0.0","event":"confidence","score":2.8,"trigger":"calc-score","ts":"2026-06-08T10:17:55Z"}
+{"delta":"+0.0","event":"confidence","score":2.8,"trigger":"calc-score","ts":"2026-06-08T10:18:07Z"}
+{"delta":"+0.0","event":"confidence","score":2.8,"trigger":"calc-score","ts":"2026-06-08T10:18:18Z"}
+{"delta":"+0.0","event":"confidence","score":2.8,"trigger":"calc-score","ts":"2026-06-08T10:18:24Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-06-08T10:18:32Z"}
+{"action":"enter","driver":"fab-continue","event":"stage-transition","stage":"apply","ts":"2026-06-08T10:18:32Z"}
+{"action":"enter","driver":"fab-continue","event":"stage-transition","stage":"review","ts":"2026-06-08T10:30:20Z"}
+{"action":"enter","driver":"fab-continue","event":"stage-transition","stage":"hydrate","ts":"2026-06-08T10:40:21Z"}
+{"event":"review","result":"passed","ts":"2026-06-08T10:40:21Z"}
+{"action":"enter","driver":"fab-continue","event":"stage-transition","stage":"ship","ts":"2026-06-08T10:42:56Z"}
+{"action":"enter","driver":"git-pr","event":"stage-transition","stage":"review-pr","ts":"2026-06-08T10:45:13Z"}
+{"event":"review","result":"passed","ts":"2026-06-08T10:45:50Z"}

@@ -60,7 +60,7 @@ const slug = args[0];
 const docsSiteDir = args[1];
 if (!slug || !docsSiteDir) usage('both <slug> and <docs-site-dir> are required');
 
-// Static per-tool page slugs hand-authored under src/content/docs/tools/<slug>/.
+// Static per-tool page slugs OWNED BY THE SITE under src/content/docs/tools/<slug>/.
 // A docs/site page that mounts at /tools/<slug>/<reserved> collides with one of
 // these: the dynamic route is higher-priority than Starlight's catch-all, so the
 // docs/site page SILENTLY SHADOWS the static page (build emits only a buried
@@ -68,7 +68,13 @@ if (!slug || !docsSiteDir) usage('both <slug> and <docs-site-dir> are required')
 // reporter surfaces a violation as a `::warning::` (same report-only posture as the
 // closure lint) so the drift is visible in the run log — the page is STILL
 // committed (never withhold), the fix belongs in the tool repo.
-const RESERVED_SLUGS = new Set(['overview', 'readme', 'commands', 'install', 'workflows']);
+//
+// The set is exactly {overview, readme, commands} (contract §9.2, PRs #41/#42):
+// the hand-authored overview directory entry + the generated readme/commands pages.
+// `install` and `workflows` are NOT reserved — they belong to the tool repo via
+// docs/site/install.md / docs/site/workflows.md (the prior hand-authored stubs were
+// removed). So a tool's docs/site/install.md mounts cleanly at /tools/<slug>/install.
+const RESERVED_SLUGS = new Set(['overview', 'readme', 'commands']);
 
 /** Recursively collect every `*.md` file under `dir`, returned as paths relative
  *  to `dir` (POSIX-separated). A missing dir yields []. */

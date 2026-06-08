@@ -50,12 +50,16 @@ could rot. Markers rot; structure does not.
 The site slice begins **after** the leading GitHub chrome. The puller skips, from the top of the
 README, a contiguous run of:
 
-1. the single leading **H1** (`# tool-name`),
+0. a single leading **YAML frontmatter** block (`---` … `---`) when it is the very first non-blank
+   content, and a leading **HTML comment** (`<!-- … -->`, e.g. a markdownlint pragma),
+1. the single leading **H1** — markdown (`# tool-name`) **or** an HTML title (`<h1 …>…</h1>`,
+   possibly spanning lines); only the FIRST leading heading is treated as chrome,
 2. a single leading **`> blockquote`** (the toolkit line — see the canonical text in
    [§Producer conformance directive](#producer-conformance-directive) rule 1, including any
    wrapped continuation lines of that same blockquote), and
 3. any contiguous run of **image / badge lines**: markdown images (`![alt](url)`), linked badges
-   (`[![alt](img)](href)`), and HTML image wrappers (`<p align=…><img …></p>`, bare `<img …>`).
+   (`[![alt](img)](href)`), and HTML image wrappers (`<p align=…><img …></p>`, bare `<img …>`,
+   `<picture>`/`<source>`, and the badge-row separators `<br>` / `<hr>` / `<span>`).
 
 Blank lines interleaved with the above are part of the skipped head. Deduction **stops skipping at
 the first non-blank line that is none of the above** — that line is the first line of the slice.
@@ -207,7 +211,10 @@ slice, in addition to the boundary cuts:
 1. **Mermaid fences** (§5): every ```` ```mermaid ```` … ```` ``` ```` block is removed. Non-mermaid
    fenced code blocks are left intact.
 2. **GitHub theme-only images** (§4): any image whose URL carries `#gh-dark-mode-only` or
-   `#gh-light-mode-only` is removed. Plain images (no theme fragment) are preserved.
+   `#gh-light-mode-only` is removed — in **both** markdown (`![](…#gh-…)`) and HTML form
+   (`<img src=…#gh-…>`, `<source srcset=…#gh-…>` inside a `<picture>`). A `<picture>` wrapper left with
+   no remaining `<source>`/`<img>` after the strip is dropped entirely (no empty residue). Plain images
+   (no theme fragment) are preserved.
 
 These strips are pure text transforms with no per-tool special-casing.
 
@@ -276,9 +283,11 @@ verifier (§7 command/flag cross-check, a report-only reporter — not Zod-schem
 
 - **Triggers:** a daily `schedule` cron + `workflow_dispatch` (on-demand after a README change).
 - **Per-tool pipeline** (looped over all 7 tools): fetch the repo's `README.md` → apply §1 head +
-  §2 tail deduction → §6 strips → §7 divergence reporter (non-fatal) → **always commit** the slice to
-  `content/<slug>/README.md` (a divergence emits a `::warning::` but is committed; a missing
-  `help/<slug>.json` commits with an "unverified" warning).
+  §2 tail deduction → §6 strips → §7 divergence reporter (non-fatal) → **README-slice link lint**
+  (non-fatal, `findReadmeLinkViolations`: warns on a relative link that is not a `docs/site/` link, or a
+  relative image — both 404/break on the site; report-only, mirrors §7) → **always commit** the slice to
+  `content/<slug>/README.md` (a divergence or a link violation emits a `::warning::` but is committed; a
+  missing `help/<slug>.json` commits with an "unverified" warning).
 - **Per-tool `docs/site/` tree pipeline** (sibling step, change `x0br`): in the same run, fetch the
   repo **tarball** (`https://codeload.github.com/sahil87/<repo>/tar.gz/<branch>`, main→master fallback)
   and untar **only** the `docs/site/` subtree → run the §closure lint per page (non-fatal `::warning::`
@@ -486,7 +495,12 @@ mount-path-aware). They are no longer slug-agnostic string transforms; that is a
    `.`/`..`, strip `.md`, and emit the site-absolute mount URL `/tools/<slug>/<resolved>`. Closure
    (§9.1.1) guarantees relative targets are intra-set. Examples: page `advanced/hooks` linking
    `../install.md` → `/tools/<slug>/install`; linking `./sibling.md` → `/tools/<slug>/advanced/sibling`.
-   Applied at render time by the dynamic route (the committed slice stays a verbatim copy of canonical).
+   A target that **escapes** the tree (a `..` climbing above the root — a closure violation, §closure
+   lint) is NOT clamped to a real page; it is rewritten under a reserved `__unresolved__` segment
+   (`/tools/<slug>/__unresolved__/<…>`) so the broken link is visibly dead rather than misrouted to a
+   plausible-but-wrong page. The escape predicate is **shared** with `findClosureViolations`, so the
+   rewrite and the warning agree on what "escape" means. Applied at render time by the dynamic route
+   (the committed slice stays a verbatim copy of canonical).
 2. **README slice (links into `docs/site/`)** — `rewriteReadmeDocsSiteLinks(markdown, slug)`: a relative
    target of the form `docs/site/<p>.md` → the site-absolute mount URL `/tools/<slug>/<p>` (the
    `docs/site/` prefix maps to the tool root `/tools/<slug>/`, `.md` stripped, nested `<p>` subtree
@@ -543,6 +557,10 @@ be absolute, §3), emits a CI `::warning::` naming the offending file + target �
 **still committed** (canonical wins; never withhold). This mirrors the §7 divergence reporter exactly:
 a report-only repo-level lint, **not** a publish gate. It turns "self-contained" from a hope into a
 checked invariant and tells the tool author precisely which link broke the rule.
+
+Image targets are scanned in **all three forms**: markdown `![](…)`, raw-HTML `<img src=…>`, and
+raw-HTML `<source srcset=…>` (each comma-separated `srcset` candidate's URL is checked) — so a relative
+image delivered via the §4-recommended `<picture><source srcset>` is caught, not just markdown images.
 
 It is implemented as a pure, single-sourced detector,
 `findClosureViolations(relPath, markdown)` in
@@ -663,9 +681,11 @@ unbroken result. Do this as a single change.
    native rendering — just also ship the rendered image.
 5. **No site-escaping relative links (§9.1.2 — absolute-by-author).** A link to anything *outside* what
    the site renders — source files, `docs/specs/`, `CONTRIBUTING.md`, your repo's other internals —
-   MUST be written as an **absolute `https://…` URL by you**. The site does **not** rewrite these, and
-   the README slice is **not** closure-linted, so a leftover relative link like `[x](docs/specs/y.md)`
-   renders as a live **404** on the site with no warning. Only two relative forms are auto-handled: a
+   MUST be written as an **absolute `https://…` URL by you**. The site does **not** rewrite these, so a
+   leftover relative link like `[x](docs/specs/y.md)` renders as a live **404** on the site. The puller
+   now emits a CI `::warning::` (report-only — the README-slice link lint) naming any such relative link
+   or relative image, so the drift is visible in the run log; the canonical slice is still committed, and
+   the fix is to make the link absolute in your README. Only two relative forms are auto-handled: a
    link **into** your `docs/site/` tree written as `docs/site/<path>.md` (rewritten to
    `/tools/<slug>/<path>`), and intra-`docs/site/` links (Part 2). Everything else relative → make it
    absolute. Avoid putting a `docs/site/` link **behind a badge/thumbnail** (`[![alt](img)](docs/site/x.md)`)
@@ -681,6 +701,22 @@ unbroken result. Do this as a single change.
    (e.g. a renamed or removed command lingering in the README). This does **not** block the pull — your
    README is canonical and ships verbatim — but a fabricated command will render on the site for up to
    one refresh cycle. Treat the warning as a signal to fix the README.
+8. **Cross-link the README to your `docs/site/` pages and the generated command reference.** The README
+   is the hub; link out to the deeper pages so a reader (on GitHub *and* on the site) can navigate to
+   them. Two specific links every conforming tool SHOULD add:
+   - **Installation → `docs/site/install.md`.** When you publish an install guide as `docs/site/install.md`
+     (Part 2), link to it from the README's install section as the natural repo-relative path
+     `[full install guide](docs/site/install.md)`. shll.ai rewrites that to `/tools/<slug>/install`
+     automatically (Part 2 rule 4); on GitHub it resolves to the file in your repo. (The README's own
+     short install section still ships in the slice — this is an *additional cross-link to the deeper
+     page*, not a replacement.) Apply the same pattern for any other `docs/site/<p>.md` page the README
+     references (deep-dives, format contracts): write the natural `docs/site/<p>.md` path.
+   - **Command reference → `https://shll.ai/tools/<tool>/commands/`.** Point readers at the site's
+     generated, always-fresh command reference with the **absolute** URL
+     `[command reference](https://shll.ai/tools/<tool>/commands/)` (substitute your tool slug, e.g.
+     `https://shll.ai/tools/run-kit/commands/`). It MUST be absolute — it leaves your repo's content set
+     (the absolute-by-author rule, §9.1.2), so the puller renders it verbatim (it is not a relative link
+     to rewrite). This is the canonical home for the full `-h` tree; the README need not reproduce it.
 
 **Part 2 — `docs/site/` tree (optional — for depth that doesn't belong inline in the README):**
 
@@ -721,6 +757,9 @@ repo and are **not** pulled.
 - No `docs/site/` page is named `overview` / `readme` / `commands` (the only three reserved slugs).
   `install` and `workflows` ARE allowed — they render at `/tools/<slug>/install` and
   `/tools/<slug>/workflows`.
+- The README cross-links to its deeper pages (rule 8): the install section links to
+  `docs/site/install.md` (if you publish one), and a `[command reference](https://shll.ai/tools/<tool>/commands/)`
+  link points at the generated reference with the **absolute** site URL (your slug).
 - (Optional self-check) Run shll.ai's extractor against your README locally if you have the site repo:
   `node sites/astro-starlight-terminal1/scripts/extract-readme-cli.mjs` — it prints the deduced slice and
   any `::warning::`s, so you can see exactly what the site will render.
@@ -758,7 +797,9 @@ The single **machine-anchored** definition of the deduction + strip + verify beh
 > targets against its mount path → `/tools/<slug>/<resolved>`) / `rewriteReadmeDocsSiteLinks(markdown, slug)`
 > (a README's `docs/site/<p>.md` → `/tools/<slug>/<p>`) — the two transforms + the shared rewrite guard
 > — and `findClosureViolations(relPath, markdown)` (§closure lint — detection logic; consumed as a
-> non-fatal `::warning::` by `extract-docs-site-cli.mjs`), all pinned by
+> non-fatal `::warning::` by `extract-docs-site-cli.mjs`), plus `findReadmeLinkViolations(slice)`
+> (the README-slice link lint — relative links not under `docs/site/`, and relative images; consumed as a
+> non-fatal `::warning::` by `extract-readme-cli.mjs`), all pinned by
 > `scripts/extract-readme.test.mjs` (native `node --test`).
 
 - `extract-readme.ts` is the **authority for the mechanical behavior**. The prose above MUST agree
@@ -780,6 +821,8 @@ The single **machine-anchored** definition of the deduction + strip + verify beh
 | 2026-06-04 | Created (change `w32m`): forward contract for README extraction. §1 head rule (skip H1 + toolkit blockquote + contiguous badge/image lines), §2 tail rule (final denylist `Contributing`/`Development`/`Building`/`License`/`Acknowledgements`; `Install` INCLUDED; `Changelog`/`Roadmap`/`FAQ` kept), §3 image rule (reference-not-copy, alt-text-travels, co-capture, ≤24h transient-404 accepted, vendoring deferred), §4 dark-theme producer/consumer stanzas (`data-theme` not `prefers-color-scheme`; `<picture>` mapping deferred), §5 mermaid Option A (strip inline, require rendered SVG), §6 strips (mermaid fences + `#gh-*-mode-only` images), §7 the `vn39` validation gate (sole install guard; `shll shell-install` failure mode; single-sourced `findUnknownTokens` verifier), §8 pull model (sibling of `scheduled-help-refresh.yml`, `content/<slug>/` repo-root collector, direct-commit-gated-on-validation, off-deploy, per-tool isolation, `ReadmeSlice.astro` build-time render injected into overviews), §9 `docs/site/` escape hatch (audience axis) marked RESERVED / not yet implemented — only `README.md` is pulled today. §Extraction reference anchors `src/lib/extract-readme.ts`. Symmetric with `help-dump-contract.md`. |
 | 2026-06-04 | Reframed (change `4s3e`): the §7 `vn39` cross-check flips from a **blocking publish gate** to a **non-fatal divergence reporter** — the tool README is canonical and rendered verbatim; divergence emits a CI `::warning::` and the slice is still committed (`extract-readme-cli.mjs` → warn + write + exit 0, not exit 1; missing `help/<slug>.json` → "unverified" warning + still write). The `vn39` rule stays a hard rule only for *hand-written* site prose. §8 pull model: **always commit, warn-not-skip** on divergence; per-tool isolation now applies ONLY to genuine fetch/read failures (which keep last-good), not to divergence. Install language (§2/§7): the reporter is an accuracy *reporter*, not the *sole guard*. Render model: the slice now renders on a **parallel per-tool `readme` page** (`/tools/<slug>/readme`, sidebar "Readme", sibling of `commands`), NOT injected into `overview.mdx`; each `overview.mdx` is thinned to a directory entry (GithubButton + framing + nav links). `findUnknownTokens` detection logic is unchanged; false-positive tuning deferred to a follow-up. Anti-drift intro reconciled. |
 | 2026-06-07 | Activated `docs/site/` (change `x0br`): §9 flips RESERVED → **ACTIVE** as a **closed-set** model — §9.1 publishes the four producer rules (closure: `docs/site/` is fully self-contained, no `..` escape; external links absolute-by-author; all images absolute everywhere; README→`docs/site/` links written naturally); §9.2 records the reserved-slug precedence (`overview`/`readme`/`commands`/`install`/`workflows`). New **§link resolution**: the consumer's entire rewrite surface is two pure context-free transforms on relative link/image targets only — `rewriteDocsSiteLinks` (`.md`-strip) for docs/site pages, `rewriteReadmeDocsSiteLinks` (`docs/site/`→`./` prefix + `.md`-strip) for the README slice — plus the **rewrite guard** (never touch absolute URLs / prose / code; relative-prefix only; suffix preserved). New **§closure lint**: report-only `findClosureViolations` emits a `::warning::` on a `..`-escape or relative image and STILL commits (mirrors §7). §3 refined: **all images absolute everywhere** (README + `docs/site/`); shll.ai vendors zero binaries; a relative image is a closure violation. §8 extended: a sibling **tarball** fetch (`codeload.github.com/.../tar.gz/<branch>`, untar `docs/site/` subtree, main→master fallback) + multi-page render via the FIRST **dynamic route** (`src/pages/tools/[slug]/[...path].astro`, `getStaticPaths` over `content/<slug>/site/**`, one page per file at `/tools/<slug>/<path>`, rendered through the same `@astrojs/markdown-remark` path as `ReadmeSlice` inside Starlight's `<StarlightPage>`) + a build-time-generated **sidebar** group appended per tool. New consumer functions anchored in §Extraction reference; pinned by `scripts/extract-readme.test.mjs`. Conforming the 7 external repos remains out of scope (forward, per-repo). |
+| 2026-06-08 | Extended the **§Producer conformance directive** with cross-linking guidance (Part 1 rule 8 + verify checklist): the README SHOULD link its install section to `docs/site/install.md` (natural repo-relative path, auto-rewritten to `/tools/<slug>/install`) and link a `[command reference](https://shll.ai/tools/<tool>/commands/)` at the generated reference using the **absolute** site URL (absolute-by-author, §9.1.2 — rendered verbatim). The README is the hub; deeper pages are cross-linked, not duplicated. Producer-facing guidance only; no consumer/mechanical change. |
+| 2026-06-08 | Reconciled prose to consumer-code fixes (change `ng8c`): **§6** now strips gh-theme images in HTML form (`<img>`/`<source srcset>`) and drops emptied `<picture>` wrappers, not just markdown; **§1** head rule now skips a leading YAML frontmatter block, an HTML `<h1>` title, a leading HTML comment, and `<br>`/`<hr>`/`<span>` badge-row separators (so they no longer leak into the slice); **§link-resolution** a `..`-escape now rewrites to a reserved `/tools/<slug>/__unresolved__/…` marker (shared escape predicate with `findClosureViolations`) instead of the old silent clamp to a real page; **§8** the README pipeline gains a report-only **README-slice link lint** (`findReadmeLinkViolations` — warns on a relative link not under `docs/site/`, or a relative image; mirrors §7, always commits). §Extraction reference + the directive's relative-link rule updated. Code-side change; no producer-contract semantics changed. |
 | 2026-06-08 | Shrank the **reserved-slug set** to exactly **`overview`, `readme`, `commands`** (was `overview`/`readme`/`commands`/`install`/`workflows`), uniform across all 7 tools (§9.2, §8 render-side, §Producer conformance directive table + verification). **`install` and `workflows` are no longer reserved** — they belong to the tool repo via `docs/site/install.md` / `docs/site/workflows.md` (rendered at `/tools/<slug>/install` / `/tools/<slug>/workflows`). Rationale: the site's prior hand-authored `install`/`workflows` stubs for `idea` and `fab-kit` were site-authored prose with no canonical source — the hand-copied drift *Tool-Page Depth* forbids — and are being **removed** so the tool repo controls that depth. The static-page deletion + the CLI `RESERVED_SLUGS` update + the `astro.config.mjs` sidebar / `overview.mdx` nav-link cleanup are a **separate consumer-code change** (`260608-ng8c`), not this doc edit. Also **removed the `docs/internal/` concept** (§9 intro + GIVEN/WHEN/THEN + directive): the pull surface is exactly `README.md` + `docs/site/**`, so everything else in a repo is un-pulled by default — maintainer/design notes need no blessed folder. The audience axis is restated as **published vs. not**; `docs/specs/` + `docs/memory/` keep their fab meanings and are not pulled. Producer-facing prose only here. |
 | 2026-06-08 | Added **§Producer conformance directive**: a ready-to-hand-to-an-agent task (the README-prose sibling of `help-dump-contract.md`'s "Teardown directive") that specifies the per-repo conformance work — README head/tail/image/mermaid structure (§1/§2/§3/§5), the absolute-by-author link rule and its 404 traps (§9.1.2, incl. the unhandled linked-image / reference-style shapes), the report-only command/flag check (§7), and the optional `docs/site/` closed-set tree (§9.1). One shared directive for all 7 tools (no seven-way copies) + a per-tool table of slug / binary / `content/<slug>/` path / URL space / reserved static slugs. The §out-of-scope boundary note now points here. Rule 1 states the **canonical toolkit blockquote** verbatim with the correct **`https://shll.ai`** link (NOT `ai.shll.in`) as the single source; §1's prose + example now defer to / match it (the old loose `> Part of @sahil87's toolkit…` examples are corrected). Clarified that the head is skipped by structure not text (H1/blockquote content is free to the extractor; the canonical blockquote is a hand-maintained convention). No mechanical/consumer behavior changed — this is producer-facing guidance only. |
 | 2026-06-07 | Reworked (`x0br` review): link resolution switched from relative-prefix rewrites to **SITE-ABSOLUTE** `/tools/<slug>/<path>` to be correct under trailing-slash directory serving (the relative form resolved one segment too deep — a README at `/tools/<slug>/readme/` + `./install` → `/tools/<slug>/readme/install`, but the page is at `/tools/<slug>/install/`). The two transforms are now **slug-aware**: `rewriteDocsSiteLinks(md, slug, mountPath)` resolves a page's relative targets against its mount path (`.`/`..` normalized) → `/tools/<slug>/<resolved>`; `rewriteReadmeDocsSiteLinks(md, slug)` maps `docs/site/<p>.md` → `/tools/<slug>/<p>`. Both consumers re-wired (`ReadmeSlice.astro` passes its `tool`; the dynamic route passes `slug` + `mountPath`). `#fragment`/`?query` preserved. A reserved-slug `::warning::` was added to the docs/site CLI (§9.2). Two honest **Known limitations** recorded under §link resolution: the OUTER target of a linked image `[![alt](img)](page.md)` and reference-style link definitions `[id]: ./x.md` are not rewritten (rare; deferred). |

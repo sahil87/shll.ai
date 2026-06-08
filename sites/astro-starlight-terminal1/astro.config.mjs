@@ -93,11 +93,10 @@ export default defineConfig({
               items: [
                 { label: 'Overview', slug: 'tools/idea/overview' },
                 { label: 'Readme', slug: 'tools/idea/readme' },
-                { label: 'Install', slug: 'tools/idea/install' },
                 { label: 'Commands', slug: 'tools/idea/commands' },
-                { label: 'Workflows', slug: 'tools/idea/workflows' },
                 // Build-time-generated entries for the tool's pulled docs/site tree
-                // (content/idea/site/**). Empty until the daily pull lands a tree.
+                // (content/idea/site/**) — including any install/workflows pages the
+                // tool repo publishes. Empty until the daily pull lands a tree.
                 ...docsSiteSidebarItems('idea'),
               ],
             },
@@ -117,9 +116,7 @@ export default defineConfig({
               items: [
                 { label: 'Overview', slug: 'tools/fab-kit/overview' },
                 { label: 'Readme', slug: 'tools/fab-kit/readme' },
-                { label: 'Install', slug: 'tools/fab-kit/install' },
                 { label: 'Commands', slug: 'tools/fab-kit/commands' },
-                { label: 'Workflows', slug: 'tools/fab-kit/workflows' },
                 ...docsSiteSidebarItems('fab-kit'),
               ],
             },

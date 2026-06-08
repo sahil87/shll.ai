@@ -38,7 +38,11 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve as resolvePath } from 'node:path';
 
-import { extractReadme, findUnknownTokens } from '../src/lib/extract-readme.ts';
+import {
+  extractReadme,
+  findUnknownTokens,
+  findReadmeLinkViolations,
+} from '../src/lib/extract-readme.ts';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 // scripts/ -> site root -> sites/ -> repo root
@@ -105,6 +109,25 @@ if (helpDoc) {
       `::warning::${slug} README diverges from help/${slug}.json — references unknown command/flag tokens: ${unknown.join(', ')}. Rendering the canonical README anyway; fix the tool README, not the site.`,
     );
   }
+}
+
+// README-slice link lint (R1/R2) — NON-FATAL. A relative link that is not a
+// `docs/site/` link, or any relative image, will 404 on the site (the consumer
+// rewrites only `docs/site/` relative links; images must be absolute, §3). Warn
+// but STILL write the slice — the fix is to make the link absolute in the tool
+// README (the absolute-by-author rule, §9.1.2), not to censor the canonical slice.
+const linkViolations = findReadmeLinkViolations(slice);
+if (linkViolations.length > 0) {
+  const detail = linkViolations
+    .map((v) =>
+      v.kind === 'relative-image'
+        ? `${v.target} (relative image — images must be absolute, §3)`
+        : `${v.target} (relative link not under docs/site/ — will 404; make it an absolute URL, §9.1.2)`,
+    )
+    .join(', ');
+  console.error(
+    `::warning::${slug} README slice has link/image targets that will not resolve on the site: ${detail}. Rendering the canonical README anyway; fix the tool README, not the site.`,
+  );
 }
 
 if (outPath) {
