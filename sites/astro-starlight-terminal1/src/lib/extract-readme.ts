@@ -759,7 +759,11 @@ export function rewriteDocsSiteLinks(
  */
 export function rewriteReadmeDocsSiteLinks(markdown: string, slug: string): string {
   return rewriteLinkTargets(markdown, (path) => {
-    if (!path.startsWith(DOCS_SITE_PREFIX)) return path;
+    // ONLY `docs/site/<p>.md` PAGES are mounted as routes — a non-`.md` docs/site
+    // target (e.g. `docs/site/img/logo.png`) is NOT pulled and would 404, so do
+    // NOT rewrite it: leaving it relative keeps it visible to the README link lint
+    // (findReadmeLinkViolations) rather than silently producing a dead URL.
+    if (!path.startsWith(DOCS_SITE_PREFIX) || !/\.md$/i.test(path)) return path;
     const sub = stripMdExt(path.slice(DOCS_SITE_PREFIX.length));
     // The README links into the tree as if from the tree ROOT; resolve `.`/`..`
     // within the sub-path so a (rare) `docs/site/a/../b.md` still normalizes.
@@ -911,8 +915,11 @@ export function findReadmeLinkViolations(slice: string): ReadmeLinkViolation[] {
       return;
     }
     // A relative LINK is fine ONLY if it is a `docs/site/<p>.md` link (the one
-    // relative shape the consumer rewrites). Anything else 404s.
-    if (path.startsWith(DOCS_SITE_PREFIX)) return;
+    // relative shape the consumer rewrites — see rewriteReadmeDocsSiteLinks).
+    // Anything else 404s — INCLUDING a `docs/site/` target that is NOT `.md`
+    // (e.g. `docs/site/img/logo.png`): only `.md` pages mount, so a non-`.md`
+    // docs/site asset is neither rewritten nor resolvable, and MUST be flagged.
+    if (path.startsWith(DOCS_SITE_PREFIX) && /\.md$/i.test(path)) return;
     const key = `relative-link|${target}`;
     if (!seen.has(key)) {
       seen.add(key);

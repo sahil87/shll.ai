@@ -494,6 +494,16 @@ test('readme slice: a relative link NOT under docs/site/ is left as-is (R6)', ()
   );
 });
 
+test('readme slice: a NON-.md docs/site target is NOT rewritten (only .md pages mount) (R6)', () => {
+  // docs/site/img/logo.png is not a mounted page — rewriting it would silently
+  // produce a dead /tools/idea/img/logo URL. Leave it relative so the README link
+  // lint catches it instead. (Copilot PR #43 finding.)
+  assert.equal(
+    rewriteReadmeDocsSiteLinks('![logo](docs/site/img/logo.png)', 'idea'),
+    '![logo](docs/site/img/logo.png)',
+  );
+});
+
 // R7: the rewrite guard — the correctness boundary. Absolute URLs containing the
 // literal `docs/site`, prose, and code that merely mention the text are untouched;
 // only relative link/image TARGETS are rewritten (markdown + raw-HTML href/src).
@@ -655,6 +665,16 @@ test('readme lint: a docs/site link and absolute links are clean (R1)', () => {
     '[anchor](#section)', // pure fragment → clean
   ].join('\n');
   assert.deepEqual(findReadmeLinkViolations(md), []);
+});
+
+test('readme lint: a NON-.md docs/site link IS flagged (only .md pages mount) (R1)', () => {
+  // docs/site/img/logo.png is under docs/site/ but not a mounted page; it is
+  // neither rewritten nor resolvable, so it MUST be flagged, not exempted.
+  // (Copilot PR #43 finding.)
+  const v = findReadmeLinkViolations('[asset](docs/site/data/sample.json)');
+  assert.equal(v.length, 1);
+  assert.equal(v[0].kind, 'relative-link');
+  assert.equal(v[0].target, 'docs/site/data/sample.json');
 });
 
 test('readme lint: a relative image is flagged relative-image; absolute image is clean (R2)', () => {
