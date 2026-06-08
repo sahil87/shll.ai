@@ -433,6 +433,74 @@ starlight-readme-toc .readme-toc-sublist {
   animation: shell-blink 1.1s steps(2, start) infinite;
 }
 
+/* ── Terminal window chrome (change 9vbo, intake § 5) ────────────────────────
+   A subtle bordered panel + thin title bar with three dimmed traffic-light dots
+   wrapping ONLY the homepage transcript — a functional affordance signalling the
+   region is typeable (the interactive prompt is a progressive enhancement on top
+   of the static transcript). CSS-only, no-JS-safe, both themes via --c-* vars.
+   This deliberately reverses 260517-pdsp-terminal-skin's "no window chrome"
+   stance; the restraint that addressed pdsp's fear is preserved: scoped to the
+   transcript alone, 1px border + dimmed dots, no glossy macOS gradients. */
+.terminal-window {
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  background: var(--c-bg);
+  overflow: hidden;
+  margin: 1.25rem 0 1.75rem;
+}
+
+/* Thin title bar — flush with the panel's top edge. The dots read as muted
+   status pips, not skeuomorphic buttons. */
+.terminal-window .terminal-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 1.8em;
+  padding: 0 0.7rem;
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-border);
+}
+
+.terminal-window .terminal-dot {
+  width: 0.62em;
+  height: 0.62em;
+  border-radius: 50%;
+  /* Dimmed: a low-opacity accent tint, not a saturated gradient. The three
+     pips map to the palette accents (red→accent, amber→accent default,
+     green→accent-2) but muted so the bar stays quiet. */
+  opacity: 0.55;
+}
+.terminal-window .terminal-dot-1 {
+  background: #c2553f;
+} /* muted red */
+.terminal-window .terminal-dot-2 {
+  background: var(--c-accent);
+} /* amber — the brand accent */
+.terminal-window .terminal-dot-3 {
+  background: var(--c-accent-2);
+} /* muted green */
+
+/* Inside the frame, the transcript drops its own outer margin (the frame owns
+   the spacing) and gains a little breathing room from the border. */
+.terminal-window .shell-session {
+  margin: 0;
+  padding: 0.85rem 1rem;
+}
+
+/* The now-focusable input region (progressive enhancement). The static skin had
+   no focusable control; this is the only behavioral CSS the skin lacks. A real
+   visible focus state (Accessibility / WCAG AA in both themes via --c-accent). */
+.shell-session .shell-input {
+  display: inline;
+  outline: none;
+  caret-color: var(--c-accent);
+  min-width: 0.6em; /* keep the caret clickable even when empty */
+}
+.shell-session .shell-input:focus-visible {
+  outline: 1px solid var(--c-accent);
+  outline-offset: 2px;
+}
+
 /* Caption block — a single-line shell-comment used as a label above/below
    another element (like an SVG diagram). Tighter vertical rhythm than a
    full shell-session. */

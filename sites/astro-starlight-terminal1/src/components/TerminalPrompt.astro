@@ -1,0 +1,392 @@
+---
+// TerminalPrompt.astro — progressive-enhancement client island for the homepage
+// terminal transcript. With JS off, the hand-written <pre class="shell-session">
+// in index.mdx renders verbatim (the static source of truth). With JS on, this
+// script upgrades ONLY the final prompt line — the one marked
+// [data-terminal-prompt] — into a focusable, typeable input that dispatches a
+// static in-page command map. No network, no SSR, no endpoint (Constitution I);
+// zero new dependencies, hand-rolled (Constitution VI). All printed output
+// reuses the existing .shell-* classes + --c-* variables, so dark/light parity
+// (Constitution V) comes for free.
+//
+// Precedent: src/components/Diagram.astro — a client island whose <script> does
+// theme-reactive work via the data-theme attribute on <html>.
+---
+
+<script>
+  // ── Types ────────────────────────────────────────────────────────────────
+  type Line = { text: string; classes?: string; html?: boolean };
+  type Handler = (args: string[], ctx: Ctx) => Line[] | void;
+  interface Ctx {
+    print: (lines: Line[]) => void;
+    clear: () => void;
+    raw: string; // the full entered line, after the command token
+  }
+
+  // ── Constants (no magic strings) ───────────────────────────────────────────
+  // The 7 tools, in the canonical order used across the site.
+  const TOOLS = ['idea', 'hop', 'fab-kit', 'wt', 'run-kit', 'tu', 'shll'] as const;
+
+  // Version rows — mirror the hand-written block in index.mdx (the no-JS source
+  // of truth). Re-declared here so `version` can re-print structured output
+  // without scraping the DOM (Design Decision 5 / Assumption 4).
+  const VERSIONS: Array<{ name: string; version: string }> = [
+    { name: 'shll', version: 'v0.0.11' },
+    { name: 'idea', version: 'v0.0.6' },
+    { name: 'hop', version: 'v0.1.11' },
+    { name: 'fab-kit', version: 'v2.0.3' },
+    { name: 'wt', version: 'v1.4.2' },
+    { name: 'run-kit', version: 'v2.2.1' },
+    { name: 'tu', version: 'v0.2.1' },
+  ];
+
+  // One-line synopsis per tool, for `man`.
+  const SYNOPSIS: Record<string, string> = {
+    idea: 'capture an idea, fan it out into parallel agents.',
+    hop: 'jump between worktrees, branches, and tools without losing your place.',
+    'fab-kit': 'turn a rough idea into a reviewed spec before any code is written.',
+    wt: 'spin up isolated git worktrees so agents never trip over each other.',
+    'run-kit': 'watch parallel runs converge into one live dashboard.',
+    tu: 'track token usage and cost across every agent run.',
+    shll: 'the meta-CLI that bootstraps and ties the whole toolkit together.',
+  };
+
+  // Dev aphorisms for `fortune` — all tie to "plan before they code".
+  const FORTUNES = [
+    'Weeks of coding can save you hours of planning.',
+    'A plan is just a hypothesis with better manners.',
+    'The fastest agent is the one that thought first.',
+    'Measure twice, prompt once.',
+    'No spec survives contact with the codebase — write it anyway.',
+    'Plan before they code, or debug after they do.',
+    'A clear spec is a refactor you never had to do.',
+    'The best diff is the one you predicted.',
+  ];
+
+  const ROUTE_OVERVIEW = (tool: string) => `/tools/${tool}/overview/`;
+  const ROUTE_INSTALL = '/getting-started/install/';
+
+  // ── Bootstrap ──────────────────────────────────────────────────────────────
+  const promptLine = document.querySelector<HTMLElement>('[data-terminal-prompt]');
+  if (promptLine) initTerminal(promptLine);
+
+  function initTerminal(promptLine: HTMLElement) {
+    const session = promptLine.closest<HTMLElement>('pre.shell-session');
+    if (!session) return;
+
+    // The active prompt line: replace the static "$ ▊" with a prompt + caret-bearing
+    // input region. We use a real, focusable, keyboard-navigable control: a span
+    // with role/tabindex plus a <span contenteditable> for the typed text, so the
+    // text echoes inline with the blinking cursor at the caret. A visible focus
+    // state is provided in terminal.css (.shell-input:focus-visible).
+    let input: HTMLElement;
+
+    // `focus` defaults to true: after the user runs a command (Enter / clear),
+    // moving focus to the next prompt is the desired terminal behavior. At initial
+    // activation we pass false — auto-focusing on page load would steal focus and
+    // scroll the hero out of view (discouraged; disruptive for keyboard/SR users).
+    function freshPrompt(focus = true): void {
+      const line = document.createElement('span');
+      line.className = 'shell-line';
+      line.setAttribute('data-terminal-prompt', '');
+
+      const prompt = document.createElement('span');
+      prompt.className = 'shell-prompt';
+      prompt.textContent = '$';
+
+      input = document.createElement('span');
+      input.className = 'shell-input';
+      input.setAttribute('contenteditable', 'plaintext-only');
+      input.setAttribute('role', 'textbox');
+      input.setAttribute('aria-multiline', 'false');
+      input.setAttribute('aria-label', 'Terminal command input. Type a command and press Enter. Type help to list commands.');
+      input.setAttribute('spellcheck', 'false');
+      input.setAttribute('autocapitalize', 'off');
+      input.setAttribute('autocorrect', 'off');
+
+      line.appendChild(prompt);
+      line.appendChild(document.createTextNode(' '));
+      line.appendChild(input);
+      session!.appendChild(line);
+
+      input.addEventListener('keydown', onKeydown);
+      caretToEnd();
+      if (focus) input.focus();
+    }
+
+    function caretToEnd(): void {
+      const sel = window.getSelection();
+      if (!sel) return;
+      const range = document.createRange();
+      range.selectNodeContents(input);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
+    // Print output lines as new spans appended to the SAME stream, reusing the
+    // existing .shell-* classes. `html: true` allows handler-authored anchors
+    // (e.g. man/version links) from our own trusted, static strings only.
+    function print(lines: Line[]): void {
+      for (const ln of lines) {
+        const el = document.createElement('span');
+        el.className = ['shell-line', ln.classes].filter(Boolean).join(' ');
+        if (ln.html) el.innerHTML = ln.text;
+        else el.textContent = ln.text;
+        session!.appendChild(el);
+      }
+    }
+
+    function clear(): void {
+      session!.replaceChildren();
+      freshPrompt();
+    }
+
+    function onKeydown(e: KeyboardEvent): void {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const raw = (input.textContent ?? '').trim();
+
+      // Freeze the just-entered line: convert the live input span into static
+      // echoed text so it reads like a committed command line.
+      input.removeAttribute('contenteditable');
+      input.removeAttribute('role');
+      input.removeAttribute('aria-multiline');
+      input.removeAttribute('aria-label');
+      input.removeEventListener('keydown', onKeydown);
+      input.classList.remove('shell-input');
+
+      if (raw === '') {
+        freshPrompt();
+        return;
+      }
+
+      run(raw);
+      // Emit the next prompt. If a handler navigated away (cd/open/install),
+      // window.location.assign is async — this prompt is appended before unload
+      // and is harmless; no guard needed.
+      freshPrompt();
+    }
+
+    function run(raw: string): void {
+      const parts = raw.split(/\s+/);
+      let name = parts[0].toLowerCase();
+      let args = parts.slice(1);
+
+      // `shll version` is an alias for `version`.
+      if (name === 'shll' && args[0]?.toLowerCase() === 'version') {
+        name = 'version';
+        args = args.slice(1);
+      }
+
+      const ctx: Ctx = { print, clear, raw: args.join(' ') };
+      const handler = COMMANDS[name];
+      if (handler) {
+        const out = handler(args, ctx);
+        if (out) print(out);
+      } else {
+        print([{ text: `command not found: ${parts[0]} — type 'help'`, classes: 'shell-out' }]);
+      }
+    }
+
+    // ── Command dispatch map ──────────────────────────────────────────────────
+    const COMMANDS: Record<string, Handler> = {
+      help() {
+        return [
+          { text: 'available commands:', classes: 'shell-out' },
+          { text: '  help            list these commands', classes: 'shell-out' },
+          { text: '  ls              list the 7 tools', classes: 'shell-out' },
+          { text: '  cd <tool>       open a tool overview  (alias: open)', classes: 'shell-out' },
+          { text: '  install         go to the install guide', classes: 'shell-out' },
+          { text: '  version         print tool versions', classes: 'shell-out' },
+          { text: '  theme [dark|light]   switch the color theme', classes: 'shell-out' },
+          { text: '  echo <text>     print text', classes: 'shell-out' },
+          { text: '  man <tool>      one-line synopsis of a tool', classes: 'shell-out' },
+          { text: '  whoami          who are you, really', classes: 'shell-out' },
+          { text: '  fortune         a dev aphorism', classes: 'shell-out' },
+          { text: '  clear           clear the screen', classes: 'shell-out' },
+          { text: '', classes: 'shell-out' },
+          { text: "tip: a few commands aren't on this list. a curious dev might try the obvious ones.", classes: 'shell-comment' },
+        ];
+      },
+
+      ls() {
+        const links = TOOLS.map(
+          (t) => `<a href="${ROUTE_OVERVIEW(t)}">${t}</a>`,
+        ).join('  ');
+        return [{ text: links, classes: 'shell-out', html: true }];
+      },
+
+      cd(args) {
+        return navigateTool(args[0]);
+      },
+      open(args) {
+        return navigateTool(args[0]);
+      },
+
+      install() {
+        window.location.assign(ROUTE_INSTALL);
+        return [{ text: `opening ${ROUTE_INSTALL} …`, classes: 'shell-out shell-dim' }];
+      },
+
+      version() {
+        // Re-print the same 7 rows as the static block in index.mdx, with the
+        // same short-URL tool links (e.g. /shll, which redirects to the tool
+        // overview) and [git] links — mirroring the no-JS block exactly.
+        const pad = Math.max(...VERSIONS.map((v) => v.name.length)) + 2;
+        return VERSIONS.map((v) => {
+          const name = `<a href="/${v.name}">${v.name}</a>`;
+          const gap = ' '.repeat(pad - v.name.length);
+          const ver = `<span class="shell-dim">${v.version}</span>`;
+          const verGap = ' '.repeat(Math.max(2, 10 - v.version.length));
+          const git = `<a class="shell-dim" href="https://github.com/sahil87/${v.name}">[git]</a>`;
+          return { text: `${name}${gap}${ver}${verGap}${git}`, classes: 'shell-line', html: true };
+        });
+      },
+
+      theme(args) {
+        return setTheme(args[0]);
+      },
+
+      clear(_args, ctx) {
+        ctx.clear();
+      },
+
+      // ── Easter eggs ──────────────────────────────────────────────────────────
+      whoami() {
+        return [
+          { text: 'a developer who plans before they code.', classes: 'shell-out' },
+          { text: '(everyone else is just typing.)', classes: 'shell-comment' },
+        ];
+      },
+
+      sudo(args) {
+        const what = args.join(' ').trim();
+        return [
+          { text: what ? `nice try. you are not in the sudoers file.` : 'sudo: a password is required (and you don’t have one here).', classes: 'shell-out' },
+          { text: 'this incident will be planned, not reported.', classes: 'shell-comment' },
+        ];
+      },
+
+      echo(_args, ctx) {
+        return [{ text: ctx.raw, classes: 'shell-out' }];
+      },
+
+      man(args) {
+        const tool = (args[0] ?? '').toLowerCase();
+        if (!tool) {
+          return [{ text: 'what manual page do you want?  try: man <tool>', classes: 'shell-out' }];
+        }
+        if (!isTool(tool)) {
+          return unknownTool(tool);
+        }
+        return [
+          { text: `${tool} — ${SYNOPSIS[tool]}`, classes: 'shell-out' },
+          { text: `see: <a href="${ROUTE_OVERVIEW(tool)}">${ROUTE_OVERVIEW(tool)}</a>`, classes: 'shell-out shell-dim', html: true },
+        ];
+      },
+
+      shll() {
+        // Signature ASCII splash / manifesto — the brand moment.
+        return [
+          { text: '         _      _ _ ', classes: 'shell-ok' },
+          { text: '  ___  | |__  | | |', classes: 'shell-ok' },
+          { text: " / __| | '_ \\ | | |", classes: 'shell-ok' },
+          { text: ' \\__ \\ | | | || | |', classes: 'shell-ok' },
+          { text: ' |___/ |_| |_||_|_|', classes: 'shell-ok' },
+          { text: '', classes: 'shell-out' },
+          { text: 'seven small CLIs that force AI agents to plan before they code.', classes: 'shell-out' },
+          { text: "type 'ls' to see them, or 'install' to get them all.", classes: 'shell-comment' },
+        ];
+      },
+
+      sl() {
+        // The classic fat-finger-of-`ls` gag: a steam locomotive chugs by.
+        return [
+          { text: '      ====        ________                ___________ ', classes: 'shell-out' },
+          { text: '  _D _|  |_______/        \\__I_I_____===__|_________| ', classes: 'shell-out' },
+          { text: '   |(_)---  |   H\\________/ |   |        =|___ ___|   ', classes: 'shell-out' },
+          { text: '   /     |  |   H  |  |     |   |         ||_| |_||   ', classes: 'shell-out' },
+          { text: '  |      |  |   H  |__--------------------| [___] |   ', classes: 'shell-out' },
+          { text: '  | ________|___H__/__|_____/[][]~\\_______|       |   ', classes: 'shell-out' },
+          { text: '  |/ |   |-----------I_____I [][] []  D   |=======|__ ', classes: 'shell-out' },
+          { text: '', classes: 'shell-out' },
+          { text: "you meant 'ls'. (we all do.)", classes: 'shell-comment' },
+        ];
+      },
+
+      fortune() {
+        const f = FORTUNES[Math.floor(Math.random() * FORTUNES.length)];
+        return [{ text: f, classes: 'shell-out' }];
+      },
+
+      exit: exitHandler,
+      ':q': exitHandler,
+    };
+
+    function exitHandler(): Line[] {
+      return [{ text: 'There is no escape from the shll.', classes: 'shell-out' }];
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────────
+    function isTool(name: string): boolean {
+      return (TOOLS as readonly string[]).includes(name);
+    }
+
+    function unknownTool(name: string): Line[] {
+      return [
+        { text: `no such tool: ${name}`, classes: 'shell-out' },
+        { text: `tools: ${TOOLS.join('  ')}`, classes: 'shell-out shell-dim' },
+      ];
+    }
+
+    function navigateTool(arg: string | undefined): Line[] {
+      const tool = (arg ?? '').toLowerCase();
+      if (!tool) {
+        return [{ text: 'usage: cd <tool>   (try: ls)', classes: 'shell-out' }];
+      }
+      if (!isTool(tool)) {
+        return unknownTool(tool);
+      }
+      const route = ROUTE_OVERVIEW(tool);
+      window.location.assign(route);
+      return [{ text: `opening ${route} …`, classes: 'shell-out shell-dim' }];
+    }
+
+    // Drive Starlight's EXISTING theme provider via the header <select>, so the
+    // header toggle, <html data-theme>, and localStorage persistence all update
+    // through Starlight's own onThemeChange (no reinvented persistence).
+    function setTheme(arg: string | undefined): Line[] {
+      const select = document.querySelector<HTMLSelectElement>(
+        'starlight-theme-select select',
+      );
+      const current =
+        document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+
+      let target: 'dark' | 'light';
+      if (!arg) {
+        target = current === 'dark' ? 'light' : 'dark';
+      } else if (arg === 'dark' || arg === 'light') {
+        target = arg;
+      } else {
+        return [{ text: 'usage: theme [dark|light]', classes: 'shell-out' }];
+      }
+
+      if (select) {
+        select.value = target;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+      } else {
+        // Fallback if the header select isn't present: flip data-theme directly.
+        document.documentElement.dataset.theme = target;
+      }
+      return [{ text: `theme → ${target}`, classes: 'shell-out shell-ok' }];
+    }
+
+    // ── Activate ─────────────────────────────────────────────────────────────
+    // Replace the static "$ ▊" line with a live, focusable prompt. The static
+    // markup (with its blinking cursor) was the no-JS source of truth; we now
+    // remove it and emit the first interactive prompt in its place.
+    promptLine.remove();
+    freshPrompt(false);
+  }
+</script>
