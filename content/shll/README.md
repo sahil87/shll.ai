@@ -24,7 +24,7 @@ That's it. `hop`, `wt`, and the other tools are now installed and their shell in
 
 For the deeper install guide — brew vs the `all` meta-formula, from-source builds, the full `shll shell-setup` rc-wiring, and the tap-trust matrix — see [docs/site/install.md](docs/site/install.md).
 
-`--trust-tap` records genuine Homebrew trust for `sahil87/tap` so brew stops nagging about non-official taps — it also opts brew into `HOMEBREW_REQUIRE_TAP_TRUST=1`, which means *other* untrusted third-party taps you use will then need explicit trust too. Drop the flag (`shll shell-setup`) if you'd rather not change brew's tap-trust posture; see [Troubleshooting](#tap-sahil87tap-is-allowed-by-default-warning) for the lighter alternatives.
+`--trust-tap` records genuine Homebrew trust for `sahil87/tap` so brew stops nagging about non-official taps — drop it (`shll shell-setup`) to leave brew's tap-trust posture unchanged. See [`--trust-tap`](#--trust-tap--resolve-the-homebrew-tap-trust-warning) for what it does and the side effects, or [Troubleshooting](#tap-sahil87tap-is-allowed-by-default-warning) for the lighter alternatives.
 
 ## Install
 
@@ -113,16 +113,16 @@ eval "$(shll shell-init zsh)"   # in ~/.zshrc
 eval "$(shll shell-init bash)"  # in ~/.bashrc
 ```
 
-The output is the concatenation (in roster order) of every installed sahil87 tool's own shell-init. What each roster tool contributes:
+The output is the concatenation (in roster order) of every installed sahil87 tool's own shell-init. What each roster tool is for, and what it adds to your shell:
 
-| Tool | What it adds to your shell |
-|------|----------------------------|
-| `hop` | `hop` shell function (bare-name `cd`, verb dispatch, tool-form), `h` / `hi` aliases, completion |
-| `wt`  | `wt` shell function wrapper (so the "Open here" menu option can `cd` your shell), completion |
-| `tu`  | completion |
-| `idea` | completion |
-| `rk`  | completion |
-| `fab-kit` | completion |
+| Tool | What it's for | What it adds to your shell |
+|------|---------------|----------------------------|
+| `hop` | fast directory navigation / bookmarks (`cd` on steroids) | `hop` shell function (bare-name `cd`, verb dispatch, tool-form), `h` / `hi` aliases, completion |
+| `wt`  | git worktree manager — create, switch, and clean up worktrees | `wt` shell function wrapper (so the "Open here" menu option can `cd` your shell), completion |
+| `tu`  | AI coding-assistant cost/usage tracker (Claude Code, Codex, OpenCode) | completion |
+| `idea` | worktree-aware idea / backlog capture from the terminal (markdown-first) | completion |
+| `rk`  | run-kit — web-based tmux orchestration for parallel agent workspaces | completion |
+| `fab-kit` | `fab` — spec-driven change workflow (this repo's own pipeline) | completion |
 
 `hop` and `wt` are the only tools that ship *shell functions* — those need eval-time installation because a function defined inside the binary can't escape into the parent shell. Everything else is completion, which the shell sources lazily on tab. Per-tool `<tool> shell-init <shell>` continues to work standalone if you'd rather wire them up individually.
 
@@ -176,7 +176,7 @@ Hide these hints with `HOMEBREW_NO_ENV_HINTS=1` (see `man brew`).
 shll shell-setup --trust-tap
 ```
 
-This runs `brew trust --tap sahil87/tap` (you vouch for your own tap) and sets `HOMEBREW_REQUIRE_TAP_TRUST=1` so brew enforces explicit trust going forward — untrusted third-party taps then get *blocked* rather than silently allowed. See [`shll shell-setup --trust-tap`](#--trust-tap--resolve-the-homebrew-tap-trust-warning) above.
+See [`shll shell-setup --trust-tap`](#--trust-tap--resolve-the-homebrew-tap-trust-warning) above for what this does (the `brew trust` ceremony, the `HOMEBREW_REQUIRE_TAP_TRUST=1` export, and how it composes with `--print`/`--uninstall`).
 
 **Lighter alternatives (set these yourself if you prefer):**
 
