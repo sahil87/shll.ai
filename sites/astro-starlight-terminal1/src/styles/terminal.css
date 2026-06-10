@@ -609,6 +609,28 @@ starlight-readme-toc .readme-toc-sublist {
   user-select: none;
 }
 
+/* sl locomotive (change o33t) — the island wraps the 7 ASCII art rows in a
+   .shell-art-train container whose inner block crosses the viewport
+   right-to-left once; a JS animationend listener then removes the container
+   (the train has left; the punchline line below it remains). translateX
+   percentages are relative to the inner element's own width — wide enough to
+   fully exit on the left (-105% clears sub-pixel residue). Under
+   prefers-reduced-motion the gate at the bottom of this file sets
+   animation: none — the art renders statically and animationend never fires,
+   so the art stays. Motion-safety is purely CSS; the island has no JS branch. */
+.shell-art-train {
+  display: block;
+  overflow: hidden;
+}
+.shell-art-train > .shell-train-inner {
+  display: inline-block;
+  animation: shell-train 3s linear forwards;
+}
+@keyframes shell-train {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(-105%); }
+}
+
 /* Caption block — a single-line shell-comment used as a label above/below
    another element (like an SVG diagram). Tighter vertical rhythm than a
    full shell-session. */
@@ -675,7 +697,10 @@ starlight-readme-toc .readme-toc-sublist {
    cursors stay VISIBLE — they signal typeability — they just hold steady: the
    focused input cursor at full opacity, the idle one at its existing 0.35
    from the base rule. Only animation/opacity here; colors stay on the --c-*
-   variables, so both themes are covered for free (Constitution V). */
+   variables, so both themes are covered for free (Constitution V).
+   Change o33t adds the sl locomotive to the gate: with animation: none the
+   art renders statically (exactly the pre-animation behavior) and
+   animationend never fires, so the island never removes it. */
 @media (prefers-reduced-motion: reduce) {
   .shell-session .shell-cursor,
   .sl-markdown-content > p:first-of-type::after {
@@ -686,5 +711,9 @@ starlight-readme-toc .readme-toc-sublist {
   .shell-session .shell-input-cursor.is-active {
     animation: none;
     opacity: 1; /* steady, not removed — focus still reads as "live" */
+  }
+  /* sl train (change o33t): static art, no crossing, no removal. */
+  .shell-art-train > .shell-train-inner {
+    animation: none;
   }
 }

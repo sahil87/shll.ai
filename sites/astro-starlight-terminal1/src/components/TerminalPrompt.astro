@@ -18,9 +18,16 @@
   // src/lib/ so it's unit-testable under node --test (scripts/
   // terminal-suggest.test.mjs); Vite bundles it into this island.
   import { suggestCommand } from '../lib/terminal-suggest.ts';
+  // GNU-utils egg logic (change o33t) — same lib pattern: echo's $VAR
+  // expansion, seq generation, and the rm/tar argument classifiers, pinned
+  // by scripts/terminal-eggs.test.mjs.
+  import { expandVars, seqLines, classifyRm, classifyTar, SEQ_GEN_CAP } from '../lib/terminal-eggs.ts';
 
   // ── Types ────────────────────────────────────────────────────────────────
-  type Line = { text: string; classes?: string; html?: boolean };
+  // `ariaHidden` (change o33t): hides the line from the cuur aria-live
+  // region — ASCII art and rapid stream frames are announcement garbage; each
+  // such command prints one announced, readable summary line instead.
+  type Line = { text: string; classes?: string; html?: boolean; ariaHidden?: boolean };
   type Handler = (args: string[], ctx: Ctx) => Line[] | void;
   interface Ctx {
     print: (lines: Line[]) => void;
@@ -99,7 +106,8 @@
     ),
     echo: helpDetail(
       'echo <text> — print text',
-      "prints its arguments back. that's it. that's the command.",
+      // Expansion mention (change o33t): echo now expands FAKE_ENV variables.
+      "prints its arguments back. variables like $SHELL expand — see 'env'.",
     ),
     man: helpDetail(
       'man <tool> — one-line synopsis of a tool',
@@ -133,6 +141,141 @@
     ':q': helpDetail(
       ':q — leave the shell, vim-style',
       'there is no escape from the shll.  (also: exit)',
+    ),
+    // The GNU-utils eggs (change o33t) — answered, never listed. Usage lines
+    // are the intake's §0e roster verbatim; `man <cmd>` bridges to these same
+    // entries, so help and man can never drift.
+    pwd: helpDetail(
+      'pwd — print the working directory',
+      "you're in /home/visitor/plans. naturally.",
+    ),
+    uname: helpDetail(
+      'uname [-a] — print system information',
+      'shllOS. add -a for the full plan-first boot brag.',
+    ),
+    id: helpDetail(
+      'id — print your identity',
+      'uid 1000, groups planners and curious. membership was automatic.',
+    ),
+    date: helpDetail(
+      'date — print the current date',
+      "the real one — some things here aren't a bit.",
+    ),
+    uptime: helpDetail(
+      'uptime — how long this page has been up',
+      'real time since page load. the load averages are always 0.07.',
+    ),
+    env: helpDetail(
+      'env — print the environment',
+      'the variables this shell believes in. echo expands them.',
+    ),
+    rm: helpDetail(
+      'rm <file> — remove files (you can try)',
+      'the filesystem is read-only. the classics are still worth typing.',
+    ),
+    mkdir: helpDetail(
+      'mkdir <dir> — create a directory (you can try)',
+      'read-only filesystem. want something built? write a spec.',
+    ),
+    touch: helpDetail(
+      'touch <file> — create a file (you can try)',
+      'nothing here gets touched without a plan.',
+    ),
+    mv: helpDetail(
+      'mv <a> <b> — move files (you can try)',
+      'nothing moves. this site is immutable, like a good artifact.',
+    ),
+    cp: helpDetail(
+      'cp <a> <b> — copy files (you can try)',
+      'no copies. every site in this repo is an original.',
+    ),
+    chmod: helpDetail(
+      'chmod <mode> <file> — change permissions (you can try)',
+      "permission to change permissions: denied. ironic, isn't it.",
+    ),
+    chown: helpDetail(
+      'chown <owner> <file> — change ownership (you can try)',
+      "visitors stay visitors. 'install' makes the toolkit yours, though.",
+    ),
+    diff: helpDetail(
+      'diff <a> <b> — compare two things',
+      "'diff plan reality' is the canonical comparison. try it.",
+    ),
+    tar: helpDetail(
+      'tar <flags> — the flag gauntlet',
+      'xkcd 1168 rules: a valid invocation on the first try, or the bomb.',
+    ),
+    make: helpDetail(
+      'make [target] — build a target. there is exactly one.',
+      "'make plan' is the only rule in this makefile. fitting.",
+    ),
+    vim: helpDetail(
+      'vim — open the editor holy war',
+      "you can't exit what you never entered. (also answers to 'vi'.)",
+    ),
+    vi: helpDetail(
+      'vi — open the editor holy war  (alias of vim)',
+      "you can't exit what you never entered.",
+    ),
+    emacs: helpDetail(
+      'emacs — open the other side of the holy war',
+      "a fine operating system. it's even got an editor.",
+    ),
+    nano: helpDetail(
+      'nano — the sensible one',
+      'it just works. no joke survives contact with nano.',
+    ),
+    curl: helpDetail(
+      'curl <url> — fetch something over the network',
+      'denied — there is no network here. the site is fully static.',
+    ),
+    wget: helpDetail(
+      'wget <url> — fetch something over the network  (see: curl)',
+      'denied — there is no network here. the site is fully static.',
+    ),
+    less: helpDetail(
+      'less — page through output',
+      "here, less and more are the same command. that's the joke.",
+    ),
+    more: helpDetail(
+      'more — page through output  (see: less)',
+      "here, more and less are the same command. that's the joke.",
+    ),
+    kill: helpDetail(
+      'kill <pid> — send a signal',
+      'signals bounce. the seven agents are protected by their planner.',
+    ),
+    true: helpDetail(
+      'true — exit successfully, saying nothing',
+      'prints nothing. succeeds quietly. the joke is that there is no joke.',
+    ),
+    false: helpDetail(
+      'false — fail, also saying nothing',
+      'prints nothing. fails quietly. somebody has to.',
+    ),
+    seq: helpDetail(
+      'seq [first [incr]] last — print a number sequence',
+      'integers only. display capped at 100 — scope control.',
+    ),
+    ps: helpDetail(
+      'ps — list running processes',
+      'the seven tools, plus you. shll is PID 1 for a reason.',
+    ),
+    sha256sum: helpDetail(
+      'sha256sum <text> — hash your text, for real',
+      'a real SHA-256 of your text, computed in your browser. no tricks.',
+    ),
+    grep: helpDetail(
+      'grep <pattern> — search the seven tools',
+      "case-insensitive match over each tool's one-line synopsis.",
+    ),
+    yes: helpDetail(
+      'yes [text] — repeat until stopped',
+      'repeats until Ctrl-C — or until it gives up at 50. try stopping it.',
+    ),
+    tail: helpDetail(
+      "tail [-f] agents.log — follow the agents' log",
+      'one logged run of all seven tools. spoiler: the log ends.',
     ),
   };
 
@@ -186,6 +329,56 @@
   // buttons without JS) and only *shown* on touch-primary devices via the
   // `(hover: none) and (pointer: coarse)` media query in terminal.css.
   const CHIP_COMMANDS = ['ls', 'help', 'version', 'install'] as const;
+
+  // ── GNU-utils delight (change o33t) ─────────────────────────────────────
+  // Fake environment — the single source for BOTH `env` (prints these as
+  // KEY=value, declaration order) and `echo`'s $VAR expansion (expandVars
+  // against the same record). One source, no drift.
+  const FAKE_ENV: Record<string, string> = {
+    SHELL: '/bin/shll',
+    USER: 'visitor',
+    HOME: '/home/visitor',
+    EDITOR: 'spec',
+    PLAN: 'first',
+    AGENTS: '7',
+    PATH: '/plans:/specs:/code',
+    TERM: 'shll-256color',
+  };
+
+  // The fixed agents.log content for `tail` — timestamps are static literals
+  // (13:37, leet o'clock), and the last line self-identifies the log as
+  // static, defusing any implied-runtime read (the conscious mitigation for
+  // the backlog's no-streaming-gags constraint).
+  const AGENT_LOG = [
+    '13:37:00 [idea]    captured: "what if the homepage was a terminal"',
+    '13:37:01 [fab-kit] intake scored: 9 certain, 0 unresolved — gate passed',
+    '13:37:02 [wt]      worktree created: a clean room for the agent',
+    '13:37:03 [hop]     jumped: main → feature branch, context intact',
+    '13:37:04 [run-kit] four panes, all green',
+    '13:37:05 [tu]      tokens counted. budget respected.',
+    '13:37:06 [shll]    shipped. plan first, then code. always.',
+    '13:37:07 [shll]    log ends — nothing actually runs here. the site is static.',
+  ];
+
+  // Stream cadences and caps (change o33t) — named constants, following the
+  // HINT_*/NAV_BEAT_MS convention above. `yes` is fast (the bit is the
+  // flood), `tail` is slow (the lines are meant to be read), `rm` sits in
+  // between (each removal should land) with a beat before the resolution.
+  const YES_TICK_MS = 150;
+  const YES_CAP = 50;
+  // Reduced-motion `yes` prints this many static lines at once — enough to
+  // suggest the forever without flooding (and a seven-tools wink).
+  const YES_REDUCE_COUNT = 7;
+  const TAIL_TICK_MS = 700;
+  const RM_TICK_MS = 300;
+  const RM_BEAT_MS = 900;
+  const SEQ_CAP = 100; // display cap for `seq` output lines
+
+  // Shared media-query check (change o33t): the streamer's all-at-once
+  // fallback, `yes`'s static variant, and the rm-deluxe wipe-skip all branch
+  // on it — and the 23xc idle ghost hint now reuses it too.
+  const prefersReducedMotion = (): boolean =>
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // ── Bootstrap ──────────────────────────────────────────────────────────────
   const promptLine = document.querySelector<HTMLElement>('[data-terminal-prompt]');
@@ -371,17 +564,26 @@
       session!.style.paddingBottom = '';
     }
 
+    // Build one transcript line element from a Line. Shared by print() and
+    // printBeforePrompt() so the element shape can never drift between them
+    // (extracted in change o33t — previously duplicated inline in both).
+    function makeLineEl(ln: Line): HTMLElement {
+      const el = document.createElement('span');
+      el.className = ['shell-line', ln.classes].filter(Boolean).join(' ');
+      if (ln.html) el.innerHTML = ln.text;
+      else el.textContent = ln.text;
+      // Live-region noise control (change o33t): lines flagged ariaHidden are
+      // hidden from the cuur aria-live region — ASCII art and rapid stream
+      // frames would otherwise be announced line by line.
+      if (ln.ariaHidden) el.setAttribute('aria-hidden', 'true');
+      return el;
+    }
+
     // Print output lines as new spans appended to the SAME stream, reusing the
     // existing .shell-* classes. `html: true` allows handler-authored anchors
     // (e.g. man/version links) from our own trusted, static strings only.
     function print(lines: Line[]): void {
-      for (const ln of lines) {
-        const el = document.createElement('span');
-        el.className = ['shell-line', ln.classes].filter(Boolean).join(' ');
-        if (ln.html) el.innerHTML = ln.text;
-        else el.textContent = ln.text;
-        session!.appendChild(el);
-      }
+      for (const ln of lines) session!.appendChild(makeLineEl(ln));
       scrollToBottom();
     }
 
@@ -447,7 +649,7 @@
       hintEl.className = 'shell-ghost';
       hintEl.setAttribute('aria-hidden', 'true');
       liveLine.appendChild(hintEl); // after the block cursor (line's last child)
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      if (prefersReducedMotion()) {
         // Reduced motion: no typing animation — the full hint appears at once,
         // still dim, still dismissable.
         hintEl.textContent = HINT_TEXT;
@@ -523,6 +725,11 @@
           // clear() deliberately does NOT emit one itself, so this is exactly one.
           e.preventDefault();
           exitResting();
+          // Kill any active output stream first (change o33t) — wiping the
+          // screen while `yes` keeps flooding (or while the rm-deluxe beat is
+          // pending) would un-clear it instantly. Matches the `clear` command,
+          // which inherits the same kill via commitLine → stopStream.
+          stopStream();
           clear();
           freshPrompt();
           return;
@@ -541,6 +748,11 @@
             window.clearTimeout(pendingNav);
             pendingNav = undefined;
           }
+          // And kill any active output stream (change o33t): the frozen ^C
+          // echo + fresh prompt + halted output read exactly like killing a
+          // foreground process. stopStream clears the rm-deluxe followup
+          // beat too, so Ctrl-C aborts that whole sequence cleanly.
+          stopStream();
           freezeInput('^C');
           historyCursor = history.length;
           freshPrompt();
@@ -611,6 +823,13 @@
       }
       historyCursor = history.length;
 
+      // A newly committed command kills any active stream (change o33t) —
+      // deliberate contrast with pendingNav, which commitLine does NOT clear
+      // (the nav beat is short and already announced its destination; streams
+      // are long-lived and would interleave with the new command's output).
+      // Placed after the empty-line short-circuit above: a bare Enter during
+      // `yes` does not kill it, just like a real shell.
+      stopStream();
       run(raw);
       // Emit the next prompt. If a handler navigated away (cd/open/install),
       // window.location.assign is async — this prompt is appended before unload
@@ -693,15 +912,20 @@
     // which prints above a still-live (uncommitted) prompt — unlike print(), which
     // appends after the (already-frozen) command line for normal command output.
     function printBeforePrompt(ln: Line): void {
-      const el = document.createElement('span');
-      el.className = ['shell-line', ln.classes].filter(Boolean).join(' ');
-      if (ln.html) el.innerHTML = ln.text;
-      else el.textContent = ln.text;
+      const el = makeLineEl(ln);
       // The live prompt line is `input`'s parent span ([data-terminal-prompt]); it is
       // the last child of `session` while the prompt is live. Insert the listing just
       // before it. insertBefore(el, null) appends to the end, so a detached/missing
       // prompt line degrades to print()'s append behavior rather than throwing.
-      const liveLine = input.closest<HTMLElement>('[data-terminal-prompt]');
+      // The isContentEditable gate (change o33t): during run() the previous
+      // input is already frozen — but freezeInput leaves a stale
+      // data-terminal-prompt attribute on the frozen line, so a bare closest()
+      // lookup would insert ABOVE the just-echoed command. With no LIVE prompt
+      // (reduced-motion streams print synchronously inside run()), fall back
+      // to appending — exactly where print() would land the line.
+      const liveLine = input.isContentEditable
+        ? input.closest<HTMLElement>('[data-terminal-prompt]')
+        : null;
       session!.insertBefore(el, liveLine);
       // While resting (top-anchored, change 23xc), pinning to bottom would jump
       // the viewport into the blank filler padding and defeat the greeting
@@ -744,7 +968,12 @@
       }
 
       const ctx: Ctx = { print, clear, raw: args.join(' ') };
-      const handler = COMMANDS[name];
+      // Own-property guard (change o33t review rework): COMMANDS is a plain
+      // object literal, so an unguarded lookup walks the prototype chain —
+      // a bare `__proto__` resolved to Object.prototype (truthy, not a
+      // Handler) and "calling" it threw before freshPrompt could emit the
+      // next prompt. Inherited names must dispatch to command-not-found.
+      const handler = Object.hasOwn(COMMANDS, name) ? COMMANDS[name] : undefined;
       if (handler) {
         const out = handler(args, ctx);
         if (out) print(out);
@@ -860,31 +1089,54 @@
       },
 
       echo(_args, ctx) {
-        return [{ text: ctx.raw, classes: 'shell-out' }];
+        // Env expansion (change o33t): $NAME / ${NAME} expand against
+        // FAKE_ENV — the same record `env` prints, one source, no drift.
+        // `echo hello` is unchanged; an unknown name expands to '' (authentic
+        // shell behavior), so `echo $UNDEFINED` prints an empty line.
+        return [{ text: expandVars(ctx.raw, FAKE_ENV), classes: 'shell-out' }];
       },
 
       man(args) {
-        const tool = (args[0] ?? '').toLowerCase();
-        if (!tool) {
+        const topic = (args[0] ?? '').toLowerCase();
+        if (!topic) {
           return [{ text: 'what manual page do you want?  try: man <tool>', classes: 'shell-out' }];
         }
-        if (!isTool(tool)) {
-          return unknownTool(tool);
+        // Tools keep precedence (man shll still prints the TOOL synopsis,
+        // never the command's HELP_DETAIL entry).
+        if (isTool(topic)) {
+          return [
+            { text: `${topic} — ${SYNOPSIS[topic]}`, classes: 'shell-out' },
+            { text: `see: <a href="${ROUTE_OVERVIEW(topic)}">${ROUTE_OVERVIEW(topic)}</a>`, classes: 'shell-out shell-dim', html: true },
+          ];
         }
-        return [
-          { text: `${tool} — ${SYNOPSIS[tool]}`, classes: 'shell-out' },
-          { text: `see: <a href="${ROUTE_OVERVIEW(tool)}">${ROUTE_OVERVIEW(tool)}</a>`, classes: 'shell-out shell-dim', html: true },
-        ];
+        // HELP_DETAIL bridge (change o33t): any command key answers from the
+        // same record `help <cmd>` reads — one source, no drift. Anything
+        // else gets the authentic no-entry line plus the cuur suggester tail
+        // (replacing the old fall-through to unknownTool, which wrongly
+        // framed every non-tool argument as a failed tool lookup).
+        // Own-property guard (change o33t review rework): an unguarded read
+        // walks the prototype chain — `man constructor` / `man toString`
+        // returned an inherited truthy member, print() threw on the
+        // non-iterable, and commitLine aborted BEFORE freshPrompt, leaving
+        // the terminal with zero prompts (bricked until reload).
+        const detail = Object.hasOwn(HELP_DETAIL, topic) ? HELP_DETAIL[topic] : undefined;
+        if (detail) return detail;
+        const suggestion = suggestCommand(topic, Object.keys(COMMANDS));
+        const tail = suggestion ? ` — did you mean '${suggestion}'?` : '';
+        return [{ text: `No manual entry for ${topic}${tail}`, classes: 'shell-out' }];
       },
 
       shll() {
-        // Signature ASCII splash / manifesto — the brand moment.
+        // Signature ASCII splash / manifesto — the brand moment. The art rows
+        // are ariaHidden (change o33t live-region retrofit): five lines of
+        // letter fragments are announcement garbage for a screen reader; the
+        // pitch + tip below carry the readable content and stay announced.
         return [
-          { text: '         _      _ _ ', classes: 'shell-ok' },
-          { text: '  ___  | |__  | | |', classes: 'shell-ok' },
-          { text: " / __| | '_ \\ | | |", classes: 'shell-ok' },
-          { text: ' \\__ \\ | | | || | |', classes: 'shell-ok' },
-          { text: ' |___/ |_| |_||_|_|', classes: 'shell-ok' },
+          { text: '         _      _ _ ', classes: 'shell-ok', ariaHidden: true },
+          { text: '  ___  | |__  | | |', classes: 'shell-ok', ariaHidden: true },
+          { text: " / __| | '_ \\ | | |", classes: 'shell-ok', ariaHidden: true },
+          { text: ' \\__ \\ | | | || | |', classes: 'shell-ok', ariaHidden: true },
+          { text: ' |___/ |_| |_||_|_|', classes: 'shell-ok', ariaHidden: true },
           { text: '', classes: 'shell-out' },
           { text: 'seven small CLIs that force AI agents to plan before they code.', classes: 'shell-out' },
           { text: "type 'ls' to see them, or 'install' to get them all.", classes: 'shell-comment' },
@@ -892,15 +1144,43 @@
       },
 
       sl() {
-        // The classic fat-finger-of-`ls` gag: a steam locomotive chugs by.
+        // The classic fat-finger-of-`ls` gag — upgraded by change o33t: the
+        // locomotive now CROSSES the viewport right-to-left via CSS
+        // (.shell-art-train / @keyframes shell-train in terminal.css) and the
+        // art container is removed on animationend — the train has left; the
+        // punchline remains directly under the echoed command. The 7 art rows
+        // live in one aria-hidden container (live-region noise control, same
+        // policy as the shll splash) while the punchline below stays
+        // announced. Under prefers-reduced-motion the existing CSS gate sets
+        // animation: none — the art renders statically exactly as before and
+        // animationend never fires, so the art stays. Motion-safety is purely
+        // CSS; no JS branch.
+        const art = [
+          '      ====        ________                ___________ ',
+          '  _D _|  |_______/        \\__I_I_____===__|_________| ',
+          '   |(_)---  |   H\\________/ |   |        =|___ ___|   ',
+          '   /     |  |   H  |  |     |   |         ||_| |_||   ',
+          '  |      |  |   H  |__--------------------| [___] |   ',
+          '  | ________|___H__/__|_____/[][]~\\_______|       |   ',
+          '  |/ |   |-----------I_____I [][] []  D   |=======|__ ',
+        ];
+        const train = document.createElement('span');
+        train.className = 'shell-art-train';
+        train.setAttribute('aria-hidden', 'true');
+        const inner = document.createElement('span');
+        inner.className = 'shell-train-inner';
+        for (const row of art) {
+          const el = document.createElement('span');
+          el.className = 'shell-line shell-out';
+          el.textContent = row;
+          inner.appendChild(el);
+        }
+        train.appendChild(inner);
+        inner.addEventListener('animationend', () => train.remove());
+        // Appended directly (run() executes before commitLine's freshPrompt,
+        // exactly like print()); the returned punchline lines land after it.
+        session!.appendChild(train);
         return [
-          { text: '      ====        ________                ___________ ', classes: 'shell-out' },
-          { text: '  _D _|  |_______/        \\__I_I_____===__|_________| ', classes: 'shell-out' },
-          { text: '   |(_)---  |   H\\________/ |   |        =|___ ___|   ', classes: 'shell-out' },
-          { text: '   /     |  |   H  |  |     |   |         ||_| |_||   ', classes: 'shell-out' },
-          { text: '  |      |  |   H  |__--------------------| [___] |   ', classes: 'shell-out' },
-          { text: '  | ________|___H__/__|_____/[][]~\\_______|       |   ', classes: 'shell-out' },
-          { text: '  |/ |   |-----------I_____I [][] []  D   |=======|__ ', classes: 'shell-out' },
           { text: '', classes: 'shell-out' },
           { text: "you meant 'ls'. (we all do.)", classes: 'shell-comment' },
         ];
@@ -913,10 +1193,499 @@
 
       exit: exitHandler,
       ':q': exitHandler,
+
+      // ── GNU-utils easter eggs (change o33t) ────────────────────────────────
+      // Tiers A (stateless one-shots), B (light logic), C (animated, via
+      // startStream). Curation rule (user-approved): every command must teach
+      // the toolkit, reward terminal-culture recognition, or demo
+      // interactivity — no bare error stubs without a punchline. All keys are
+      // unlisted eggs: the top-level `help` list stays byte-identical and each
+      // key answers `help <cmd>` / `man <cmd>` via HELP_DETAIL. NOTE: the new
+      // keys are appended AFTER all pre-existing keys so the did-you-mean
+      // suggester's equal-distance tie-break (first key in iteration order)
+      // keeps favoring the established commands.
+
+      // ── Tier A: one-shots ──
+      pwd() {
+        return [
+          { text: '/home/visitor/plans', classes: 'shell-out' },
+          { text: '(you are exactly where you planned to be.)', classes: 'shell-comment' },
+        ];
+      },
+
+      uname(args) {
+        // Bare: just the OS. Any flag (-a etc.): the full plan-first boot brag.
+        if (args.length === 0) return [{ text: 'shllOS', classes: 'shell-out' }];
+        return [{ text: 'shllOS shll.ai 7.0-plan-first #1 SMP plan-first scheduler x86_64', classes: 'shell-out' }];
+      },
+
+      id() {
+        return [{ text: 'uid=1000(visitor) gid=7(planners) groups=7(planners),20(curious)', classes: 'shell-out' }];
+      },
+
+      date() {
+        return [
+          { text: new Date().toString(), classes: 'shell-out' },
+          { text: '(a good day to write a spec.)', classes: 'shell-comment' },
+        ];
+      },
+
+      uptime() {
+        // Real page age from performance.now(); the loads are the
+        // seven-tools wink (0.07 across the board, forever).
+        const sec = Math.floor(performance.now() / 1000);
+        const age = sec < 60 ? `${sec} sec` : `${Math.floor(sec / 60)} min`;
+        const clock = new Date().toTimeString().slice(0, 8);
+        return [{ text: ` ${clock} up ${age}, 1 visitor, load average: 0.07, 0.07, 0.07`, classes: 'shell-out' }];
+      },
+
+      env() {
+        // FAKE_ENV as KEY=value, declaration order — the same record echo
+        // expands against.
+        return Object.entries(FAKE_ENV).map(([k, v]) => ({ text: `${k}=${v}`, classes: 'shell-out' }));
+      },
+
+      // ── Tier A: read-only refusals ──
+      // First line keeps the authentic GNU error shape; the second is the
+      // punchline. No fake filesystem (the backlog [o33t] constraint, fully
+      // honored) — every file-op refuses, honestly.
+      rm(args) {
+        // Branch on the classification alone (change o33t review rework: the
+        // missing-operand fallback was a double-duty `cls === 'refuse' &&
+        // target` condition — now each class owns its branch explicitly).
+        const cls = classifyRm(args);
+        if (cls === 'deluxe') {
+          // rmDeluxe streams and returns void — keep the void call and the
+          // handler's (line-less) return decoupled.
+          rmDeluxe();
+          return;
+        }
+        if (cls === 'guarded-root') {
+          // Two authentic lines, NO joke line — the authenticity is the
+          // invitation to type the override.
+          return [
+            { text: "rm: it is dangerous to operate recursively on '/'", classes: 'shell-out' },
+            { text: 'rm: use --no-preserve-root to override this failsafe', classes: 'shell-out' },
+          ];
+        }
+        if (cls === 'refuse') {
+          // `refuse` needs a removable target; a flags-only invocation
+          // (`rm -f`) has none and falls to the missing-operand lines below.
+          const target = args.find((a) => !a.startsWith('-'));
+          if (target) {
+            return [
+              { text: `rm: cannot remove '${target}': Read-only file system`, classes: 'shell-out' },
+              { text: '(this site ships as static files. deletion was never on the table.)', classes: 'shell-comment' },
+            ];
+          }
+        }
+        // `missing` — and target-less `refuse` — land here, with the
+        // deliberate invitation to the deluxe egg.
+        return [
+          { text: 'rm: missing operand', classes: 'shell-out' },
+          { text: "(try 'rm -rf /' if you're feeling brave.)", classes: 'shell-comment' },
+        ];
+      },
+
+      mkdir(args) {
+        const target = args.find((a) => !a.startsWith('-'));
+        if (!target) return [{ text: 'mkdir: missing operand', classes: 'shell-out' }];
+        return [
+          { text: `mkdir: cannot create directory '${target}': Read-only file system`, classes: 'shell-out' },
+          { text: '(want something built? write a spec. fab-kit insists.)', classes: 'shell-comment' },
+        ];
+      },
+
+      touch(args) {
+        const target = args.find((a) => !a.startsWith('-'));
+        if (!target) return [{ text: 'touch: missing file operand', classes: 'shell-out' }];
+        return [
+          { text: `touch: cannot touch '${target}': Read-only file system`, classes: 'shell-out' },
+          { text: '(the agents do the typing around here.)', classes: 'shell-comment' },
+        ];
+      },
+
+      mv(args) {
+        if (args.length < 2) return [{ text: 'mv: missing file operand', classes: 'shell-out' }];
+        return [
+          { text: `mv: cannot move '${args[0]}': Read-only file system`, classes: 'shell-out' },
+          { text: '(this site is immutable. like a good artifact.)', classes: 'shell-comment' },
+        ];
+      },
+
+      cp(args) {
+        if (args.length < 2) return [{ text: 'cp: missing file operand', classes: 'shell-out' }];
+        return [
+          { text: `cp: cannot create regular file '${args[1]}': Read-only file system`, classes: 'shell-out' },
+          { text: '(every site in this repo is an original.)', classes: 'shell-comment' },
+        ];
+      },
+
+      chmod(args) {
+        if (args.length === 0) return [{ text: 'chmod: missing operand', classes: 'shell-out' }];
+        const target = args[args.length - 1];
+        if (args.includes('777')) {
+          return [
+            { text: `chmod: changing permissions of '${target}': absolutely not`, classes: 'shell-out' },
+            { text: '(777? we plan our permissions here.)', classes: 'shell-comment' },
+          ];
+        }
+        return [
+          { text: `chmod: changing permissions of '${target}': Operation not permitted`, classes: 'shell-out' },
+          { text: "(ironic, isn't it.)", classes: 'shell-comment' },
+        ];
+      },
+
+      chown(args) {
+        if (args.length === 0) return [{ text: 'chown: missing operand', classes: 'shell-out' }];
+        return [
+          { text: `chown: changing ownership of '${args[args.length - 1]}': Operation not permitted`, classes: 'shell-out' },
+          // The conversion hook: ownership is for keeps, via install.
+          { text: "(visitors stay visitors. the toolkit can be yours, though — try 'install'.)", classes: 'shell-comment' },
+        ];
+      },
+
+      // ── Tier A: terminal-culture one-shots ──
+      diff(args) {
+        if (args.length < 2) {
+          return [
+            { text: 'usage: diff <a> <b>', classes: 'shell-out' },
+            { text: '(try: diff plan reality)', classes: 'shell-comment' },
+          ];
+        }
+        const a = args[0].toLowerCase();
+        const b = args[1].toLowerCase();
+        if ((a === 'plan' && b === 'reality') || (a === 'reality' && b === 'plan')) {
+          // Authentic normal-diff format, then the thesis.
+          return [
+            { text: '1c1', classes: 'shell-out' },
+            { text: '< everything you planned', classes: 'shell-out' },
+            { text: '---', classes: 'shell-out' },
+            { text: '> everything that happened', classes: 'shell-out' },
+            { text: "(that's why we plan.)", classes: 'shell-comment' },
+          ];
+        }
+        return [{ text: `diff: ${args[0]} and ${args[1]} differ in every line that matters.`, classes: 'shell-out' }];
+      },
+
+      tar(args) {
+        // The xkcd-1168 flag gauntlet, classified by terminal-eggs.ts.
+        if (classifyTar(args) === 'survivor') {
+          return [
+            { text: 'congratulations: a valid tar invocation on the first try.', classes: 'shell-out' },
+            { text: "(xkcd 1168 survivors club. membership is smaller than you'd think.)", classes: 'shell-comment' },
+          ];
+        }
+        return [
+          { text: 'tar: This does not look like a tar archive', classes: 'shell-out' },
+          { text: 'tar: Exiting with failure status due to previous errors', classes: 'shell-out' },
+          { text: '(xkcd 1168: you had ten seconds.)', classes: 'shell-comment' },
+        ];
+      },
+
+      make(args) {
+        const target = (args[0] ?? '').toLowerCase();
+        if (!target) {
+          return [
+            { text: 'make: *** No targets specified and no makefile found.  Stop.', classes: 'shell-out' },
+            { text: '(try: make plan)', classes: 'shell-comment' },
+          ];
+        }
+        if (target === 'plan') {
+          // The converting gag: the one buildable target IS the product.
+          // Reuses SYNOPSIS + ROUTE_OVERVIEW (zero copy duplication; same
+          // html:true trusted-static-anchor pattern as man).
+          return [
+            { text: "make: building 'plan'...", classes: 'shell-out' },
+            { text: `fab-kit — ${SYNOPSIS['fab-kit']}`, classes: 'shell-out' },
+            { text: `see: <a href="${ROUTE_OVERVIEW('fab-kit')}">${ROUTE_OVERVIEW('fab-kit')}</a>`, classes: 'shell-out shell-dim', html: true },
+          ];
+        }
+        if (target === 'coffee') {
+          return [
+            { text: "make: *** No rule to make target 'coffee'.  Stop.", classes: 'shell-out' },
+            { text: "(418: i'm a teapot.)", classes: 'shell-comment' },
+          ];
+        }
+        return [
+          { text: `make: *** No rule to make target '${target}'.  Stop.`, classes: 'shell-out' },
+          { text: "(only 'plan' is buildable here. naturally.)", classes: 'shell-comment' },
+        ];
+      },
+
+      // The editor holy war — two keys, one handler (the exitHandler shape).
+      vim: editorHandler,
+      vi: editorHandler,
+
+      emacs() {
+        return [{ text: "a fine operating system. all it's missing is a good terminal website.", classes: 'shell-out' }];
+      },
+
+      nano() {
+        return [{ text: "nano: too sensible to joke about. (try 'vim'.)", classes: 'shell-out' }];
+      },
+
+      // No fake network (the backlog [o33t] constraint, fully honored) —
+      // both deniers print their own name via one shared handler.
+      curl() {
+        return denyNetwork('curl');
+      },
+      wget() {
+        return denyNetwork('wget');
+      },
+
+      // Two keys, byte-identical output — that IS the gag.
+      less: lessHandler,
+      more: lessHandler,
+
+      kill(args) {
+        const pid = args.find((a) => !a.startsWith('-'));
+        if (!pid) {
+          return [
+            { text: 'kill: usage: kill <pid>', classes: 'shell-out' },
+            { text: "(you don't know their pids. that's rather the point.)", classes: 'shell-comment' },
+          ];
+        }
+        // One shared refusal line; only the punchline varies by signal
+        // (change o33t review rework — the first line was duplicated).
+        const punchline = args.includes('-9')
+          ? '(not even with -9. the agents are protected by their planner.)'
+          : '(the seven agents are protected by their planner.)';
+        return [
+          { text: `kill: ${pid}: Operation not permitted`, classes: 'shell-out' },
+          { text: punchline, classes: 'shell-comment' },
+        ];
+      },
+
+      // true/false print NOTHING — authentic, and the authenticity is the
+      // egg. The payoff lives in `help true` / `help false`.
+      true() {},
+      false() {},
+
+      // ── Tier B: light logic ──
+      seq(args) {
+        const lines = seqLines(args);
+        if (lines === null) {
+          return [
+            { text: 'seq: invalid argument', classes: 'shell-out' },
+            { text: 'usage: seq [first [incr]] last', classes: 'shell-out shell-dim' },
+          ];
+        }
+        // Empty range → empty output, authentic. Display capped at SEQ_CAP;
+        // the lib's own generation bound (SEQ_GEN_CAP) keeps absurd ranges
+        // from freezing the tab, and the `+` keeps the cap line honest.
+        const out: Line[] = lines.slice(0, SEQ_CAP).map((n) => ({ text: n, classes: 'shell-out' }));
+        if (lines.length > SEQ_CAP) {
+          const total = `${lines.length}${lines.length >= SEQ_GEN_CAP ? '+' : ''}`;
+          out.push({ text: `(capped at ${SEQ_CAP} of ${total} — this terminal believes in scope control.)`, classes: 'shell-comment' });
+        }
+        return out;
+      },
+
+      ps() {
+        // Tool rows are generated from TOOLS — no parallel roster to drift.
+        // shll is PID 1: the meta-CLI that bootstraps the toolkit is init,
+        // that's the joke. The visitor row shows REAL elapsed session time.
+        const sec = Math.floor(performance.now() / 1000);
+        const elapsed = [
+          String(Math.floor(sec / 3600)).padStart(2, '0'),
+          String(Math.floor(sec / 60) % 60).padStart(2, '0'),
+          String(sec % 60).padStart(2, '0'),
+        ].join(':');
+        const procs = ['shll', ...TOOLS.filter((t) => t !== 'shll')];
+        return [
+          { text: '  PID TTY      TIME     CMD', classes: 'shell-out' },
+          ...procs.map((t, i) => ({
+            text: `${String(i + 1).padStart(5)} ${'tty7'.padEnd(9)}00:00:07 ${t}`,
+            classes: 'shell-out',
+          })),
+          { text: `${'42'.padStart(5)} ${'pts/0'.padEnd(9)}${elapsed} you`, classes: 'shell-out' },
+        ];
+      },
+
+      sha256sum(_args, ctx) {
+        if (!ctx.raw) {
+          return [
+            { text: 'sha256sum: missing operand', classes: 'shell-out' },
+            { text: 'usage: sha256sum <text>', classes: 'shell-out shell-dim' },
+          ];
+        }
+        // crypto.subtle exists only in secure contexts (https/localhost).
+        // Read via globalThis (PR #55 review): a bare `crypto?.subtle` would
+        // throw ReferenceError where the `crypto` identifier itself is
+        // missing — optional chaining can't guard an unresolvable name. The
+        // guard's whole point is to degrade gracefully, never throw.
+        const subtle = globalThis.crypto?.subtle;
+        if (!subtle) {
+          return [{ text: 'sha256sum: secure context required', classes: 'shell-out' }];
+        }
+        // A REAL hash — oddly satisfying is the point. The digest resolves
+        // async; printBeforePrompt lands the result above the (by then
+        // already-emitted) live prompt — correct placement by construction.
+        void subtle.digest('SHA-256', new TextEncoder().encode(ctx.raw)).then((buf) => {
+          const hex = Array.from(new Uint8Array(buf))
+            .map((b) => b.toString(16).padStart(2, '0'))
+            .join('');
+          // `  -` is the coreutils stdin-filename convention.
+          printBeforePrompt({ text: `${hex}  -`, classes: 'shell-out' });
+        });
+      },
+
+      grep(_args, ctx) {
+        // Standalone site-search over the seven synopses (pipe mode is the
+        // 42my draft). ctx.raw, so multi-word patterns work.
+        const pattern = ctx.raw.trim();
+        if (!pattern) {
+          return [
+            { text: 'usage: grep <pattern>', classes: 'shell-out' },
+            { text: "(searches the seven tools' synopses.)", classes: 'shell-out shell-dim' },
+          ];
+        }
+        const needle = pattern.toLowerCase();
+        const hits = TOOLS.filter((t) => `${t} — ${SYNOPSIS[t]}`.toLowerCase().includes(needle));
+        if (hits.length === 0) {
+          return [{ text: "(no matches — try 'grep plan')", classes: 'shell-out shell-dim' }];
+        }
+        // Tool names as overview anchors — the same html:true trusted-static
+        // pattern as ls; the pattern itself is never interpolated into HTML.
+        return hits.map((t) => ({
+          text: `<a href="${ROUTE_OVERVIEW(t)}">${t}</a> — ${SYNOPSIS[t]}`,
+          classes: 'shell-out',
+          html: true,
+        }));
+      },
+
+      // ── Tier C: animated (via startStream) ──
+      yes(_args, ctx) {
+        const word = ctx.raw || 'y';
+        const reduce = prefersReducedMotion();
+        // Frames are ariaHidden (announcement garbage at 150ms); only the
+        // closing comment announces. Reduced motion: 7 static lines suggest
+        // the forever, with a comment that owns the joke. Teaching value
+        // either way: the Ctrl-C affordance (change n23o) becomes
+        // discoverable. Ctrl-C mid-stream just halts — the ^C echo is the
+        // feedback, no extra line.
+        const count = reduce ? YES_REDUCE_COUNT : YES_CAP;
+        const lines: Line[] = Array.from({ length: count }, () => ({
+          text: word,
+          classes: 'shell-out',
+          ariaHidden: true,
+        }));
+        lines.push(
+          reduce
+            ? { text: '(yes repeats forever. imagine it. Ctrl-C ends it.)', classes: 'shell-comment' }
+            : { text: `(yes: stopped at ${YES_CAP}. Ctrl-C would have been faster — and more satisfying.)`, classes: 'shell-comment' },
+        );
+        startStream(lines, { intervalMs: YES_TICK_MS });
+      },
+
+      tail(args) {
+        const target = args.find((a) => !a.startsWith('-'));
+        if (!target) {
+          return [
+            { text: 'tail: missing file operand', classes: 'shell-out' },
+            { text: '(try: tail -f agents.log)', classes: 'shell-out shell-dim' },
+          ];
+        }
+        if (target !== 'agents.log') {
+          return [
+            { text: `tail: cannot open '${target}' for reading: No such file or directory`, classes: 'shell-out' },
+            { text: '(try: tail -f agents.log)', classes: 'shell-out shell-dim' },
+          ];
+        }
+        // `tail -f agents.log` and `tail agents.log` both stream. Lines are
+        // ANNOUNCED — the one stream whose frames a screen-reader user should
+        // hear (slow cadence, meaningful content). The log's last line and
+        // the closing comment self-identify the site as static.
+        startStream(
+          [
+            ...AGENT_LOG.map((entry) => ({ text: entry, classes: 'shell-out' })),
+            { text: "(tail: agents.log is a file, not a feed. Ctrl-C next time you can't wait.)", classes: 'shell-comment' },
+          ],
+          { intervalMs: TAIL_TICK_MS },
+        );
+      },
     };
 
     function exitHandler(): Line[] {
       return [{ text: 'There is no escape from the shll.', classes: 'shell-out' }];
+    }
+
+    // Shared by vim/vi — two keys, one handler (the exitHandler shape).
+    function editorHandler(): Line[] {
+      return [
+        { text: "you can't exit what you never entered.", classes: 'shell-out' },
+        { text: "(':q' works here, though. we're not monsters.)", classes: 'shell-comment' },
+      ];
+    }
+
+    // Shared by less/more — byte-identical output from either key IS the gag.
+    function lessHandler(): Line[] {
+      return [{ text: 'less is more. more or less.', classes: 'shell-out' }];
+    }
+
+    // Shared by curl/wget: deny the network honestly, each under its own name.
+    function denyNetwork(cmd: string): Line[] {
+      return [
+        { text: `${cmd}: no network from in here — this site is fully static.`, classes: 'shell-out' },
+        { text: '(constitution I: static-first, zero runtime. we take it literally.)', classes: 'shell-comment' },
+      ];
+    }
+
+    // rm -rf / --no-preserve-root — the deluxe (change o33t). Stream one
+    // removal line per tool (canonical TOOLS order) plus the visitor's home,
+    // announced (the drama IS the content), then WIPE the transcript —
+    // preserving the live prompt element in place via
+    // session.replaceChildren(liveLine): the exactly-one-trailing-prompt
+    // invariant holds, focus and listeners survive, no freshPrompt() needed.
+    // After a beat (streamFollowup — cleared by stopStream, so Ctrl-C aborts
+    // the whole sequence cleanly at any stage), the resolution prints. The
+    // greeting is NOT re-printed: the lost transcript is the consequence and
+    // the joke. Under reduced motion the removal lines print at once and the
+    // wipe is SKIPPED — a sudden full-screen wipe is exactly the kind of
+    // dramatic visual change reduce users opted out of — with a merciful
+    // second line instead.
+    function rmDeluxe(): void {
+      const reduce = prefersReducedMotion();
+      // The resolution's first line is shared by the reduced-motion and
+      // post-wipe paths — one Line, hoisted so the copy can't drift
+      // (change o33t review rework).
+      const kidding: Line = { text: 'just kidding. the site is static — nothing was harmed.', classes: 'shell-out' };
+      startStream(
+        [
+          ...TOOLS.map((t) => ({ text: `removing /tools/${t}`, classes: 'shell-out' })),
+          { text: 'removing /home/visitor', classes: 'shell-out' },
+        ],
+        {
+          intervalMs: RM_TICK_MS,
+          onDone: () => {
+            if (reduce) {
+              printBeforePrompt(kidding);
+              printBeforePrompt({ text: '(transcript spared. reduced motion is mercy.)', classes: 'shell-comment' });
+              return;
+            }
+            const liveLine = input.closest<HTMLElement>('[data-terminal-prompt]');
+            // replaceChildren detaches the live line before reinserting it,
+            // and detaching a focused element blurs it (DOM focus fixup) —
+            // so restore focus across the wipe, but ONLY if the input held
+            // it beforehand: the no-autofocus principle stands (a chip-tap
+            // deluxe never focused the prompt and must stay that way).
+            // caretToEnd() re-places the caret a blur would otherwise reset
+            // (change o33t review rework).
+            const hadFocus = document.activeElement === input;
+            if (liveLine) session!.replaceChildren(liveLine);
+            if (hadFocus) {
+              input.focus();
+              caretToEnd();
+            }
+            streamFollowup = window.setTimeout(() => {
+              streamFollowup = undefined;
+              printBeforePrompt(kidding);
+              printBeforePrompt({ text: '(your session transcript, though? gone. actions have consequences.)', classes: 'shell-comment' });
+            }, RM_BEAT_MS);
+          },
+        },
+      );
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────
@@ -938,7 +1707,10 @@
     // did-you-mean suggester the not-found branch uses — one matcher, two
     // call sites, no second fuzzy-match implementation to drift.
     function helpFor(topic: string): Line[] {
-      const detail = HELP_DETAIL[topic];
+      // Own-property guard (change o33t review rework): same prototype-chain
+      // hazard as the man bridge — `help constructor` returned an inherited
+      // member and crashed print() before the next prompt could be emitted.
+      const detail = Object.hasOwn(HELP_DETAIL, topic) ? HELP_DETAIL[topic] : undefined;
       if (detail) return detail;
       if (isTool(topic)) {
         return [{ text: `help: no help for '${topic}' — try 'man ${topic}'`, classes: 'shell-out' }];
@@ -991,6 +1763,58 @@
       return navigateWithBeat(ROUTE_OVERVIEW(tool), [
         { text: `${tool} — ${SYNOPSIS[tool]}`, classes: 'shell-out' },
       ]);
+    }
+
+    // ── Line streamer (change o33t) — the Tier C engine ──────────────────────
+    // Emits `lines` one per tick via printBeforePrompt(), so streamed output
+    // lands ABOVE the live prompt and the exactly-one-trailing-prompt
+    // invariant holds BY CONSTRUCTION (precedent: the Tab ambiguous-match
+    // listing). At most one stream at a time — startStream stops any previous
+    // one first. The stream is killed by Ctrl-C (the frozen ^C echo + fresh
+    // prompt + halted output read exactly like killing a foreground process)
+    // and by any newly committed command (commitLine calls stopStream before
+    // run — a deliberate contrast with pendingNav, which commitLine does NOT
+    // clear: the nav beat is 900ms and already announced its destination,
+    // while streams are long-lived and would interleave with new output).
+    // Under prefers-reduced-motion there is no interval: all lines print at
+    // once and onDone runs immediately (the 23xc ghost-hint precedent —
+    // streams are timing, but their visual effect is motion; reduce gets the
+    // content without the cadence).
+    let activeStream: number | undefined; // interval id
+    let streamFollowup: number | undefined; // pending onDone timer (rm-deluxe beat)
+
+    function startStream(lines: Line[], opts: { intervalMs: number; onDone?: () => void }): void {
+      stopStream();
+      if (lines.length === 0) {
+        opts.onDone?.();
+        return;
+      }
+      if (prefersReducedMotion()) {
+        for (const ln of lines) printBeforePrompt(ln);
+        opts.onDone?.();
+        return;
+      }
+      let next = 0;
+      activeStream = window.setInterval(() => {
+        printBeforePrompt(lines[next]);
+        next += 1;
+        if (next >= lines.length) {
+          window.clearInterval(activeStream);
+          activeStream = undefined;
+          opts.onDone?.();
+        }
+      }, opts.intervalMs);
+    }
+
+    function stopStream(): void {
+      if (activeStream !== undefined) {
+        window.clearInterval(activeStream);
+        activeStream = undefined;
+      }
+      if (streamFollowup !== undefined) {
+        window.clearTimeout(streamFollowup);
+        streamFollowup = undefined;
+      }
     }
 
     // Drive Starlight's EXISTING theme provider via the header <select>, so the
