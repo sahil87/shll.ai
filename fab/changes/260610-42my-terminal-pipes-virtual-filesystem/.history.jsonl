@@ -1,0 +1,5 @@
+{"action":"enter","driver":"fab-new","event":"stage-transition","stage":"intake","ts":"2026-06-10T14:55:27Z"}
+{"args":"Speculative second pass: pipe infrastructure + sitemap-backed virtual filesystem for the homepage terminal (Tier D/E from discussion analysis) — queued, may never be implemented","cmd":"fab-new","event":"command","ts":"2026-06-10T14:55:27Z"}
+{"delta":"+0.0","event":"confidence","score":0,"trigger":"calc-score","ts":"2026-06-10T15:05:08Z"}
+{"delta":"+0.0","event":"confidence","score":0,"trigger":"calc-score","ts":"2026-06-10T15:05:24Z"}
+{"cmd":"fab-draft","event":"command","ts":"2026-06-10T15:05:24Z"}

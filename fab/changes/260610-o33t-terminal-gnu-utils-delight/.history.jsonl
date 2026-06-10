@@ -1,0 +1,5 @@
+{"action":"enter","driver":"fab-new","event":"stage-transition","stage":"intake","ts":"2026-06-10T14:55:27Z"}
+{"args":"GNU-utils easter-egg pass for the homepage terminal — Tier A one-shot commands + Tier B light logic + Tier C animated, per discussion analysis; combine into o33t","cmd":"fab-new","event":"command","ts":"2026-06-10T14:55:27Z"}
+{"delta":"+3.5","event":"confidence","score":3.5,"trigger":"calc-score","ts":"2026-06-10T15:01:48Z"}
+{"delta":"+0.0","event":"confidence","score":3.5,"trigger":"calc-score","ts":"2026-06-10T15:05:24Z"}
+{"cmd":"fab-draft","event":"command","ts":"2026-06-10T15:05:24Z"}
