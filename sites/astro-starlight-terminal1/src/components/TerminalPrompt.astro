@@ -22,6 +22,10 @@
   // expansion, seq generation, and the rm/tar argument classifiers, pinned
   // by scripts/terminal-eggs.test.mjs.
   import { expandVars, seqLines, classifyRm, classifyTar, SEQ_GEN_CAP } from '../lib/terminal-eggs.ts';
+  // Cheatsheet logic (change cdbr) — same lib pattern again: the anti-drift
+  // coverage/alias/stale-drop computation and the width-budget chunking,
+  // pinned by scripts/terminal-cheatsheet.test.mjs.
+  import { buildCheatsheet, chunkLine, type CheatGroup } from '../lib/terminal-cheatsheet.ts';
 
   // ── Types ────────────────────────────────────────────────────────────────
   // `ariaHidden` (change o33t): hides the line from the cuur aria-live
@@ -277,6 +281,12 @@
       "tail [-f] agents.log — follow the agents' log",
       'one logged run of all seven tools. spoiler: the log ends.',
     ),
+    // The full-roster reveal (change cdbr) — appended after all existing
+    // entries, matching its COMMANDS position.
+    cheatsheet: helpDetail(
+      'cheatsheet — the full command roster, grouped',
+      "everything, including what 'help' won't admit to.",
+    ),
   };
 
   // Dev aphorisms for `fortune` — all tie to "plan before they code".
@@ -373,6 +383,109 @@
   const RM_TICK_MS = 300;
   const RM_BEAT_MS = 900;
   const SEQ_CAP = 100; // display cap for `seq` output lines
+
+  // ── Cheatsheet (change cdbr) ─────────────────────────────────────────────
+  // The deliberate full-roster reveal: `help` stays the curated short list and
+  // the eggs stay unlisted there, but `cheatsheet` maps the whole territory in
+  // five fixed groups. Membership lives HERE, in one const beside the other
+  // named rosters — and the handler recomputes coverage at runtime
+  // (buildCheatsheet): any COMMANDS key missing from every group and not
+  // declared alias-of is appended under `uncategorized`, so a future command
+  // can never silently vanish from the sheet; a group key no longer in
+  // COMMANDS is dropped at render (stale-entry tolerance). Every COMMANDS key
+  // is covered exactly once: alias-of keys (CHEATSHEET_ALIASES) render with
+  // their primary and are never double-listed, while true pairs (cd · open,
+  // curl · wget, true · false) display both names adjacent. Display strings
+  // may decorate beyond the bare key (`cd <tool>`, `make plan`) — the
+  // decoration teaches the interesting invocation.
+  const CHEATSHEET_GROUPS: CheatGroup[] = [
+    {
+      name: 'navigate',
+      entries: [
+        { key: 'ls' },
+        { key: 'cd', display: 'cd <tool>' },
+        { key: 'open' },
+        { key: 'install' },
+        { key: 'version' },
+        { key: 'theme' },
+        { key: 'clear' },
+        { key: 'history' },
+        { key: 'help' },
+        { key: 'cheatsheet' }, // a key must be covered somewhere; help lists help
+      ],
+    },
+    {
+      name: 'look around',
+      entries: [
+        { key: 'pwd' },
+        { key: 'uname' },
+        { key: 'id' },
+        { key: 'date' },
+        { key: 'uptime' },
+        { key: 'env' },
+        { key: 'ps' },
+        { key: 'whoami' },
+      ],
+    },
+    {
+      name: 'do things (try to)',
+      entries: [
+        { key: 'rm' },
+        { key: 'mkdir' },
+        { key: 'touch' },
+        { key: 'mv' },
+        { key: 'cp' },
+        { key: 'chmod' },
+        { key: 'chown' },
+        { key: 'sudo' },
+        { key: 'kill' },
+        // curl/wget try network things and get refused — exactly like the
+        // file-op refusals beside them.
+        { key: 'curl' },
+        { key: 'wget' },
+      ],
+    },
+    {
+      name: 'classics',
+      entries: [
+        { key: 'make', display: 'make plan' },
+        { key: 'diff', display: 'diff plan reality' },
+        { key: 'tar' },
+        { key: 'vim' },
+        { key: 'emacs' },
+        { key: 'nano' },
+        { key: 'less' },
+        { key: 'yes' },
+        { key: 'sl' },
+        { key: 'tail', display: 'tail -f agents.log' },
+        { key: 'fortune' },
+        { key: 'true' },
+        { key: 'false' },
+        { key: 'exit' },
+        { key: 'shll' },
+      ],
+    },
+    {
+      name: 'real utilities',
+      entries: [
+        { key: 'echo', display: 'echo $VAR' },
+        { key: 'seq' },
+        { key: 'grep', display: 'grep <pattern>' },
+        { key: 'sha256sum', display: 'sha256sum <text>' },
+        { key: 'man', display: 'man <thing>' },
+      ],
+    },
+  ];
+  // Alias-of declarations: these COMMANDS keys render with their primary's
+  // entry (vim, less, exit) and are not listed on their own — but they still
+  // count as covered, so the runtime check never flags them uncategorized.
+  const CHEATSHEET_ALIASES: Record<string, string> = { vi: 'vim', more: 'less', ':q': 'exit' };
+  // Width budget for the ` · `-joined command lines: 74 joined chars + the
+  // 2-space indent = 76 total under the session's `white-space: pre` (the
+  // GREETING length precedent — longer lines clip into horizontal scroll on
+  // common laptop widths). Long groups wrap to extra indented lines.
+  const CHEAT_LINE_WIDTH = 74;
+  const CHEAT_SEP = ' · ';
 
   // Shared media-query check (change o33t): the streamer's all-at-once
   // fallback, `yes`'s static variant, and the rm-deluxe wipe-skip all branch
@@ -1012,7 +1125,11 @@
           { text: '  history         list previously entered commands', classes: 'shell-out' },
           { text: '  clear           clear the screen', classes: 'shell-out' },
           { text: '', classes: 'shell-out' },
-          { text: "tip: a few commands aren't on this list. a curious dev might try the obvious ones.", classes: 'shell-comment' },
+          // The one sanctioned change to bare `help` (change cdbr): keep the
+          // curiosity tease, append the cheatsheet pointer. The curated list
+          // above stays byte-identical — cheatsheet is the reveal, not a
+          // listed utility; this tip (and guessing) is its discovery path.
+          { text: "tip: a few commands aren't on this list. a curious dev might try the obvious ones — or type 'cheatsheet' for everything.", classes: 'shell-comment' },
         ];
       },
 
@@ -1604,6 +1721,31 @@
           ],
           { intervalMs: TAIL_TICK_MS },
         );
+      },
+
+      // ── The full-roster reveal (change cdbr) ─────────────────────────────
+      // The deliberate counterpart to the accidental empty-prompt Tab dump:
+      // every COMMANDS key, grouped and mapped (per-command depth stays behind
+      // `help <command>` — that's what the closing line teaches). Coverage is
+      // recomputed against the live roster on every run, so the sheet can
+      // never silently drift from COMMANDS (see CHEATSHEET_GROUPS above).
+      // Plain announced Line[] through the normal print path — no stream, no
+      // nav, no ariaHidden (static meaningful text; the `tail` precedent for
+      // announced content). Appended after all existing keys, per the o33t
+      // suggester tie-break convention.
+      cheatsheet() {
+        const groups = buildCheatsheet(CHEATSHEET_GROUPS, CHEATSHEET_ALIASES, Object.keys(COMMANDS));
+        const out: Line[] = [{ text: 'the full roster — you found it.', classes: 'shell-out' }];
+        for (const group of groups) {
+          out.push({ text: '', classes: 'shell-out' });
+          out.push({ text: group.name, classes: 'shell-out shell-dim' });
+          for (const line of chunkLine(group.displays, CHEAT_SEP, CHEAT_LINE_WIDTH)) {
+            out.push({ text: `  ${line}`, classes: 'shell-out' });
+          }
+        }
+        out.push({ text: '', classes: 'shell-out' });
+        out.push({ text: '(each one: help <command>)', classes: 'shell-comment' });
+        return out;
       },
     };
 
