@@ -665,3 +665,26 @@ starlight-readme-toc .readme-toc-sublist {
   background: var(--c-accent);
   color: var(--c-bg);
 }
+
+/* ── Reduced motion (change cuur) ────────────────────────────────────────────
+   The two cursor blinks — shell-blink in the terminal (static skin + the live
+   input's .is-active state) and terminal-blink on doc-page first paragraphs —
+   were this file's only unconditional animations (audited in the cuur intake:
+   the 23xc ghost hint already gates its typing in JS, scrolls are instant
+   assignments, and the nav beat is a timer, not motion). Under reduce the
+   cursors stay VISIBLE — they signal typeability — they just hold steady: the
+   focused input cursor at full opacity, the idle one at its existing 0.35
+   from the base rule. Only animation/opacity here; colors stay on the --c-*
+   variables, so both themes are covered for free (Constitution V). */
+@media (prefers-reduced-motion: reduce) {
+  .shell-session .shell-cursor,
+  .sl-markdown-content > p:first-of-type::after {
+    animation: none;
+  }
+  /* Restated at the base rule's own specificity (it would otherwise outrank
+     the two-class selector above and keep blinking while focused). */
+  .shell-session .shell-input-cursor.is-active {
+    animation: none;
+    opacity: 1; /* steady, not removed — focus still reads as "live" */
+  }
+}
