@@ -78,6 +78,15 @@
   const HINT_DELAY_MS = 4000;
   const HINT_TYPE_MS = 70; // per-character typing cadence
 
+  // On-screen command bar (change by18): the chip roster, in display order.
+  // Touch users get one-tap access to the commands the ghost hint and `help`
+  // advertise — the touch analogue of ↑/↓/Tab. `install` is included: it is
+  // the site's primary CTA and the chip reuses the existing command's real
+  // navigation. The bar itself is island-injected (never static markup — dead
+  // buttons without JS) and only *shown* on touch-primary devices via the
+  // `(hover: none) and (pointer: coarse)` media query in terminal.css.
+  const CHIP_COMMANDS = ['ls', 'help', 'version', 'install'] as const;
+
   // ── Bootstrap ──────────────────────────────────────────────────────────────
   const promptLine = document.querySelector<HTMLElement>('[data-terminal-prompt]');
   if (promptLine) initTerminal(promptLine);
@@ -452,8 +461,23 @@
 
       if (e.key !== 'Enter') return;
       e.preventDefault();
-      // Enter is a prompt-emitting path: end the resting (top-anchored) state
-      // so the bottom-pinned scroll behavior resumes for this and all
+      commitLine(true);
+    }
+
+    // ── Line commit (change by18) ────────────────────────────────────────────
+    // Commit the live line exactly as Enter always did: end the resting state,
+    // freeze the echoed line, record history, dispatch, and emit EXACTLY ONE
+    // fresh trailing prompt. Extracted from the Enter branch (same precedent as
+    // freezeInput in n23o) so the command-bar chip path commits through the
+    // SAME sequence and the two can never drift — the exactly-one-trailing-
+    // prompt invariant holds by construction for every committed line.
+    // `focusNext` flows to freshPrompt: Enter passes true (focus follows
+    // command execution — the desired keyboard behavior); the chip path passes
+    // false (focusing would summon the mobile soft keyboard over the output
+    // the user just asked for — a chip user is in touch mode).
+    function commitLine(focusNext: boolean): void {
+      // Committing is a prompt-emitting path: end the resting (top-anchored)
+      // state so the bottom-pinned scroll behavior resumes for this and all
       // subsequent output (change 23xc).
       exitResting();
       const raw = (input.textContent ?? '').trim();
@@ -462,7 +486,7 @@
       freezeInput();
 
       if (raw === '') {
-        freshPrompt();
+        freshPrompt(focusNext);
         return;
       }
 
@@ -479,7 +503,7 @@
       // Emit the next prompt. If a handler navigated away (cd/open/install),
       // window.location.assign is async — this prompt is appended before unload
       // and is harmless; no guard needed.
-      freshPrompt();
+      freshPrompt(focusNext);
     }
 
     // ── History navigation ──────────────────────────────────────────────────────
@@ -833,10 +857,67 @@
       dismissIdleHint();
       const target = e.target as HTMLElement | null;
       if (target?.closest('a')) return;
+      // Chip taps bubble here too — bail so the focus affordance doesn't run
+      // right after a chip commit and summon the soft keyboard the chip path
+      // deliberately avoids (change by18). The hint dismissal above still
+      // counts the tap as interaction.
+      if (target?.closest('.terminal-cmdbar')) return;
       if ((window.getSelection()?.toString() ?? '') !== '') return;
       if (target === input) return; // native click already places the caret
       input.focus();
       caretToEnd();
+    }
+
+    // ── On-screen command bar (change by18) ──────────────────────────────────
+    // A row of tappable chips on the terminal's bottom edge — one-tap access to
+    // the highest-value commands for touch users who can't reach ↑/↓/Tab.
+    // Island-injected as the LAST child of .terminal-window, BELOW the
+    // pre.shell-session scroll viewport: it reads as a keyboard-accessory row
+    // adjacent to where the OS keyboard rises, and living outside the session
+    // leaves the resting-state anchor, scrollToBottom, and the live-prompt-
+    // last-child DOM-order invariant untouched. Hidden by default; revealed
+    // only under (hover: none) and (pointer: coarse) in terminal.css. Native
+    // <button>s: tap, Enter, and Space all fire `click` — keyboard-operable
+    // with a :focus-visible ring for free (Constitution accessibility).
+    function injectCommandBar(): void {
+      const win = session!.closest<HTMLElement>('.terminal-window');
+      if (!win) return; // no frame → no accessory bar (tap-to-focus still works)
+      const bar = document.createElement('div');
+      bar.className = 'terminal-cmdbar';
+      bar.setAttribute('role', 'group');
+      bar.setAttribute('aria-label', 'quick commands');
+      for (const cmd of CHIP_COMMANDS) {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'terminal-chip';
+        chip.dataset.cmd = cmd;
+        chip.textContent = cmd;
+        bar.appendChild(chip);
+      }
+      // One delegated listener for the whole bar (not one per button).
+      bar.addEventListener('click', onChipClick);
+      win.appendChild(bar);
+    }
+
+    // A chip tap runs the command exactly as if the user had typed it and
+    // pressed Enter — same dismissal, same history, same dispatch, same single
+    // fresh prompt — via the shared commitLine. focusNext = false: do NOT
+    // focus the contenteditable, or the soft keyboard would pop over the
+    // output the user just asked for (the keyboard appears only when they tap
+    // the prompt itself). The surface onClick bails on .terminal-cmdbar
+    // clicks, so the bubbled click can't re-focus the input afterward either.
+    function onChipClick(e: MouseEvent): void {
+      const chip = (e.target as HTMLElement | null)?.closest<HTMLButtonElement>(
+        'button.terminal-chip',
+      );
+      if (!chip) return;
+      // A chip tap is interaction — spend the idle ghost hint. (The surface
+      // onClick also dismisses it, but the chip handler must not depend on
+      // listener ordering; dismissIdleHint is a one-shot latch, so the second
+      // call is a no-op, never a double-fire.)
+      dismissIdleHint();
+      input.textContent = chip.dataset.cmd ?? '';
+      commitLine(false);
     }
 
     // ── Activate ─────────────────────────────────────────────────────────────
@@ -846,6 +927,7 @@
     const clickSurface = session.closest<HTMLElement>('.terminal-window') ?? session;
     clickSurface.addEventListener('click', onClick);
     clickSurface.style.cursor = 'text'; // hint the whole area is typeable
+    injectCommandBar(); // touch-only quick-command chips (change by18)
     promptLine.remove();
     // Greeting first — one dim line carrying the value prop + invitation —
     // then the first live prompt (no autofocus), then anchor the resting

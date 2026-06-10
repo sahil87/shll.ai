@@ -465,6 +465,11 @@ starlight-readme-toc .readme-toc-sublist {
   background: var(--c-bg);
   overflow: hidden;
   margin: 1.25rem 0 1.75rem;
+  /* Touch (change by18): drop the double-tap-to-zoom heuristics inside the
+     terminal — they can delay or swallow the synthesized click a tap produces
+     (the tap-to-focus path) and cause accidental zoom on rapid chip taps.
+     Pan/scroll gestures are unaffected; no behavior change for mouse users. */
+  touch-action: manipulation;
 }
 
 /* Thin title bar — flush with the panel's top edge. The dots read as muted
@@ -518,6 +523,53 @@ starlight-readme-toc .readme-toc-sublist {
 .terminal-window .shell-session::-webkit-scrollbar-thumb {
   background: var(--c-border);
   border-radius: 4px;
+}
+
+/* ── On-screen command bar (change by18) ─────────────────────────────────────
+   Tappable quick-command chips (ls / help / version / install) injected by the
+   island as the terminal window's last child, below the session viewport — a
+   keyboard-accessory row on the terminal's bottom edge for touch users, who
+   have no ↑/↓ history or Tab completion. Hidden by default and revealed ONLY
+   on touch-primary devices: `(hover: none) and (pointer: coarse)` is the
+   touch-primary signal, so the bar shows on phones/tablets at any width and
+   never on desktop (narrow desktop windows keep the full keyboard
+   affordances instead). Skinned exclusively with the shared --c-* variables —
+   both themes for free (Constitution V); no animation. */
+.terminal-cmdbar {
+  display: none;
+}
+@media (hover: none) and (pointer: coarse) {
+  .terminal-cmdbar {
+    display: flex;
+    flex-wrap: wrap;
+  }
+}
+
+.terminal-cmdbar {
+  gap: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  background: var(--c-surface);
+  border-top: 1px solid var(--c-border); /* matches the titlebar's chrome */
+}
+
+.terminal-cmdbar .terminal-chip {
+  /* Native <button> resets: buttons don't inherit the mono font, and the
+     window surface sets `cursor: text` — both overridden here. */
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  background: transparent;
+  color: var(--c-fg);
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  padding: 0.4rem 0.9rem; /* comfortable tap target */
+}
+.terminal-cmdbar .terminal-chip:active {
+  background: var(--c-surface-2);
+}
+.terminal-cmdbar .terminal-chip:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 1px;
 }
 
 /* The now-focusable input region (progressive enhancement). The static skin had
