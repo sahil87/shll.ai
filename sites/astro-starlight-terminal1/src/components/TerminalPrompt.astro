@@ -1510,14 +1510,19 @@
             { text: 'usage: sha256sum <text>', classes: 'shell-out shell-dim' },
           ];
         }
-        if (!crypto?.subtle) {
-          // crypto.subtle exists only in secure contexts (https/localhost).
+        // crypto.subtle exists only in secure contexts (https/localhost).
+        // Read via globalThis (PR #55 review): a bare `crypto?.subtle` would
+        // throw ReferenceError where the `crypto` identifier itself is
+        // missing — optional chaining can't guard an unresolvable name. The
+        // guard's whole point is to degrade gracefully, never throw.
+        const subtle = globalThis.crypto?.subtle;
+        if (!subtle) {
           return [{ text: 'sha256sum: secure context required', classes: 'shell-out' }];
         }
         // A REAL hash — oddly satisfying is the point. The digest resolves
         // async; printBeforePrompt lands the result above the (by then
         // already-emitted) live prompt — correct placement by construction.
-        void crypto.subtle.digest('SHA-256', new TextEncoder().encode(ctx.raw)).then((buf) => {
+        void subtle.digest('SHA-256', new TextEncoder().encode(ctx.raw)).then((buf) => {
           const hex = Array.from(new Uint8Array(buf))
             .map((b) => b.toString(16).padStart(2, '0'))
             .join('');
