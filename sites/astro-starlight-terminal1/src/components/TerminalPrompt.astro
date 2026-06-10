@@ -14,6 +14,11 @@
 ---
 
 <script>
+  // Did-you-mean matcher (change cuur) — dependency-free, extracted to
+  // src/lib/ so it's unit-testable under node --test (scripts/
+  // terminal-suggest.test.mjs); Vite bundles it into this island.
+  import { suggestCommand } from '../lib/terminal-suggest.ts';
+
   // ── Types ────────────────────────────────────────────────────────────────
   type Line = { text: string; classes?: string; html?: boolean };
   type Handler = (args: string[], ctx: Ctx) => Line[] | void;
@@ -42,6 +47,93 @@
     'run-kit': 'watch parallel runs converge into one live dashboard.',
     tu: 'track token usage and cost across every agent run.',
     shll: 'the meta-CLI that bootstraps and ties the whole toolkit together.',
+  };
+
+  // Per-command detail for `help <command>` (change cuur): one usage line plus
+  // one dim elaboration line each (the man-page shape: synopsis + see-also dim
+  // tier) — printed only on request, so the top-level `help` list stays short.
+  // EVERY key in COMMANDS has an entry, hidden eggs included: `help sudo`
+  // answers once you've found sudo, but the list never enumerates the eggs
+  // (answering a direct question is not advertising — the discovery ethos
+  // stands).
+  const helpDetail = (usage: string, detail: string): Line[] => [
+    { text: `  ${usage}`, classes: 'shell-out' },
+    { text: `  ${detail}`, classes: 'shell-out shell-dim' },
+  ];
+  const HELP_DETAIL: Record<string, Line[]> = {
+    help: helpDetail(
+      'help [command] — list commands, or explain one',
+      'with a command name, prints what it does and how to use it.',
+    ),
+    ls: helpDetail(
+      'ls — list the 7 tools',
+      "each name links to that tool's overview page.",
+    ),
+    cd: helpDetail(
+      "cd <tool> — open a tool's overview page  (alias: open)",
+      "prints the tool's synopsis, then navigates after a beat. Ctrl-C cancels.",
+    ),
+    open: helpDetail(
+      "open <tool> — open a tool's overview page  (alias of cd)",
+      "prints the tool's synopsis, then navigates after a beat. Ctrl-C cancels.",
+    ),
+    install: helpDetail(
+      'install — go to the install guide',
+      'navigates after a short beat. Ctrl-C keeps you here.',
+    ),
+    version: helpDetail(
+      'version — print tool versions  (also: shll version)',
+      're-prints the version table above — always current, never hardcoded.',
+    ),
+    theme: helpDetail(
+      'theme [dark|light] — switch the color theme',
+      "with no argument, toggles. persists via the site's theme picker.",
+    ),
+    history: helpDetail(
+      'history — list previously entered commands',
+      'the same list ↑/↓ walk. survives a refresh, not a new session.',
+    ),
+    clear: helpDetail(
+      'clear — clear the screen',
+      'Ctrl-L does the same without committing the line.',
+    ),
+    echo: helpDetail(
+      'echo <text> — print text',
+      "prints its arguments back. that's it. that's the command.",
+    ),
+    man: helpDetail(
+      'man <tool> — one-line synopsis of a tool',
+      'plus a link to the overview page for the long version.',
+    ),
+    whoami: helpDetail(
+      'whoami — who are you, really',
+      'a developer who plans before they code, hopefully.',
+    ),
+    fortune: helpDetail(
+      'fortune — a dev aphorism',
+      'plan-before-you-code wisdom. re-run for another.',
+    ),
+    // The eggs — answered, never listed.
+    sudo: helpDetail(
+      'sudo <cmd> — escalate your privileges',
+      'you are not in the sudoers file. this site has no root.',
+    ),
+    shll: helpDetail(
+      'shll — the ASCII splash and the pitch',
+      'seven small CLIs that force agents to plan first.',
+    ),
+    sl: helpDetail(
+      'sl — the steam locomotive',
+      "you meant 'ls'. we all do. enjoy the train.",
+    ),
+    exit: helpDetail(
+      'exit — leave the shell',
+      'there is no escape from the shll.  (also: :q)',
+    ),
+    ':q': helpDetail(
+      ':q — leave the shell, vim-style',
+      'there is no escape from the shll.  (also: exit)',
+    ),
   };
 
   // Dev aphorisms for `fortune` — all tie to "plan before they code".
@@ -77,6 +169,14 @@
   const HINT_TEXT = "try 'ls' ⏎";
   const HINT_DELAY_MS = 4000;
   const HINT_TYPE_MS = 70; // per-character typing cadence
+
+  // Navigation beat (change cuur): cd/open/install no longer navigate on the
+  // same tick as Enter — instant navigation off a playful exploration surface
+  // reads as a misclick, yanking the visitor away before the `opening …` line
+  // even registers. Instead the handler prints where it's headed (a real
+  // clickable link) and navigates after this beat; Ctrl-C cancels the pending
+  // timer (see navigateWithBeat / the Ctrl-C branch in onKeydown).
+  const NAV_BEAT_MS = 900;
 
   // On-screen command bar (change by18): the chip roster, in display order.
   // Touch users get one-tap access to the commands the ghost hint and `help`
@@ -159,6 +259,11 @@
       const prompt = document.createElement('span');
       prompt.className = 'shell-prompt';
       prompt.textContent = '$';
+      // Hidden from the session live region (change cuur): every fresh prompt
+      // line is an appended node, so an exposed `$` would be announced after
+      // every command — pure noise. The input's aria-label already carries the
+      // prompt semantics; the block cursor span is aria-hidden likewise.
+      prompt.setAttribute('aria-hidden', 'true');
 
       input = document.createElement('span');
       input.className = 'shell-input';
@@ -429,6 +534,13 @@
           // the next ↑ starts from the newest entry rather than mid-history.
           e.preventDefault();
           exitResting();
+          // Also cancel any pending nav beat (change cuur): Ctrl-C inside the
+          // beat window keeps you on the page — the `^C` + fresh prompt below
+          // then read exactly like aborting a command in a real shell.
+          if (pendingNav !== undefined) {
+            window.clearTimeout(pendingNav);
+            pendingNav = undefined;
+          }
           freezeInput('^C');
           historyCursor = history.length;
           freshPrompt();
@@ -637,13 +749,25 @@
         const out = handler(args, ctx);
         if (out) print(out);
       } else {
-        print([{ text: `command not found: ${parts[0]} — type 'help'`, classes: 'shell-out' }]);
+        // Did-you-mean (change cuur): a small edit-distance match over the
+        // COMMANDS keys — hidden eggs included as candidates (a near-miss egg
+        // rewards the curiosity the help footer invites; the list itself still
+        // never reveals them). A suggestion replaces the `type 'help'` tail on
+        // the same line; with no candidate within threshold (max distance 1
+        // for inputs ≤3 chars, else 2) the existing line is unchanged.
+        const suggestion = suggestCommand(name, Object.keys(COMMANDS));
+        const tail = suggestion ? `did you mean '${suggestion}'?` : "type 'help'";
+        print([{ text: `command not found: ${parts[0]} — ${tail}`, classes: 'shell-out' }]);
       }
     }
 
     // ── Command dispatch map ──────────────────────────────────────────────────
     const COMMANDS: Record<string, Handler> = {
-      help() {
+      // Bare `help` prints the short list, UNCHANGED by change cuur — detail
+      // lives behind `help <command>` (the helpFor helper below), so the list
+      // can stay scannable without losing depth. Eggs stay unlisted.
+      help(args) {
+        if (args[0]) return helpFor(args[0].toLowerCase());
         return [
           { text: 'available commands:', classes: 'shell-out' },
           { text: '  help            list these commands', classes: 'shell-out' },
@@ -678,8 +802,11 @@
       },
 
       install() {
-        window.location.assign(ROUTE_INSTALL);
-        return [{ text: `opening ${ROUTE_INSTALL} …`, classes: 'shell-out shell-dim' }];
+        // Same nav beat as cd/open (change cuur) — install keeps its single
+        // `opening …` line, now a clickable anchor with the cancel hint. The
+        // install chip (change by18) commits through commitLine → run → here,
+        // so touch users inherit the beat and the tappable link too.
+        return navigateWithBeat(ROUTE_INSTALL, []);
       },
 
       version() {
@@ -804,6 +931,53 @@
       ];
     }
 
+    // `help <arg>` resolution (change cuur): a known command prints its
+    // HELP_DETAIL entry; a tool name points sideways to `man` (tools are
+    // documented there, not here — `shll` never lands on this branch because
+    // its HELP_DETAIL lookup wins first); anything else gets the same
+    // did-you-mean suggester the not-found branch uses — one matcher, two
+    // call sites, no second fuzzy-match implementation to drift.
+    function helpFor(topic: string): Line[] {
+      const detail = HELP_DETAIL[topic];
+      if (detail) return detail;
+      if (isTool(topic)) {
+        return [{ text: `help: no help for '${topic}' — try 'man ${topic}'`, classes: 'shell-out' }];
+      }
+      const suggestion = suggestCommand(topic, Object.keys(COMMANDS));
+      const tail = suggestion ? ` — did you mean '${suggestion}'?` : '';
+      return [{ text: `help: no help for '${topic}'${tail}`, classes: 'shell-out' }];
+    }
+
+    // ── Navigation beat (change cuur) ────────────────────────────────────────
+    // The pending navigation timer, if any. Held at initTerminal scope so the
+    // Ctrl-C branch in onKeydown can cancel it — `^C` + a fresh prompt then
+    // read exactly like aborting a command in a real shell, and you stay on
+    // the page. Deliberately NOT cleared by commitLine: a new command typed
+    // during the beat does not cancel the scheduled navigation (accepted —
+    // the beat is short, and the printed line already said where it's headed).
+    let pendingNav: number | undefined;
+
+    // Shared by cd/open (tool synopsis first) and install (its single line):
+    // print the context lines plus a REAL clickable `opening …` anchor
+    // (html: true — our own trusted, static strings only, the same pattern as
+    // man/ls), then navigate after NAV_BEAT_MS. The visible beat + cancel
+    // hint is what makes the navigation intentional rather than a yank off a
+    // playful page; an impatient visitor clicks the anchor through
+    // immediately. Chip taps (install, change by18) flow through this same
+    // path and inherit the beat. A pure setTimeout — timing, not animation —
+    // so there is no prefers-reduced-motion interaction.
+    function navigateWithBeat(route: string, lines: Line[]): Line[] {
+      pendingNav = window.setTimeout(() => window.location.assign(route), NAV_BEAT_MS);
+      return [
+        ...lines,
+        {
+          text: `opening <a href="${route}">${route}</a> … (Ctrl-C to cancel)`,
+          classes: 'shell-out shell-dim',
+          html: true,
+        },
+      ];
+    }
+
     function navigateTool(arg: string | undefined): Line[] {
       const tool = (arg ?? '').toLowerCase();
       if (!tool) {
@@ -812,9 +986,11 @@
       if (!isTool(tool)) {
         return unknownTool(tool);
       }
-      const route = ROUTE_OVERVIEW(tool);
-      window.location.assign(route);
-      return [{ text: `opening ${route} …`, classes: 'shell-out shell-dim' }];
+      // Context before motion (change cuur): the synopsis line says what
+      // you're opening; the beat + anchor give you the choice of when.
+      return navigateWithBeat(ROUTE_OVERVIEW(tool), [
+        { text: `${tool} — ${SYNOPSIS[tool]}`, classes: 'shell-out' },
+      ]);
     }
 
     // Drive Starlight's EXISTING theme provider via the header <select>, so the
@@ -928,6 +1104,20 @@
     clickSurface.addEventListener('click', onClick);
     clickSurface.style.cursor = 'text'; // hint the whole area is typeable
     injectCommandBar(); // touch-only quick-command chips (change by18)
+    // Live region (change cuur): everything print()/printBeforePrompt() appends
+    // is announced to screen readers — before this, the island's output was
+    // silent after Enter (well-labeled input, invisible results). polite, not
+    // assertive: announce after the user's keystroke settles. atomic=false:
+    // announce only the appended nodes, never re-read the whole transcript.
+    // Set BEFORE the greeting prints so the greeting announces once on load —
+    // the right SR introduction to an interactive region. Island-only: the
+    // static no-JS transcript stays inert and needs nothing. What stays silent
+    // by construction: the aria-hidden ghost hint (hidden additions aren't
+    // announced), clear/Ctrl-L (removals aren't announced), and each fresh
+    // prompt's `$` (aria-hidden in freshPrompt). The Ctrl-C `^C` text suffix
+    // IS a text addition — announcing it is correct cancel feedback.
+    session.setAttribute('aria-live', 'polite');
+    session.setAttribute('aria-atomic', 'false');
     promptLine.remove();
     // Greeting first — one dim line carrying the value prop + invitation —
     // then the first live prompt (no autofocus), then anchor the resting

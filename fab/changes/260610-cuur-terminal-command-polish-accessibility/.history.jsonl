@@ -1,0 +1,19 @@
+{"action":"enter","driver":"fab-new","event":"stage-transition","stage":"intake","ts":"2026-06-10T13:15:57Z"}
+{"args":"Polish the terminal command experience and make its output accessible — fuzzy did-you-mean, help \u003ccommand\u003e, intentional cd nav beat, aria-live output, reduced-motion audit (backlog cuur)","cmd":"fab-new","event":"command","ts":"2026-06-10T13:15:57Z"}
+{"delta":"+2.9","event":"confidence","score":2.9,"trigger":"calc-score","ts":"2026-06-10T13:19:19Z"}
+{"delta":"+0.0","event":"confidence","score":2.9,"trigger":"calc-score","ts":"2026-06-10T13:19:59Z"}
+{"cmd":"fab-new","event":"command","ts":"2026-06-10T13:20:15Z"}
+{"cmd":"fab-clarify","event":"command","ts":"2026-06-10T13:25:33Z"}
+{"delta":"+2.1","event":"confidence","score":5,"trigger":"calc-score","ts":"2026-06-10T13:28:44Z"}
+{"delta":"+0.0","event":"confidence","score":5,"trigger":"calc-score","ts":"2026-06-10T13:28:49Z"}
+{"cmd":"fab-fff","event":"command","ts":"2026-06-10T13:29:15Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"apply","ts":"2026-06-10T13:29:25Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-06-10T13:31:09Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"review","ts":"2026-06-10T13:41:45Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-06-10T13:42:38Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-06-10T14:07:50Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"hydrate","ts":"2026-06-10T14:15:13Z"}
+{"event":"review","result":"passed","ts":"2026-06-10T14:15:13Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-06-10T14:16:02Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"ship","ts":"2026-06-10T14:25:51Z"}
+{"cmd":"git-pr","event":"command","ts":"2026-06-10T14:26:54Z"}
