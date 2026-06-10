@@ -398,7 +398,30 @@
       // Ambiguous at the typed prefix — list candidates above the live input. No
       // freeze, no freshPrompt(): the input span keeps its text and caret, so the
       // "exactly one trailing prompt" invariant is untouched (nothing is committed).
-      print([{ text: matches.join('  '), classes: 'shell-out' }]);
+      // We must NOT use print() here: print() appends to the end of `session`, which
+      // would drop the listing BELOW the live prompt (the current last line), leaving
+      // the prompt no longer trailing — un-shell-like and contrary to the invariant.
+      // Instead insert the listing immediately BEFORE the live prompt line so the
+      // prompt stays the last line, exactly as a real shell redraws it.
+      printBeforePrompt({ text: matches.join('  '), classes: 'shell-out' });
+    }
+
+    // Insert a single output line directly BEFORE the live prompt line, so the
+    // prompt remains the trailing element. Used by the Tab ambiguous-match listing,
+    // which prints above a still-live (uncommitted) prompt — unlike print(), which
+    // appends after the (already-frozen) command line for normal command output.
+    function printBeforePrompt(ln: Line): void {
+      const el = document.createElement('span');
+      el.className = ['shell-line', ln.classes].filter(Boolean).join(' ');
+      if (ln.html) el.innerHTML = ln.text;
+      else el.textContent = ln.text;
+      // The live prompt line is `input`'s parent span ([data-terminal-prompt]); it is
+      // the last child of `session` while the prompt is live. Insert the listing just
+      // before it. insertBefore(el, null) appends to the end, so a detached/missing
+      // prompt line degrades to print()'s append behavior rather than throwing.
+      const liveLine = input.closest<HTMLElement>('[data-terminal-prompt]');
+      session!.insertBefore(el, liveLine);
+      scrollToBottom();
     }
 
     // Replace the token at `tokenIndex` with `value`, rejoining the line, then put
