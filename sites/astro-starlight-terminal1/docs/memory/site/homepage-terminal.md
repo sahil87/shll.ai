@@ -1,5 +1,5 @@
 ---
-description: "The homepage's interactive terminal prompt (change 9vbo): the progressive-enhancement boundary (static `<pre class=\"shell-session\">` transcript is the no-JS source of truth; `TerminalPrompt.astro` client island upgrades ONLY the final `[data-terminal-prompt]` line into a focusable `contenteditable` input, no autofocus on load), the static client-side command dispatch map (help/ls/cd·open/install/version/theme/clear + eggs whoami·sudo·echo·man·shll·sl·fortune·exit·:q, strict `command not found`), the `theme` → `<starlight-theme-select>` `change`-event sync, and the `.terminal-window` CSS chrome (1px border + thin title bar + 3 dimmed dots — a deliberate reversal of `260517-pdsp-terminal-skin`'s no-chrome decision)"
+description: "The homepage's interactive terminal prompt (changes 9vbo, n23o): the progressive-enhancement boundary (static `<pre class=\"shell-session\">` transcript is the no-JS source of truth; `TerminalPrompt.astro` client island upgrades ONLY the final `[data-terminal-prompt]` line into a focusable `contenteditable` input, no autofocus on load), the static client-side command dispatch map (help/ls/cd·open/install/version/theme/history/clear + eggs whoami·sudo·echo·man·shll·sl·fortune·exit·:q, strict `command not found`), the shell affordances on `onKeydown` (↑/↓ command history with sessionStorage persistence + `ignoredups`, bash-like Tab-completion, Ctrl-L clear / Ctrl-C cancel — all upholding the exactly-one-trailing-prompt invariant), the `theme` → `<starlight-theme-select>` `change`-event sync, and the `.terminal-window` CSS chrome (1px border + thin title bar + 3 dimmed dots — a deliberate reversal of `260517-pdsp-terminal-skin`'s no-chrome decision)"
 ---
 # Homepage Interactive Terminal
 
@@ -35,6 +35,7 @@ A single `COMMANDS: Record<string, Handler>` of pure-ish handlers `(args, ctx) =
 | `install` | `window.location.assign('/getting-started/install/')`. |
 | `version` (+ `shll version` alias) | Re-prints the version rows **captured from the rendered `<VersionTable/>` output** at init (`versionRowsHtml`) — NOT a hardcoded list. Since `#47` the page's `$ shll version` block is self-updating (build-time, from `help/*.json`, with the `run-kit → rk` display label); the terminal mirrors it verbatim so the two never drift. Rows carry short-URL tool links (`/shll`) + `[git]` links. |
 | `theme [dark\|light]` | Drives Starlight's **existing** theme mechanism (see below). |
+| `history` | Prints the in-memory command history, one indexed (1-based, right-padded) `shell-out` line each — reading the **same** array the ↑/↓ recall walks, so the two can never disagree. Empty history prints `no history yet` (`shell-dim`). Added by change `n23o`; also listed in `help`. |
 | `clear` | `session.replaceChildren()` then a fresh prompt. |
 
 **Easter eggs** (named after commands a dev would naturally try — for organic discovery): `whoami` (planning-themed), `sudo [anything]` (cheeky refusal), `echo <text>`, `man <tool>` (one-line synopsis from the in-script `SYNOPSIS` map + overview link; invalid tool → the valid list), `shll` (ASCII splash / manifesto), `sl` (ASCII steam-locomotive — the fat-finger-of-`ls` gag), `fortune` (random aphorism from the in-script `FORTUNES` list, re-runnable), `exit` / `:q` ("There is no escape from the shll.").
@@ -46,6 +47,38 @@ Egg copy/ASCII was authored at apply time in the site's voice and PR-reviewed (r
 ### `theme` syncs with Starlight (does not reinvent persistence)
 
 `setTheme` locates the header `starlight-theme-select select`, sets `select.value` to the target, and dispatches a bubbling `change` event — so the header toggle UI, `<html data-theme>`, and `localStorage` all update through Starlight's own `onThemeChange`. It MUST NOT flip `data-theme` directly nor reinvent persistence. No-arg toggles the effective theme (read from `document.documentElement.dataset.theme`); `dark`/`light` sets it; any other arg prints `usage: theme [dark|light]`. A direct `data-theme` flip exists only as a fallback if the header select is absent.
+
+## Shell affordances on `onKeydown` (change `n23o`)
+
+Change `n23o` makes the prompt behave like a real shell rather than a form field. All three features live in input handling (`onKeydown` + module-scoped state inside `initTerminal`) and reuse existing plumbing (`COMMANDS`, `TOOLS`, `freshPrompt`, `clear`, `caretToEnd`, `print`); zero new dependencies (Constitution VI), no markup/content change. The `onKeydown` branch order is: Ctrl-combos → ↑/↓ → Tab → Enter → native fall-through.
+
+**The exactly-one-trailing-prompt invariant (load-bearing).** The most fragile part of this change. Ctrl-L and Ctrl-C are prompt-emitting paths **outside** the Enter→`run`→`freshPrompt` flow, so each must emit exactly one trailing prompt itself — never two, never zero. The Tab multiple-match listing deliberately does NOT commit/freeze the line (so it adds no prompt-emitting path at all).
+
+### Command history (↑ / ↓ recall)
+
+- **State at `initTerminal` scope** (one history per terminal instance, NOT inside `freshPrompt` which runs per prompt): `history: string[]` of committed, non-empty, trimmed **raw** lines + a `historyCursor` ranging `[0, history.length]`, where `length` is the "blank draft" slot past the newest entry. ↑ (`navigateHistory(-1)`) walks toward 0; ↓ (`navigateHistory(1)`) walks toward `length`, where it restores a **blank** line (drafting a new command), not the newest entry. Caret to end via `caretToEnd()`. Because the prompt is enforced single-line (paste flattened, `aria-multiline=false`), ↑/↓ drive history unconditionally rather than caret movement.
+- **`ignoredups`** (bash behavior): on Enter commit a line is pushed only if it differs from the immediately previous entry; the cursor then resets to `history.length`. Ctrl-C also resets the cursor to the blank-draft slot (so the next ↑ starts from the newest entry).
+- **sessionStorage persistence** under the named key `shll:terminal:history` (deliberately NOT `localStorage` — a refresh keeps recent commands, but a new browser session starts clean). Read once at init via `loadHistory()`, written on each commit via `saveHistory()`. **All** access is try/catch-guarded: private-mode / disabled-storage / quota degrades silently to in-memory-only and never throws, and a malformed / non-array payload coerces to `[]` (the parsed array is also filtered to strings).
+
+### Tab-completion (bash-like)
+
+`completeInput()` completes the token under edit. First token → `COMMANDS` keys; second token → `TOOLS` when the first token is a tool-arg command (`cd` / `open` / `man`, the `TOOL_ARG_COMMANDS` list). Resolution over the candidates matching the typed fragment:
+
+- **single match** → fill it (`fillToken` rejoins the line, preserving any `cd `/`open `/`man ` prefix), caret to end.
+- **longest common prefix > typed** → fill the shared prefix (partial completion), no listing.
+- **multiple matches, no LCP gain** → `printBeforePrompt({ text: matches.join('  '), classes: 'shell-out' })` lists the candidates ABOVE the still-live input — WITHOUT freezing the line or emitting a new prompt (input text + caret untouched). It uses `printBeforePrompt` (insert before the live prompt line), NOT `print` (append to end of `session`): `print` would drop the listing BELOW the live prompt — the prompt would no longer be the trailing line. This is the chosen path (over freeze→reseed) precisely because it adds no prompt-emitting path, keeping the one-trailing-prompt invariant trivially intact.
+- **no match** → no-op (input unchanged, nothing printed).
+
+### Control keys (Ctrl-L, Ctrl-C)
+
+Detected only on an unmodified Ctrl combo (`e.ctrlKey && !shift && !alt && !meta`) so e.g. Ctrl-Shift-C copy is left to the browser; other Ctrl combos fall through to native handling.
+
+- **Ctrl-L** → `preventDefault()` (Ctrl-L otherwise focuses the address bar), reuse `clear()` (which deliberately does NOT emit a prompt itself), then exactly one `freshPrompt()`.
+- **Ctrl-C** → `preventDefault()`, `freezeInput('^C')` (freeze the live line with a trailing `^C` like a real shell aborting a line), discard the typed input (do **not** run it), reset `historyCursor`, then one `freshPrompt()`. Empty input still freezes `$ ^C` + one prompt.
+
+### `freezeInput(suffix?)` helper
+
+The Enter-branch line tear-down (live input → static echoed text: strip `contenteditable`/`role`/`aria-multiline`/listeners/`shell-input` class, drop the block cursor) was **extracted** from the inline Enter logic into a shared `freezeInput(suffix = '')` helper, reused by both Enter (commit, no suffix) and Ctrl-C (cancel, `'^C'` suffix) so the freeze semantics can never drift between them. The optional `suffix` is appended to the echoed text.
 
 ## Terminal window chrome (`terminal.css`, deliberate `pdsp` reversal)
 
@@ -76,6 +109,10 @@ This is a **deliberate reversal** of `260517-pdsp-terminal-skin`'s explicit "no 
 - Output MUST reuse only existing `.shell-*` classes + `--c-*` variables; new CSS is limited to the `.terminal-window` frame, the fixed-height scroll viewport, and the block-cursor/input state (Constitution V parity is free).
 - The `.terminal-window` frame MUST be CSS-only, no-JS-safe, transcript-scoped, both themes.
 - Inside the frame the `.shell-session` is a **fixed-height scroll viewport** (`height: 22rem`, `max-height: 60vh`, `overflow-y: auto`): output scrolls up as it grows rather than the panel expanding. JS pins the newest line to the bottom (`scrollToBottom()` after `print`/`freshPrompt`). The no-JS static transcript is short enough to sit within the fixed height.
+- The shell affordances (change `n23o`) MUST uphold the **exactly-one-trailing-prompt invariant** on every prompt-emitting path: Ctrl-L (`clear()` + one `freshPrompt()`) and Ctrl-C (`freezeInput('^C')` + one `freshPrompt()`) each emit exactly one; Tab listing emits none (no freeze/commit).
+- ↑/↓ history recall and the `history` command MUST read the **same** `initTerminal`-scoped array; persistence MUST use `sessionStorage` (NOT `localStorage`) under a named key with **all** access try/catch-guarded (silent degrade to in-memory; malformed payload → `[]`).
+- Tab-completion MUST complete the first token against `COMMANDS` keys and the second against `TOOLS` only for the tool-arg commands `cd`/`open`/`man`; resolution is single-fill / LCP-fill / multi-list / no-op, and the multi-match listing MUST NOT freeze the line.
+- The Enter and Ctrl-C freeze logic MUST share one `freezeInput(suffix?)` helper (no copy-paste drift).
 - Zero new dependencies; no `astro.config` change; output stays fully static (Constitution I, IV, VI).
 
 ## Design Decisions
@@ -91,10 +128,15 @@ This is a **deliberate reversal** of `260517-pdsp-terminal-skin`'s explicit "no 
 - **Eggs are NOT listed in `help`** — named after commands a dev would naturally try, surfaced via a "curious dev might try the obvious ones" hint, for organic discovery.
 - **Window chrome reverses `260517-pdsp-terminal-skin`** — see § Terminal window chrome; a within-project design decision (changed context: frame as functional affordance), not a constitutional breach.
 - **Single hardcoded `#c2553f` red dot** (not a `--c-*` var) — decorative, `aria-hidden`, muted at 0.55 opacity; judged acceptable on both theme surfaces during review (Constitution V parity is mechanism-agnostic correctness).
+- **Tab multiple-match listing uses print-without-freezing** (change `n23o`) — `printBeforePrompt()` a `shell-out` listing line above the still-live input; do NOT freeze or re-emit a prompt. *Why*: cleanest path for the one-trailing-prompt invariant (no commit/re-emit happens) and the caret/input stay put. Uses `printBeforePrompt` (insert before the live prompt line), not `print` (append to end) — the latter would drop the listing below the prompt, breaking the trailing-prompt invariant. *Rejected*: freeze→print→`freshPrompt()`-with-reseed (more code, an extra prompt-emitting path to keep correct).
+- **`freezeInput(suffix?)` shared by Enter and Ctrl-C** (change `n23o`) — the Enter-branch line tear-down was extracted into one helper so commit (no suffix) and cancel (`'^C'`) can never drift. *Rejected*: copy-pasting the ~12-line tear-down into the Ctrl-C path (drift risk; god-branch).
+- **History persisted in `sessionStorage`, not `localStorage`** (change `n23o`) — session-scoped recall survives a refresh but a new browser session starts clean; single namespaced JSON key (`shll:terminal:history`), all access try/catch-guarded with malformed→`[]` coercion so storage failures degrade silently. *Rejected*: `localStorage` (would persist across unrelated sessions).
+- **History recall and the `history` command read one shared array** (change `n23o`) — the ↑/↓ cursor walk and the `history` command both read the `initTerminal`-scoped `history[]`, so the listing and the recall can never disagree (no duplicate source of truth).
+- **↑/↓ drive history unconditionally** (change `n23o`) — no caret-boundary gate, because the prompt is enforced single-line (paste flattened, `aria-multiline=false`), so there is no multi-line navigation to preserve.
 
 ## Key Files
 
-- `src/components/TerminalPrompt.astro` *(new)* — the client-island script: bootstrap via `[data-terminal-prompt]`, the input lifecycle (`freshPrompt`/`caretToEnd`/`print`/`clear`/`onKeydown`/`onPaste`/`onFocus`/`onBlur`/`run`), the block-cursor element + `is-active` blink toggle, `onClick` click-to-focus, `scrollToBottom`, the `COMMANDS` dispatch map, and the `setTheme`/`navigateTool` helpers.
+- `src/components/TerminalPrompt.astro` — the client-island script: bootstrap via `[data-terminal-prompt]`, the input lifecycle (`freshPrompt`/`caretToEnd`/`print`/`clear`/`onKeydown`/`onPaste`/`onFocus`/`onBlur`/`run`), the block-cursor element + `is-active` blink toggle, `onClick` click-to-focus, `scrollToBottom`, the `COMMANDS` dispatch map, and the `setTheme`/`navigateTool` helpers. Change `n23o` adds the shell affordances: `initTerminal`-scoped `history[]` + `historyCursor` + `loadHistory`/`saveHistory` (sessionStorage, key `shll:terminal:history`), the `freezeInput(suffix?)` helper (extracted from the Enter branch, reused by Ctrl-C), `navigateHistory(dir)`, `completeInput`/`fillToken`/`longestCommonPrefix` (Tab) + the `TOOL_ARG_COMMANDS` list, the `history` `COMMANDS` entry + its `help` line, and the Ctrl-L/Ctrl-C/↑/↓/Tab branches in `onKeydown`.
 - `src/content/docs/index.mdx` — the `import`, the `.terminal-window` frame wrap (`<div class="terminal-window">` + `aria-hidden` titlebar with three dots), the `data-terminal-prompt` hook on the final `.shell-line`, and the `<TerminalPrompt />` placement.
 - `src/styles/terminal.css` — the `.terminal-window` / `.terminal-titlebar` / `.terminal-dot*` chrome and the `.shell-input` focus/caret CSS.
 
@@ -104,3 +146,4 @@ This is a **deliberate reversal** of `260517-pdsp-terminal-skin`'s explicit "no 
 |------|--------|
 | 2026-06-08 | Change `9vbo`: created. The homepage terminal prompt is now interactive — `TerminalPrompt.astro` client island upgrades the `[data-terminal-prompt]` line into a focusable `contenteditable` input dispatching a static command map (navigation + eggs, strict `command not found`), `theme` syncs through Starlight's `<starlight-theme-select>`, and a CSS-only `.terminal-window` frame wraps the transcript (a deliberate reversal of `260517-pdsp-terminal-skin`'s no-chrome decision). Progressive enhancement: the static transcript stays the no-JS source of truth; zero new dependencies; output stays static. |
 | 2026-06-08 | Change `9vbo` (PR #46 polish): replaced the OS text-caret with a TTY-style **block cursor** (`▊`, blinks only when focused) and removed the form-field focus-ring box; made the in-frame session a **fixed-height scroll viewport** (output scrolls up, panel no longer grows); added **click-anywhere-to-focus** (skips links + text selections). Also a PR-review fix: `contenteditable="true"` + explicit plain-text paste handler (replacing `plaintext-only`), and dropped a redundant `shell-line` class on version rows. Verified in a real browser (block cursor renders, click focuses + activates blink, content scrolls pinned-to-bottom). |
+| 2026-06-10 | Change `n23o`: shell affordances on `onKeydown`. **Command history** — `initTerminal`-scoped `history[]` + `historyCursor`, ↑/↓ recall (past-newest = blank draft), bash `ignoredups`, `sessionStorage` persistence (key `shll:terminal:history`, try/catch-guarded, malformed→`[]`), and a new `history` command (+ `help` line) reading the same array. **Tab-completion** — bash-like over `COMMANDS` keys (first token) / `TOOLS` (second token for `cd`/`open`/`man`): single-fill / LCP-fill / multi-list (print-without-freezing) / no-op. **Control keys** — Ctrl-L (`clear()` + one prompt), Ctrl-C (`freezeInput('^C')` + one prompt, no run); unmodified-Ctrl only. The Enter-branch freeze tear-down was extracted into a shared `freezeInput(suffix?)` helper reused by Ctrl-C. Upholds the exactly-one-trailing-prompt invariant; zero new dependencies; no markup/content change (`index.mdx` and the no-JS fallback untouched). |

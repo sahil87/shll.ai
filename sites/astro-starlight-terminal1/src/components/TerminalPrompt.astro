@@ -79,6 +79,38 @@
       .filter((el) => /\[git\]/.test(el.textContent ?? ''))
       .map((el) => el.innerHTML);
 
+    // ── Command history ────────────────────────────────────────────────────────
+    // In-memory log of committed, non-empty, trimmed RAW lines (one history per
+    // terminal instance — this lives at initTerminal scope, NOT inside freshPrompt
+    // which runs per prompt). `historyCursor` is the recall position: it ranges
+    // [0, history.length], where history.length is the "blank draft" slot past the
+    // newest entry. ↑ walks toward 0; ↓ walks toward length (blank draft).
+    //
+    // Persisted in sessionStorage (NOT localStorage — a refresh keeps your recent
+    // commands, but a new browser session starts clean). All storage access is
+    // try/catch-guarded so private-mode / disabled-storage degrades silently to
+    // in-memory-only and never throws. A malformed/non-array payload coerces to [].
+    const HISTORY_KEY = 'shll:terminal:history';
+    const history: string[] = loadHistory();
+    let historyCursor = history.length;
+
+    function loadHistory(): string[] {
+      try {
+        const parsed = JSON.parse(sessionStorage.getItem(HISTORY_KEY) ?? '[]');
+        return Array.isArray(parsed) ? parsed.filter((x) => typeof x === 'string') : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveHistory(): void {
+      try {
+        sessionStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+      } catch {
+        // sessionStorage unavailable (private mode / quota) — degrade to in-memory.
+      }
+    }
+
     // The active prompt line: replace the static "$ ▊" with a prompt + typeable
     // input region, followed by a block cursor (▊) that matches the static skin.
     // We hide the OS text-caret (caret-color: transparent in terminal.css) and
@@ -203,13 +235,14 @@
       cursor?.classList.remove('is-active');
     }
 
-    function onKeydown(e: KeyboardEvent): void {
-      if (e.key !== 'Enter') return;
-      e.preventDefault();
-      const raw = (input.textContent ?? '').trim();
-
-      // Freeze the just-entered line: convert the live input span into static
-      // echoed text so it reads like a committed command line.
+    // Freeze the live input into a static, echoed command line: strip its
+    // editable attributes/listeners + the `shell-input` class so it reads like a
+    // committed line, and drop its block cursor (only the live prompt carries
+    // one). An optional `suffix` is appended to the echoed text — Ctrl-C uses
+    // this to render the trailing `^C` a real shell prints when you abort a line.
+    // Shared by the Enter branch (commit) and the Ctrl-C branch (cancel) so the
+    // freeze semantics can never drift between them.
+    function freezeInput(suffix = ''): void {
       input.removeAttribute('contenteditable');
       input.removeAttribute('role');
       input.removeAttribute('aria-multiline');
@@ -219,20 +252,198 @@
       input.removeEventListener('focus', onFocus);
       input.removeEventListener('blur', onBlur);
       input.classList.remove('shell-input');
-      // The just-committed line becomes static history — drop its block cursor;
-      // only the live prompt carries one.
+      if (suffix) input.textContent = (input.textContent ?? '') + suffix;
       cursor?.remove();
+    }
+
+    function onKeydown(e: KeyboardEvent): void {
+      // ── Control keys (Ctrl-L clear, Ctrl-C cancel) ──────────────────────────
+      // Each is a prompt-emitting path OUTSIDE the Enter→run→freshPrompt flow, so
+      // each must emit EXACTLY ONE trailing prompt itself (the same invariant the
+      // Enter branch upholds — never two prompts, never zero). We ignore modified
+      // combos (Shift/Alt/Meta) so e.g. Ctrl-Shift-C copy is left to the browser.
+      if (e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
+        const key = e.key.toLowerCase();
+        if (key === 'l') {
+          // Wipe the transcript (reusing clear()), then emit one fresh prompt.
+          // clear() deliberately does NOT emit one itself, so this is exactly one.
+          e.preventDefault();
+          clear();
+          freshPrompt();
+          return;
+        }
+        if (key === 'c') {
+          // Abort the line like a real shell: freeze it with a trailing `^C`,
+          // discard the typed input (do NOT run it), and drop one fresh prompt.
+          // Reset the recall cursor to the blank-draft slot (as commit does), so
+          // the next ↑ starts from the newest entry rather than mid-history.
+          e.preventDefault();
+          freezeInput('^C');
+          historyCursor = history.length;
+          freshPrompt();
+          return;
+        }
+        // Other Ctrl combos fall through to native handling.
+      }
+
+      // ── History recall (↑ back, ↓ forward) ──────────────────────────────────
+      // The prompt is enforced single-line (paste flattened, aria-multiline=false),
+      // so ↑/↓ unconditionally drive history rather than caret movement.
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        navigateHistory(-1);
+        return;
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        navigateHistory(1);
+        return;
+      }
+
+      // ── Tab-completion ───────────────────────────────────────────────────────
+      // preventDefault FIRST — Tab's default moves focus out of the contenteditable.
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        completeInput();
+        return;
+      }
+
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const raw = (input.textContent ?? '').trim();
+
+      // Freeze the just-entered line so it reads like a committed command line.
+      freezeInput();
 
       if (raw === '') {
         freshPrompt();
         return;
       }
 
+      // Record the committed line for ↑/↓ recall. `ignoredups`: skip pushing if
+      // it's identical to the immediately previous entry (bash behavior). Reset
+      // the recall cursor to the blank-draft slot past the newest entry.
+      if (history[history.length - 1] !== raw) {
+        history.push(raw);
+        saveHistory();
+      }
+      historyCursor = history.length;
+
       run(raw);
       // Emit the next prompt. If a handler navigated away (cd/open/install),
       // window.location.assign is async — this prompt is appended before unload
       // and is harmless; no guard needed.
       freshPrompt();
+    }
+
+    // ── History navigation ──────────────────────────────────────────────────────
+    // Walk the recall cursor by `dir` (-1 = ↑/back, +1 = ↓/forward), clamped to
+    // [0, history.length]. The length slot is the "blank draft" position: landing
+    // there restores an empty line (drafting a new command), NOT the newest entry.
+    // Always leaves the caret at end via the existing caretToEnd().
+    function navigateHistory(dir: -1 | 1): void {
+      if (history.length === 0) return;
+      const next = historyCursor + dir;
+      if (next < 0 || next > history.length) return; // already at a boundary
+      historyCursor = next;
+      input.textContent = historyCursor === history.length ? '' : history[historyCursor];
+      caretToEnd();
+    }
+
+    // ── Tab-completion ───────────────────────────────────────────────────────────
+    // Complete the token under edit (bash-like). First token completes against the
+    // COMMANDS keys; the second token completes against TOOLS when the first token
+    // is a tool-arg command (cd/open/man). Resolution over the matching candidates:
+    //   • single match    → fill it in, caret to end
+    //   • longest common   → fill the shared prefix (partial completion), no listing
+    //     prefix > typed
+    //   • multiple matches → print the candidates as one space-joined shell-out line
+    //     (no LCP gain)       ABOVE the still-live input, WITHOUT freezing it or
+    //                         emitting a new prompt (input + caret stay untouched)
+    //   • no match         → no-op (input unchanged, nothing printed)
+    const TOOL_ARG_COMMANDS = ['cd', 'open', 'man'];
+
+    function completeInput(): void {
+      const raw = input.textContent ?? '';
+      // Tokenize on whitespace; a trailing space means we're completing a fresh
+      // (empty) next token, so reflect that in the parts list.
+      const parts = raw.split(/\s+/);
+      const tokenIndex = parts.length - 1;
+      const fragment = parts[tokenIndex];
+
+      let candidates: readonly string[];
+      if (tokenIndex === 0) {
+        candidates = Object.keys(COMMANDS);
+      } else if (tokenIndex === 1 && TOOL_ARG_COMMANDS.includes(parts[0].toLowerCase())) {
+        candidates = TOOLS;
+      } else {
+        return; // nothing to complete beyond the supported positions
+      }
+
+      const matches = candidates.filter((c) => c.startsWith(fragment));
+      if (matches.length === 0) return; // no match → no-op
+
+      if (matches.length === 1) {
+        fillToken(parts, tokenIndex, matches[0]);
+        return;
+      }
+
+      // Multiple matches: extend to the longest common prefix if it's longer than
+      // what's typed (first-Tab partial completion). Otherwise list the candidates.
+      const lcp = longestCommonPrefix(matches);
+      if (lcp.length > fragment.length) {
+        fillToken(parts, tokenIndex, lcp);
+        return;
+      }
+      // Ambiguous at the typed prefix — list candidates above the live input. No
+      // freeze, no freshPrompt(): the input span keeps its text and caret, so the
+      // "exactly one trailing prompt" invariant is untouched (nothing is committed).
+      // We must NOT use print() here: print() appends to the end of `session`, which
+      // would drop the listing BELOW the live prompt (the current last line), leaving
+      // the prompt no longer trailing — un-shell-like and contrary to the invariant.
+      // Instead insert the listing immediately BEFORE the live prompt line so the
+      // prompt stays the last line, exactly as a real shell redraws it.
+      printBeforePrompt({ text: matches.join('  '), classes: 'shell-out' });
+    }
+
+    // Insert a single output line directly BEFORE the live prompt line, so the
+    // prompt remains the trailing element. Used by the Tab ambiguous-match listing,
+    // which prints above a still-live (uncommitted) prompt — unlike print(), which
+    // appends after the (already-frozen) command line for normal command output.
+    function printBeforePrompt(ln: Line): void {
+      const el = document.createElement('span');
+      el.className = ['shell-line', ln.classes].filter(Boolean).join(' ');
+      if (ln.html) el.innerHTML = ln.text;
+      else el.textContent = ln.text;
+      // The live prompt line is `input`'s parent span ([data-terminal-prompt]); it is
+      // the last child of `session` while the prompt is live. Insert the listing just
+      // before it. insertBefore(el, null) appends to the end, so a detached/missing
+      // prompt line degrades to print()'s append behavior rather than throwing.
+      const liveLine = input.closest<HTMLElement>('[data-terminal-prompt]');
+      session!.insertBefore(el, liveLine);
+      scrollToBottom();
+    }
+
+    // Replace the token at `tokenIndex` with `value`, rejoining the line, then put
+    // the caret at end. For a first-token completion this is the whole input; for a
+    // second-token completion the leading command prefix (cd/open/man) is preserved.
+    function fillToken(parts: string[], tokenIndex: number, value: string): void {
+      const next = parts.slice();
+      next[tokenIndex] = value;
+      input.textContent = next.join(' ');
+      caretToEnd();
+    }
+
+    function longestCommonPrefix(strings: readonly string[]): string {
+      if (strings.length === 0) return '';
+      let prefix = strings[0];
+      for (const s of strings) {
+        while (!s.startsWith(prefix)) {
+          prefix = prefix.slice(0, -1);
+          if (prefix === '') return '';
+        }
+      }
+      return prefix;
     }
 
     function run(raw: string): void {
@@ -271,6 +482,7 @@
           { text: '  man <tool>      one-line synopsis of a tool', classes: 'shell-out' },
           { text: '  whoami          who are you, really', classes: 'shell-out' },
           { text: '  fortune         a dev aphorism', classes: 'shell-out' },
+          { text: '  history         list previously entered commands', classes: 'shell-out' },
           { text: '  clear           clear the screen', classes: 'shell-out' },
           { text: '', classes: 'shell-out' },
           { text: "tip: a few commands aren't on this list. a curious dev might try the obvious ones.", classes: 'shell-comment' },
@@ -311,6 +523,19 @@
 
       theme(args) {
         return setTheme(args[0]);
+      },
+
+      // List previously entered commands. Reads the SAME `history` array the ↑/↓
+      // recall walks, so the two can never disagree. One indexed (1-based) line
+      // each, `shell-out` class — matching the rest of the command output skin.
+      history() {
+        if (history.length === 0) {
+          return [{ text: 'no history yet', classes: 'shell-out shell-dim' }];
+        }
+        return history.map((cmd, i) => ({
+          text: `  ${String(i + 1).padStart(3)}  ${cmd}`,
+          classes: 'shell-out',
+        }));
       },
 
       clear(_args, ctx) {
