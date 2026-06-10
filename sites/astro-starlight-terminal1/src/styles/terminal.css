@@ -363,6 +363,24 @@ starlight-readme-toc .readme-toc-sublist {
   color: var(--c-fg-dim);
 }
 
+/* Above-the-fold pass (change 23xc): Starlight's splash hero padding-block
+   resolves to ~91px each side at laptop sizes, pushing the terminal — the
+   site's signature interaction — mostly below the fold on a ~1280×750
+   viewport (the live prompt sat at y≈876, fold at 750). Tighten the hero's
+   vertical rhythm so the terminal window's greeting + live prompt clear the
+   fold. Scoped via [data-has-hero] (set on <html> for hero pages only), so
+   doc pages are untouched; the extra attribute also outranks Starlight's
+   :where()-scoped component rules without !important. */
+[data-has-hero] .hero {
+  padding-block: 3rem 1.5rem;
+}
+[data-has-hero] .hero .stack {
+  gap: 1.5rem;
+}
+[data-has-hero] .terminal-window {
+  margin-top: 0.75rem;
+}
+
 /* ── Shell session blocks (splash page) ─────────────────────────────────────
    The .shell-session <pre> is hand-written terminal output, not a code block.
    Renders flush against the page background — no panel, no border, no
@@ -526,6 +544,17 @@ starlight-readme-toc .readme-toc-sublist {
 .shell-session .shell-input-cursor.is-active {
   opacity: 1;
   animation: shell-blink 1.1s steps(2, start) infinite;
+}
+
+/* Idle ghost hint (change 23xc) — a dim, aria-hidden, visual-only nudge typed
+   into the live prompt line after ~4s without interaction, fish-autosuggestion
+   style: `$ ▊try 'ls' ⏎`. It sits AFTER the block cursor, outside the
+   contenteditable input, so it can never be submitted or announced. Faintest
+   foreground tier so it reads as a ghost, not output; both themes for free
+   via the shared variable (Constitution V). */
+.shell-session .shell-ghost {
+  color: var(--c-fg-faint);
+  user-select: none;
 }
 
 /* Caption block — a single-line shell-comment used as a label above/below

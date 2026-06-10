@@ -59,6 +59,25 @@
   const ROUTE_OVERVIEW = (tool: string) => `/tools/${tool}/overview/`;
   const ROUTE_INSTALL = '/getting-started/install/';
 
+  // Activation-time greeting (change 23xc): one dim line stating what shll is
+  // plus the invitation, printed by the island BEFORE the first live prompt so
+  // the value prop sits where the top-anchored resting viewport rests the eye.
+  // Island-printed only — the static no-JS transcript in index.mdx stays
+  // byte-identical (the progressive-enhancement source of truth). Kept short
+  // enough that the tail invitation survives the session's `white-space: pre`
+  // on common laptop widths (long lines clip into horizontal scroll).
+  const GREETING = "seven small CLIs that force agents to plan first. type 'help' or 'ls'.";
+
+  // Idle ghost hint (change 23xc): after HINT_DELAY_MS without interaction, a
+  // dim, aria-hidden, VISUAL-ONLY hint types into the live prompt line after
+  // the block cursor (fish-autosuggestion style: `$ ▊try 'ls' ⏎`) to signal
+  // "this is alive". One-shot per page view — any interaction before the timer
+  // fires cancels it, any after dismisses it, and it never re-arms. Under
+  // prefers-reduced-motion the full text appears statically (no typing).
+  const HINT_TEXT = "try 'ls' ⏎";
+  const HINT_DELAY_MS = 4000;
+  const HINT_TYPE_MS = 70; // per-character typing cadence
+
   // ── Bootstrap ──────────────────────────────────────────────────────────────
   const promptLine = document.querySelector<HTMLElement>('[data-terminal-prompt]');
   if (promptLine) initTerminal(promptLine);
@@ -164,9 +183,16 @@
       input.addEventListener('paste', onPaste);
       input.addEventListener('focus', onFocus);
       input.addEventListener('blur', onBlur);
-      caretToEnd();
       scrollToBottom();
-      if (focus) input.focus();
+      // Only place the caret on the focusing path: putting a selection range
+      // inside a contenteditable gives it focus in Chromium, so an
+      // unconditional caretToEnd() here silently violated the deliberate
+      // no-autofocus-on-load decision at activation (focus = false). The
+      // click-to-focus and Tab-focus paths re-place the caret themselves.
+      if (focus) {
+        input.focus();
+        caretToEnd();
+      }
     }
 
     function caretToEnd(): void {
@@ -183,6 +209,52 @@
     // newest line in view as content grows — like a real terminal scrolling up.
     function scrollToBottom(): void {
       session!.scrollTop = session!.scrollHeight;
+    }
+
+    // ── Resting-state top anchor (change 23xc) ──────────────────────────────
+    // Until the first prompt-emitting interaction, the session viewport is
+    // anchored so the greeting line is the FIRST visible line and the live
+    // prompt sits directly below it — like a real terminal after `clear`, with
+    // the boot transcript still above, reachable by scrolling up. The content
+    // below the greeting (greeting + prompt, ~2 lines) is far shorter than the
+    // viewport, so plain scrollTop can't reach the greeting's offset: we extend
+    // the scroll range with inline bottom padding (the blank rows a real
+    // terminal shows after `clear`). This is scroll GEOMETRY, not content — the
+    // live prompt remains the session's last DOM child, so the exactly-one-
+    // trailing-prompt invariant is untouched.
+    let resting = true;
+
+    function anchorToGreeting(greetingEl: HTMLElement): void {
+      if (!greetingEl.isConnected) return;
+      const style = getComputedStyle(session!);
+      const padTop = parseFloat(style.paddingTop) || 0;
+      // The greeting's offset from the scrollable content origin, minus the
+      // normal top padding so the line rests where content normally starts.
+      const target = Math.max(
+        0,
+        greetingEl.getBoundingClientRect().top -
+          session!.getBoundingClientRect().top +
+          session!.scrollTop -
+          padTop,
+      );
+      // Extend the scroll range when the content below the greeting is shorter
+      // than the viewport (always true at activation).
+      const deficit = target - (session!.scrollHeight - session!.clientHeight);
+      if (deficit > 0) {
+        const padBottom = parseFloat(style.paddingBottom) || 0;
+        session!.style.paddingBottom = `${padBottom + deficit}px`;
+      }
+      // Direct, instant assignment — no smooth scrolling (trivially motion-safe).
+      session!.scrollTop = target;
+    }
+
+    // The first prompt-emitting interaction (Enter, Ctrl-L, Ctrl-C) ends the
+    // resting state: drop the filler so the existing bottom-pinned behavior
+    // (scrollToBottom after print/freshPrompt) resumes exactly as before.
+    function exitResting(): void {
+      if (!resting) return;
+      resting = false;
+      session!.style.paddingBottom = '';
     }
 
     // Print output lines as new spans appended to the SAME stream, reusing the
@@ -229,10 +301,73 @@
     // The block cursor blinks only while the input is focused — an unfocused
     // terminal shouldn't pulse. Toggled via an `is-active` class on the cursor.
     function onFocus(): void {
+      dismissIdleHint();
       cursor?.classList.add('is-active');
     }
     function onBlur(): void {
       cursor?.classList.remove('is-active');
+    }
+
+    // ── Idle ghost hint (change 23xc) ────────────────────────────────────────
+    // One-shot per page view: armed at activation, fires after HINT_DELAY_MS
+    // without interaction. The ghost is VISUAL-ONLY — an aria-hidden span
+    // appended to the live prompt line AFTER the block cursor (`$ ▊try 'ls' ⏎`),
+    // never inside the contenteditable input: it can't be submitted by Enter,
+    // is never part of the textbox's accessible name/value, and never focuses
+    // the input (the deliberate no-autofocus-on-load decision stands — the
+    // hint draws the eye, it does not steal focus).
+    let hintTimer: number | undefined;
+    let hintInterval: number | undefined;
+    let hintEl: HTMLElement | undefined;
+    let hintSpent = false; // one-shot latch — never re-arm after any interaction
+
+    function armIdleHint(): void {
+      hintTimer = window.setTimeout(showIdleHint, HINT_DELAY_MS);
+    }
+
+    function showIdleHint(): void {
+      if (hintSpent) return;
+      const liveLine = input.closest<HTMLElement>('[data-terminal-prompt]');
+      if (!liveLine) return;
+      hintEl = document.createElement('span');
+      hintEl.className = 'shell-ghost';
+      hintEl.setAttribute('aria-hidden', 'true');
+      liveLine.appendChild(hintEl); // after the block cursor (line's last child)
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        // Reduced motion: no typing animation — the full hint appears at once,
+        // still dim, still dismissable.
+        hintEl.textContent = HINT_TEXT;
+        return;
+      }
+      // Animate the hint in character-by-character, editing the ghost span's
+      // textContent in place. Deliberately NOT print()/scrollToBottom() — the
+      // typing must never move the scroll position.
+      let typed = 0;
+      hintInterval = window.setInterval(() => {
+        typed += 1;
+        hintEl!.textContent = HINT_TEXT.slice(0, typed);
+        if (typed >= HINT_TEXT.length) {
+          window.clearInterval(hintInterval);
+          hintInterval = undefined;
+        }
+      }, HINT_TYPE_MS);
+    }
+
+    // Any interaction spends the hint for the rest of the page view: before the
+    // timer fires this cancels it; after, it removes the ghost (clearing a
+    // mid-animation interval). Wired as the FIRST action of onKeydown — so e.g.
+    // Tab as the first keystroke dismisses the ghost before completion logic
+    // runs — plus onFocus and the terminal-surface click handler.
+    function dismissIdleHint(): void {
+      if (hintSpent) return;
+      hintSpent = true;
+      window.clearTimeout(hintTimer);
+      if (hintInterval !== undefined) {
+        window.clearInterval(hintInterval);
+        hintInterval = undefined;
+      }
+      hintEl?.remove();
+      hintEl = undefined;
     }
 
     // Freeze the live input into a static, echoed command line: strip its
@@ -257,6 +392,11 @@
     }
 
     function onKeydown(e: KeyboardEvent): void {
+      // Any keydown is interaction: spend the idle ghost hint BEFORE branch
+      // dispatch, so e.g. Tab as the very first keystroke dismisses the ghost
+      // before completion logic runs (change 23xc).
+      dismissIdleHint();
+
       // ── Control keys (Ctrl-L clear, Ctrl-C cancel) ──────────────────────────
       // Each is a prompt-emitting path OUTSIDE the Enter→run→freshPrompt flow, so
       // each must emit EXACTLY ONE trailing prompt itself (the same invariant the
@@ -268,6 +408,7 @@
           // Wipe the transcript (reusing clear()), then emit one fresh prompt.
           // clear() deliberately does NOT emit one itself, so this is exactly one.
           e.preventDefault();
+          exitResting();
           clear();
           freshPrompt();
           return;
@@ -278,6 +419,7 @@
           // Reset the recall cursor to the blank-draft slot (as commit does), so
           // the next ↑ starts from the newest entry rather than mid-history.
           e.preventDefault();
+          exitResting();
           freezeInput('^C');
           historyCursor = history.length;
           freshPrompt();
@@ -310,6 +452,10 @@
 
       if (e.key !== 'Enter') return;
       e.preventDefault();
+      // Enter is a prompt-emitting path: end the resting (top-anchored) state
+      // so the bottom-pinned scroll behavior resumes for this and all
+      // subsequent output (change 23xc).
+      exitResting();
       const raw = (input.textContent ?? '').trim();
 
       // Freeze the just-entered line so it reads like a committed command line.
@@ -421,7 +567,11 @@
       // prompt line degrades to print()'s append behavior rather than throwing.
       const liveLine = input.closest<HTMLElement>('[data-terminal-prompt]');
       session!.insertBefore(el, liveLine);
-      scrollToBottom();
+      // While resting (top-anchored, change 23xc), pinning to bottom would jump
+      // the viewport into the blank filler padding and defeat the greeting
+      // anchor. The listing lands just below the still-anchored greeting — in
+      // the already-visible region — so preserve the scroll position instead.
+      if (!resting) scrollToBottom();
     }
 
     // Replace the token at `tokenIndex` with `value`, rejoining the line, then put
@@ -677,6 +827,10 @@
     // landed on a link (let it navigate) or when the user is selecting text
     // (don't steal a copy-selection), so the affordance never fights the user.
     function onClick(e: MouseEvent): void {
+      // A click on the terminal surface is interaction — spend the idle ghost
+      // hint before the focus-affordance early-returns below (a link click or
+      // an in-progress text selection still counts as interaction).
+      dismissIdleHint();
       const target = e.target as HTMLElement | null;
       if (target?.closest('a')) return;
       if ((window.getSelection()?.toString() ?? '') !== '') return;
@@ -693,6 +847,22 @@
     clickSurface.addEventListener('click', onClick);
     clickSurface.style.cursor = 'text'; // hint the whole area is typeable
     promptLine.remove();
+    // Greeting first — one dim line carrying the value prop + invitation —
+    // then the first live prompt (no autofocus), then anchor the resting
+    // viewport so the greeting is the first visible line (change 23xc).
+    print([{ text: GREETING, classes: 'shell-out shell-dim' }]);
+    const greetingEl = session.lastElementChild as HTMLElement;
     freshPrompt(false);
+    anchorToGreeting(greetingEl);
+    const anchoredScrollTop = session.scrollTop;
+    // JetBrains Mono loads async and shifts line metrics — re-anchor once the
+    // fonts are in, but only while still resting and only if the user hasn't
+    // scrolled away from the anchored position in the meantime.
+    document.fonts?.ready.then(() => {
+      if (resting && Math.abs(session.scrollTop - anchoredScrollTop) < 2) {
+        anchorToGreeting(greetingEl);
+      }
+    });
+    armIdleHint();
   }
 </script>

@@ -1,0 +1,51 @@
+id: 23xc
+name: 260610-23xc-terminal-interactive-above-fold
+created: 2026-06-10T11:26:30Z
+created_by: sahil-noon
+change_type: fix
+issues: []
+progress:
+    intake: done
+    apply: done
+    review: done
+    hydrate: done
+    ship: done
+    review-pr: done
+plan:
+    generated: true
+    task_count: 8
+    acceptance_count: 17
+    acceptance_completed: 17
+confidence:
+    certain: 8
+    confident: 6
+    tentative: 0
+    unresolved: 0
+    score: 3.2
+    fuzzy: true
+    dimensions:
+        signal: 85.2
+        reversibility: 88.2
+        competence: 87.9
+        disambiguation: 81.8
+stage_metrics:
+    intake: {started_at: "2026-06-10T11:26:30Z", driver: fab-new, iterations: 1, completed_at: "2026-06-10T11:31:03Z"}
+    apply: {started_at: "2026-06-10T11:31:03Z", driver: fab-fff, iterations: 1, completed_at: "2026-06-10T11:51:29Z"}
+    review: {started_at: "2026-06-10T11:51:29Z", driver: fab-fff, iterations: 1, completed_at: "2026-06-10T12:01:27Z"}
+    hydrate: {started_at: "2026-06-10T12:01:27Z", driver: fab-fff, iterations: 1, completed_at: "2026-06-10T12:08:25Z"}
+    ship: {started_at: "2026-06-10T12:08:25Z", driver: fab-fff, iterations: 1, completed_at: "2026-06-10T12:11:23Z"}
+    review-pr: {started_at: "2026-06-10T12:11:23Z", driver: git-pr, iterations: 1, completed_at: "2026-06-10T12:20:40Z"}
+prs:
+    - https://github.com/sahil87/shll.ai/pull/51
+true_impact:
+    added: 0
+    deleted: 0
+    net: 0
+    excluding:
+        added: 0
+        deleted: 0
+        net: 0
+    computed_at: "2026-06-10T12:08:25Z"
+    computed_at_stage: hydrate
+# true_impact: lazily created on first apply-finish (no placeholder here).
+last_updated: 2026-06-10T12:20:40Z
