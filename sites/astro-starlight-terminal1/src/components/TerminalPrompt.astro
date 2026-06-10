@@ -567,7 +567,11 @@
       // prompt line degrades to print()'s append behavior rather than throwing.
       const liveLine = input.closest<HTMLElement>('[data-terminal-prompt]');
       session!.insertBefore(el, liveLine);
-      scrollToBottom();
+      // While resting (top-anchored, change 23xc), pinning to bottom would jump
+      // the viewport into the blank filler padding and defeat the greeting
+      // anchor. The listing lands just below the still-anchored greeting — in
+      // the already-visible region — so preserve the scroll position instead.
+      if (!resting) scrollToBottom();
     }
 
     // Replace the token at `tokenIndex` with `value`, rejoining the line, then put
