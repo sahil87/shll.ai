@@ -1,0 +1,47 @@
+id: 37ng
+name: 260611-37ng-terminal-tool-name-commands
+created: 2026-06-11T07:28:25Z
+created_by: sahil-noon
+change_type: feat
+issues: []
+progress:
+    intake: done
+    apply: done
+    review: active
+    hydrate: pending
+    ship: pending
+    review-pr: pending
+plan:
+    generated: true
+    task_count: 10
+    acceptance_count: 17
+    acceptance_completed: 17
+confidence:
+    certain: 13
+    confident: 5
+    tentative: 0
+    unresolved: 0
+    score: 3.5
+    fuzzy: true
+    dimensions:
+        signal: 86.9
+        reversibility: 89.4
+        competence: 89.2
+        disambiguation: 86.4
+stage_metrics:
+    intake: {started_at: "2026-06-11T07:28:25Z", driver: fab-new, iterations: 1, completed_at: "2026-06-11T07:32:39Z"}
+    apply: {started_at: "2026-06-11T07:32:39Z", driver: fab-fff, iterations: 1, completed_at: "2026-06-11T07:55:28Z"}
+    review: {started_at: "2026-06-11T07:55:28Z", driver: fab-fff, iterations: 1}
+prs: []
+true_impact:
+    added: 0
+    deleted: 0
+    net: 0
+    excluding:
+        added: 0
+        deleted: 0
+        net: 0
+    computed_at: "2026-06-11T07:55:28Z"
+    computed_at_stage: apply
+# true_impact: lazily created on first apply-finish (no placeholder here).
+last_updated: 2026-06-11T08:03:40Z
