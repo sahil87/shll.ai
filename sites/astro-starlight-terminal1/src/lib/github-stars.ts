@@ -57,7 +57,9 @@ async function fetchStarCount(tool: string): Promise<number | null> {
     // Bounded wait: a stalled connection must degrade to a missing count in
     // seconds, not hold the build for undici's ~300s default. The abort lands
     // in the catch below — same fail-soft path as any other network error.
-    const res = await fetch(`${GITHUB_API_REPOS}/${tool}`, {
+    // The slug is path-encoded so an unexpected character from a future
+    // caller ('?', '/', space) can't rewrite the request path or query.
+    const res = await fetch(`${GITHUB_API_REPOS}/${encodeURIComponent(tool)}`, {
       headers,
       signal: AbortSignal.timeout(10_000),
     });
@@ -92,11 +94,21 @@ function warnOmitted(tool: string, reason: string): void {
  * (`12345` → `12k`). No millions tier: these repos sit far below 1M, and an
  * unreachable branch is just dead code.
  *
+ * The one-decimal tier rounds via INTEGER tenths-of-k, not `toFixed(1)`:
+ * `(1950 / 1000).toFixed(1)` is "1.9" (the double sits just below 1.95)
+ * while 1999 rounds up to "2k" — an inconsistent half-up. `count / 100` is
+ * exact at every .5 boundary (multiples of 50 divide to representable
+ * halves), so `Math.round` gives stable half-up rounding: 1950 → `2k`.
+ *
  * Pure and exported so scripts/github-stars.test.mjs can pin the tiers.
  */
 export function formatStarCount(count: number): string {
   if (count < 1000) return String(count);
-  const thousands = count / 1000;
-  if (thousands < 10) return `${thousands.toFixed(1).replace(/\.0$/, '')}k`;
-  return `${Math.floor(thousands)}k`;
+  if (count < 10_000) {
+    const tenths = Math.round(count / 100);
+    const whole = Math.floor(tenths / 10);
+    const frac = tenths % 10;
+    return frac === 0 ? `${whole}k` : `${whole}.${frac}k`;
+  }
+  return `${Math.floor(count / 1000)}k`;
 }

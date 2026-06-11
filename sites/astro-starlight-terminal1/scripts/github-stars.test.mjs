@@ -205,9 +205,10 @@ test('format: counts under 1000 print exactly', () => {
 test('format: one-decimal k below 10k, trailing .0 dropped', () => {
   assert.equal(formatStarCount(1000), '1k');
   assert.equal(formatStarCount(1234), '1.2k'); // the intake's worked example
-  assert.equal(formatStarCount(1950), '1.9k'); // 1.95's double sits below 1.95 — toFixed rounds down
-  assert.equal(formatStarCount(1999), '2k'); // 1.999 → "2.0" → "2k"
-  assert.equal(formatStarCount(9999), '10k'); // 9.999 → "10.0" → "10k"
+  assert.equal(formatStarCount(1949), '1.9k'); // just below the half boundary
+  assert.equal(formatStarCount(1950), '2k'); // stable half-up via integer tenths (toFixed would give 1.9k)
+  assert.equal(formatStarCount(1999), '2k');
+  assert.equal(formatStarCount(9999), '10k'); // rounds across the tier edge
 });
 
 test('format: integer k from 10k up', () => {
