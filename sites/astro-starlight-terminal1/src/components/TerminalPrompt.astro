@@ -11,6 +11,68 @@
 //
 // Precedent: src/components/Diagram.astro — a client island whose <script> does
 // theme-reactive work via the data-theme attribute on <html>.
+//
+// Build-time tool-help payload (change 37ng): this frontmatter reads the
+// repo-root help/*.json documents at BUILD TIME (the VersionTable precedent:
+// ascend from import.meta.url to the repo root — a fixed relative depth breaks
+// under Vite bundling), slims each doc to exactly what the bare-tool-name
+// cards render ({ short, usage, commands[].{name,short} } — the `text` fields
+// are KBs each and the card renders none of them), and emits ONE
+// application/json element in the template below. The island parses it at
+// activation (the versionRowsHtml capture-at-init precedent: build-time
+// truth, island snapshot, no drift). No runtime fetch — Constitution I.
+//
+// Graceful degrade, PER TOOL (deliberate contrast with VersionTable's
+// build-stop): a missing or invalid help/<slug>.json is skipped — omitted
+// from the payload — and that tool's card falls back to its SYNOPSIS line +
+// nav line. VersionTable already build-stops on any missing/invalid rostered
+// doc, so it remains the build's defect gate and this degrade can never mask
+// a committed defect.
+import fs from 'node:fs';
+import path from 'node:path';
+import { HelpDocSchema } from '../lib/schemas.ts';
+import { repoRootFromModuleUrl } from '../lib/repo-root.ts';
+import { stripToolPrefix, stripUsagePrefix } from '../lib/terminal-toolcard.ts';
+
+interface SlimToolHelp {
+  short: string;
+  usage: string;
+  commands: { name: string; short: string }[];
+}
+
+const helpDir = path.join(repoRootFromModuleUrl(import.meta.url), 'help');
+
+// Keyed by tool slug (the file name — help/run-kit.json holds binary `rk`).
+// Enumerating the directory rather than a roster const: the island's TOOLS
+// list is unreachable from this frontmatter, and the help/ collection IS the
+// roster (a stray extra file would add an unreferenced entry, harmless).
+const toolHelp: Record<string, SlimToolHelp> = {};
+for (const file of fs.readdirSync(helpDir)) {
+  if (!file.endsWith('.json')) continue;
+  const slug = file.slice(0, -'.json'.length);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(fs.readFileSync(path.join(helpDir, file), 'utf8'));
+  } catch {
+    continue; // unreadable or malformed JSON → degrade this tool only
+  }
+  const doc = HelpDocSchema.safeParse(parsed);
+  if (!doc.success) continue; // schema-invalid → degrade this tool only
+  const { tool, root } = doc.data;
+  toolHelp[slug] = {
+    // The §2 mechanical normalizations (change 37ng), applied at build time
+    // where the binary name (doc.tool) is known — pure transforms of json
+    // data, vn39-clean. Defined in terminal-toolcard.ts so the unit tests
+    // pin them.
+    short: stripToolPrefix(root.short, tool),
+    usage: stripUsagePrefix(root.usage),
+    commands: root.commands.map((c) => ({ name: c.name, short: c.short })),
+  };
+}
+
+// `<` → \u003c so the serialized payload can never terminate its own
+// <script> element early (standard embedded-JSON hygiene).
+const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
 ---
 
 <script>
@@ -26,6 +88,17 @@
   // coverage/alias/stale-drop computation and the width-budget chunking,
   // pinned by scripts/terminal-cheatsheet.test.mjs.
   import { buildCheatsheet, chunkLine, type CheatGroup } from '../lib/terminal-cheatsheet.ts';
+  // Tool-card logic (change 37ng) — the lib pattern a fourth time: card
+  // assembly (header/usage normalization, name-column padding, ellipsis
+  // truncation, the subcommand cap) and the subcommand lookup, pinned by
+  // scripts/terminal-toolcard.test.mjs. ToolHelpDoc is the slim build-time
+  // payload shape this component's frontmatter embeds.
+  import {
+    buildToolCard,
+    findSubcommand,
+    formatSubcommandLine,
+    type ToolHelpDoc,
+  } from '../lib/terminal-toolcard.ts';
 
   // ── Types ────────────────────────────────────────────────────────────────
   // `ariaHidden` (change o33t): hides the line from the cuur aria-live
@@ -71,6 +144,14 @@
     { text: `  ${usage}`, classes: 'shell-out' },
     { text: `  ${detail}`, classes: 'shell-out shell-dim' },
   ];
+  // Tool-card help entries (change 37ng): six near-identical entries, one
+  // factory — the helpDetail shape for the six bare tool-name commands
+  // appended at the record's tail below (one body, no six-way copy drift).
+  const toolCardHelp = (slug: string): Line[] =>
+    helpDetail(
+      `${slug} [command] — ${slug}'s card, from its own help`,
+      `usage + subcommands, machine-fresh. 'cd ${slug}' opens the full docs.`,
+    );
   const HELP_DETAIL: Record<string, Line[]> = {
     help: helpDetail(
       'help [command] — list commands, or explain one',
@@ -287,6 +368,25 @@
       'cheatsheet — the full command roster, grouped',
       "everything, including what 'help' won't admit to.",
     ),
+    // The tool-name cards (change 37ng) — appended after all existing
+    // entries (the o33t/cdbr convention), matching their COMMANDS position:
+    // six tools in canonical TOOLS order, then the two binary aliases
+    // pointing at their primaries. `man rk`/`man fab` answer from these via
+    // the o33t bridge (not in TOOLS, so they fall through to HELP_DETAIL).
+    idea: toolCardHelp('idea'),
+    hop: toolCardHelp('hop'),
+    'fab-kit': toolCardHelp('fab-kit'),
+    wt: toolCardHelp('wt'),
+    'run-kit': toolCardHelp('run-kit'),
+    tu: toolCardHelp('tu'),
+    rk: helpDetail(
+      "rk — run-kit's card, by its binary name  (alias of run-kit)",
+      "the same card — rk is what you actually type. 'cd run-kit' navigates.",
+    ),
+    fab: helpDetail(
+      "fab — fab-kit's card, by its binary name  (alias of fab-kit)",
+      "the same card — fab is what you actually type. 'cd fab-kit' navigates.",
+    ),
   };
 
   // Dev aphorisms for `fortune` — all tie to "plan before they code".
@@ -303,6 +403,10 @@
 
   const ROUTE_OVERVIEW = (tool: string) => `/tools/${tool}/overview/`;
   const ROUTE_INSTALL = '/getting-started/install/';
+  // Per-tool sibling pages (change 37ng): every tool has all three (verified
+  // at intake) — the tool cards' nav line links them all.
+  const ROUTE_README = (tool: string) => `/tools/${tool}/readme/`;
+  const ROUTE_COMMANDS = (tool: string) => `/tools/${tool}/commands/`;
 
   // Activation-time greeting (change 23xc): one dim line stating what shll is
   // plus the invitation, printed by the island BEFORE the first live prompt so
@@ -387,7 +491,8 @@
   // ── Cheatsheet (change cdbr) ─────────────────────────────────────────────
   // The deliberate full-roster reveal: `help` stays the curated short list and
   // the eggs stay unlisted there, but `cheatsheet` maps the whole territory in
-  // five fixed groups. Membership lives HERE, in one const beside the other
+  // six fixed groups (five from cdbr; `tools` added first by change 37ng).
+  // Membership lives HERE, in one const beside the other
   // named rosters — and the handler recomputes coverage at runtime
   // (buildCheatsheet): any COMMANDS key missing from every group and not
   // declared alias-of is appended under `uncategorized`, so a future command
@@ -399,6 +504,23 @@
   // may decorate beyond the bare key (`cd <tool>`, `make plan`) — the
   // decoration teaches the interesting invocation.
   const CHEATSHEET_GROUPS: CheatGroup[] = [
+    {
+      // The toolkit itself, FIRST (change 37ng): the six bare tool-name
+      // cards are the funnel's hottest keys and deserve the top of the
+      // sheet. fab-kit/run-kit display their binary aliases adjacent (the
+      // cdbr `cd · open` adjacency, alias-folded via CHEATSHEET_ALIASES).
+      // shll stays in classics — its behavior is the splash, distinct from
+      // the cards.
+      name: 'tools',
+      entries: [
+        { key: 'idea' },
+        { key: 'hop' },
+        { key: 'fab-kit', display: 'fab-kit · fab' },
+        { key: 'wt' },
+        { key: 'run-kit', display: 'run-kit · rk' },
+        { key: 'tu' },
+      ],
+    },
     {
       name: 'navigate',
       entries: [
@@ -477,15 +599,45 @@
     },
   ];
   // Alias-of declarations: these COMMANDS keys render with their primary's
-  // entry (vim, less, exit) and are not listed on their own — but they still
+  // entry (vim, less, exit — and, since change 37ng, the rk/fab binary
+  // names with their tools) and are not listed on their own — but they still
   // count as covered, so the runtime check never flags them uncategorized.
-  const CHEATSHEET_ALIASES: Record<string, string> = { vi: 'vim', more: 'less', ':q': 'exit' };
+  const CHEATSHEET_ALIASES: Record<string, string> = {
+    vi: 'vim',
+    more: 'less',
+    ':q': 'exit',
+    rk: 'run-kit',
+    fab: 'fab-kit',
+  };
   // Width budget for the ` · `-joined command lines: 74 joined chars + the
   // 2-space indent = 76 total under the session's `white-space: pre` (the
   // GREETING length precedent — longer lines clip into horizontal scroll on
   // common laptop widths). Long groups wrap to extra indented lines.
   const CHEAT_LINE_WIDTH = 74;
   const CHEAT_SEP = ' · ';
+
+  // ── Tool-name cards (change 37ng) ────────────────────────────────────────
+  // The build-time tool-help payload: this component's frontmatter reads the
+  // repo-root help/*.json at BUILD TIME, slims each doc to what the cards
+  // render, and embeds ONE application/json element in the template; this
+  // parse captures it at activation (the versionRowsHtml capture-at-init
+  // precedent — build-time truth, island snapshot, no drift). The parse
+  // trusts nothing (the sessionStorage try/catch discipline): an absent
+  // element or malformed payload degrades to an empty record, in which case
+  // every tool card falls back to its SYNOPSIS line + nav line.
+  function loadToolHelp(): Record<string, ToolHelpDoc> {
+    try {
+      const el = document.querySelector('script[data-terminal-help]');
+      const parsed: unknown = JSON.parse(el?.textContent ?? '');
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed as Record<string, ToolHelpDoc>;
+      }
+    } catch {
+      // fall through — degrade to the empty record
+    }
+    return {};
+  }
+  const TOOL_HELP: Record<string, ToolHelpDoc> = loadToolHelp();
 
   // Shared media-query check (change o33t): the streamer's all-at-once
   // fallback, `yes`'s static variant, and the rm-deluxe wipe-skip all branch
@@ -1257,6 +1409,10 @@
           { text: '', classes: 'shell-out' },
           { text: 'seven small CLIs that force AI agents to plan before they code.', classes: 'shell-out' },
           { text: "type 'ls' to see them, or 'install' to get them all.", classes: 'shell-comment' },
+          // The same nav line the tool cards close with (change 37ng) — the
+          // splash stays the brand moment, untouched above; the anchors make
+          // it a doorway too.
+          toolNavLine('shll'),
         ];
       },
 
@@ -1747,6 +1903,27 @@
         out.push({ text: '(each one: help <command>)', classes: 'shell-comment' });
         return out;
       },
+
+      // ── Tool-name cards (change 37ng) ─────────────────────────────────────
+      // The funnel fix: `ls` advertises the seven tools, so the most natural
+      // next keystroke is a tool's name itself — which used to dead-end on
+      // command-not-found for six of the seven. A bare tool name now prints
+      // that tool's card, mechanically sourced from the build-time help
+      // payload (TOOL_HELP). Six tools in canonical TOOLS order, then the two
+      // binary aliases (rk/fab) dispatching identically to their primaries —
+      // one factory, no drift. shll is NOT here: its splash above stays the
+      // brand moment (it gains only the nav line). Appended after all
+      // existing keys, per the o33t suggester tie-break convention;
+      // Tab-completion, the did-you-mean suggester, and the cheatsheet
+      // coverage check pick these up via Object.keys(COMMANDS), zero wiring.
+      idea: toolCardHandler('idea'),
+      hop: toolCardHandler('hop'),
+      'fab-kit': toolCardHandler('fab-kit'),
+      wt: toolCardHandler('wt'),
+      'run-kit': toolCardHandler('run-kit'),
+      tu: toolCardHandler('tu'),
+      rk: toolCardHandler('run-kit'),
+      fab: toolCardHandler('fab-kit'),
     };
 
     function exitHandler(): Line[] {
@@ -1772,6 +1949,76 @@
         { text: `${cmd}: no network from in here — this site is fully static.`, classes: 'shell-out' },
         { text: '(constitution I: static-first, zero runtime. we take it literally.)', classes: 'shell-comment' },
       ];
+    }
+
+    // ── Tool-name cards (change 37ng) ─────────────────────────────────────
+    // One nav line serves all seven tools — the six cards' closing line, the
+    // shll splash's append, and the degraded fallback: real anchors to the
+    // tool's overview/readme/commands pages plus the install guide (the
+    // html: true trusted-static-string pattern of man/ls). Display text per
+    // the user-approved mock: the overview route shown once, sibling pages
+    // by name.
+    function toolNavLine(slug: string): Line {
+      return {
+        text: `docs: <a href="${ROUTE_OVERVIEW(slug)}">/tools/${slug}/overview</a> · <a href="${ROUTE_README(slug)}">readme</a> · <a href="${ROUTE_COMMANDS(slug)}">commands</a>     get it: <a href="${ROUTE_INSTALL}">install</a>`,
+        classes: 'shell-out shell-dim',
+        html: true,
+      };
+    }
+
+    // The lib's card line descriptors mapped onto the island's .shell-*
+    // classes (the lib owns text/width math, the island owns presentation —
+    // the cheatsheet division of labor). All card lines are announced:
+    // static meaningful text through the normal print path, no ariaHidden
+    // (the cheatsheet/tail precedent for announced content).
+    const TOOLCARD_CLASSES: Record<'header' | 'usage' | 'blank' | 'sub' | 'more', string> = {
+      header: 'shell-out',
+      usage: 'shell-out shell-dim',
+      blank: 'shell-out',
+      sub: 'shell-out',
+      more: 'shell-out shell-dim',
+    };
+
+    // Shared handler factory for the six tool keys + the rk/fab binary
+    // aliases — aliases dispatch with their primary's slug, so eight keys
+    // share one body (the editorHandler/denyNetwork precedent, no drift).
+    // The card INFORMS in place: nothing navigates, no timer, no nav beat —
+    // navigation stays cd's job (the cuur beat) and `man <tool>` keeps the
+    // hand-written SYNOPSIS voice. With a first argument matching one of the
+    // doc's commands[].name, prints that ONE padded subcommand line + a dim
+    // see-more anchor; an unknown argument (or none) prints the full card.
+    // A tool absent from TOOL_HELP (missing/invalid json skipped at build,
+    // or a failed payload parse) degrades to SYNOPSIS line + nav line only.
+    function toolCardHandler(slug: string): Handler {
+      return (args) => {
+        // Own-property guard (the o33t idiom): TOOL_HELP crossed a JSON
+        // boundary — only own keys may resolve, inherited names must miss.
+        const doc = Object.hasOwn(TOOL_HELP, slug) ? TOOL_HELP[slug] : undefined;
+        if (doc && args[0]) {
+          const sub = findSubcommand(doc, args[0].toLowerCase());
+          if (sub) {
+            return [
+              { text: formatSubcommandLine(sub.name, sub.short), classes: 'shell-out' },
+              { text: `see: <a href="${ROUTE_COMMANDS(slug)}">${ROUTE_COMMANDS(slug)}</a>`, classes: 'shell-out shell-dim', html: true },
+            ];
+          }
+          // No match → the full card below: an unrecognized argument still
+          // deserves the overview, never a pretend execution or an error.
+        }
+        const card = doc ? buildToolCard(slug, doc) : [];
+        if (card.length === 0) {
+          // Graceful degrade: the hand-written synopsis + the nav line.
+          return [
+            { text: `${slug} — ${SYNOPSIS[slug]}`, classes: 'shell-out' },
+            toolNavLine(slug),
+          ];
+        }
+        return [
+          ...card.map((ln) => ({ text: ln.text, classes: TOOLCARD_CLASSES[ln.kind] })),
+          { text: '', classes: 'shell-out' },
+          toolNavLine(slug),
+        ];
+      };
     }
 
     // rm -rf / --no-preserve-root — the deluxe (change o33t). Stream one
@@ -2104,3 +2351,10 @@
     armIdleHint();
   }
 </script>
+
+{/* The build-time tool-help payload (change 37ng): ONE application/json
+    element — never rendered, never executed — that the island parses at
+    activation to source the bare-tool-name cards. Living in this component's
+    own template keeps index.mdx byte-identical (the progressive-enhancement
+    source of truth gains nothing visible: data script elements don't render). */}
+<script is:inline type="application/json" data-terminal-help set:html={toolHelpJson} />
