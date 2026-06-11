@@ -15,13 +15,21 @@
  * The copyright color comes from the site's --c-* tokens (src/styles/terminal.css),
  * which flip with Starlight's data-theme, so dark-mode parity is automatic
  * (Constitution V) — no hardcoded color.
+ *
+ * Author links (change d9qb): LinkedIn + noon.design join the same ·-separated
+ * row (footer placement was the user's explicit call — NOT a header icon).
+ * The LinkedIn handle is deliberately `ahujasahil`, not the GitHub username
+ * `sahil87` — do not "correct" it. The same URL also appears in the homepage
+ * `$ whoami` section and the terminal whoami egg (hand-copy drift surface —
+ * change one, grep for the others).
  */
 import Default from '@astrojs/starlight/components/Footer.astro';
 ---
 
 <Default />
 <div class="site-copyright not-content">
-  © Sahil Ahuja 2026 · <a href="https://github.com/sahil87/shll.ai/blob/main/LICENSE">MIT licensed</a>
+  © Sahil Ahuja 2026 · <a href="https://github.com/sahil87/shll.ai/blob/main/LICENSE">MIT licensed</a> · <a
+    href="https://www.linkedin.com/in/ahujasahil/">LinkedIn</a> · <a href="https://noon.design">noon.design</a>
 </div>
 
 <style>
