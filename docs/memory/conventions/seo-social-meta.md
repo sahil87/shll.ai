@@ -1,5 +1,5 @@
 ---
-description: 'The SEO & social-share layer on the live Starlight site: Starlight''s emitted-by-default baseline (do not re-add it), the site-wide og:image/twitter:image set appended in the `Head.astro` override (absolute URL from `Astro.site`), the committed 1200×630 terminal-card `og-image.png` + its unwired one-off generator script, the homepage frontmatter `head:` overrides (keyword title, `og:type=website`), the homepage-only WebSite+SoftwareApplication JSON-LD (`JSON.stringify` + `set:html` in Head, not frontmatter), and the redirect-stub exclusion'
+description: "The SEO & social-share layer on the live Starlight site: Starlight's emitted-by-default baseline (do not re-add it), the site-wide og:image/twitter:image set appended in the `Head.astro` override (absolute URL from `Astro.site`), the committed 1200×630 terminal-card `og-image.png` + its unwired one-off generator script, the homepage frontmatter `head:` overrides (keyword title, `og:type=website`), the homepage-only WebSite+SoftwareApplication JSON-LD (`JSON.stringify` + `set:html` in Head, not frontmatter), and the redirect-stub exclusion"
 ---
 # SEO & Social-Share Meta
 
