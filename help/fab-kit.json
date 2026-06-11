@@ -1,7 +1,7 @@
 {
   "tool": "fab",
-  "version": "2.1.1",
-  "captured_at": "2026-06-10T08:32:56Z",
+  "version": "2.1.5",
+  "captured_at": "2026-06-11T08:48:35Z",
   "schema_version": 1,
   "root": {
     "name": "fab",

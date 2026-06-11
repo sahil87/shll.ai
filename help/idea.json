@@ -1,7 +1,7 @@
 {
   "tool": "idea",
-  "version": "v0.0.7",
-  "captured_at": "2026-06-10T08:32:56Z",
+  "version": "v0.0.9",
+  "captured_at": "2026-06-11T08:48:35Z",
   "schema_version": 1,
   "root": {
     "name": "idea",
@@ -39,7 +39,7 @@
         "path": "idea list",
         "short": "List ideas from the backlog",
         "usage": "idea list [flags]",
-        "text": "List ideas from the current worktree's backlog (fab/backlog.md).\n\nOpen ideas are shown by default. Use --all/-a to include done ideas, or --done\nto show only completed ones. --json emits the structured records (id, date,\nstatus, text) for piping into other tools. --sort accepts \"date\" (default) or\n\"id\", and --reverse flips the order. As with every backlog command, --main\ntargets the main worktree's backlog and --file / IDEAS_FILE point elsewhere\n(see \"idea --help\").\n\n  idea list\n  idea list --all --sort id\n  idea list --json\n\nUsage:\n  idea list [flags]\n\nFlags:\n  -a, --all           Show all ideas (open + done)\n      --done          Show only done ideas\n  -h, --help          help for list\n      --json          Output as JSON\n      --reverse       Reverse sort order\n      --sort string   Sort by field (id or date) (default \"date\")\n\nGlobal Flags:\n      --file string   Override backlog file path (relative to git root)\n      --main          Operate on the main worktree's backlog instead of the current worktree\n",
+        "text": "List ideas from the current worktree's backlog (fab/backlog.md).\n\nOpen ideas are shown by default. Use --all/-a to include done ideas, or --done\nto show only completed ones. --json emits the structured records (id, date,\nstatus, text) for piping into other tools. --sort accepts \"date\" (default) or\n\"id\", and --reverse flips the order. As with every backlog command, --main\ntargets the main worktree's backlog and --file / IDEAS_FILE point elsewhere\n(see \"idea --help\").\n\n  idea list\n  idea list --all --sort id\n  idea list --json\n\nUsage:\n  idea list [flags]\n\nAliases:\n  list, ls\n\nFlags:\n  -a, --all           Show all ideas (open + done)\n      --done          Show only done ideas\n  -h, --help          help for list\n      --json          Output as JSON\n      --reverse       Reverse sort order\n      --sort string   Sort by field (id or date) (default \"date\")\n\nGlobal Flags:\n      --file string   Override backlog file path (relative to git root)\n      --main          Operate on the main worktree's backlog instead of the current worktree\n",
         "commands": []
       },
       {
