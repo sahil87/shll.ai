@@ -7,9 +7,9 @@ issues: []
 progress:
     intake: done
     apply: done
-    review: active
-    hydrate: pending
-    ship: pending
+    review: done
+    hydrate: done
+    ship: active
     review-pr: pending
 plan:
     generated: true
@@ -31,7 +31,9 @@ confidence:
 stage_metrics:
     intake: {started_at: "2026-06-11T07:28:25Z", driver: fab-new, iterations: 1, completed_at: "2026-06-11T07:32:39Z"}
     apply: {started_at: "2026-06-11T07:32:39Z", driver: fab-fff, iterations: 1, completed_at: "2026-06-11T07:55:28Z"}
-    review: {started_at: "2026-06-11T07:55:28Z", driver: fab-fff, iterations: 1}
+    review: {started_at: "2026-06-11T07:55:28Z", driver: fab-fff, iterations: 1, completed_at: "2026-06-11T08:05:54Z"}
+    hydrate: {started_at: "2026-06-11T08:05:54Z", driver: fab-fff, iterations: 1, completed_at: "2026-06-11T08:18:17Z"}
+    ship: {started_at: "2026-06-11T08:18:17Z", driver: fab-fff, iterations: 1}
 prs: []
 true_impact:
     added: 0
@@ -41,7 +43,7 @@ true_impact:
         added: 0
         deleted: 0
         net: 0
-    computed_at: "2026-06-11T07:55:28Z"
-    computed_at_stage: apply
+    computed_at: "2026-06-11T08:18:17Z"
+    computed_at_stage: hydrate
 # true_impact: lazily created on first apply-finish (no placeholder here).
-last_updated: 2026-06-11T08:03:40Z
+last_updated: 2026-06-11T08:18:17Z
