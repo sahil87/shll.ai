@@ -1,6 +1,22 @@
 ---
 title: shll
 description: The shll AI coding toolkit — 7 CLIs that plan before they code.
+# Homepage-only <head> overrides (change kb1r). Starlight's head-merging gives
+# these frontmatter entries priority over its defaults and dedupes the singleton
+# <title> and same-`property` metas — so the built homepage carries exactly one
+# of each. Fixes the keyword-free `shll | shll` title and the incorrect
+# `og:type=article` on the landing page (docs pages correctly keep `article`).
+head:
+  - tag: title
+    content: 'shll — the AI coding toolkit'
+  - tag: meta
+    attrs:
+      property: 'og:title'
+      content: 'shll — the AI coding toolkit'
+  - tag: meta
+    attrs:
+      property: 'og:type'
+      content: 'website'
 template: splash
 hero:
   tagline: Seven small CLIs that force AI agents to plan before they code.

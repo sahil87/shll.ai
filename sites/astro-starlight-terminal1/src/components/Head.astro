@@ -26,12 +26,57 @@
  * Production only: gated on `import.meta.env.PROD` (true during `astro build`, false
  * during `astro dev`) so local dev / preview sessions don't pollute the Cloudflare
  * dashboard with localhost traffic. The beacon still ships site-wide in `dist/`.
+ *
+ * Social-share meta (change kb1r): Starlight emits og:title/og:type/og:url/etc.
+ * and `twitter:card=summary_large_image`, but NO og:image/twitter:image — so the
+ * one shareable image asset (public/og-image.png, 1200×630, regenerated via
+ * scripts/generate-og-image.mjs) was orphaned and link previews rendered bare
+ * text cards. Appending the og:image set after <Default /> cannot double-emit
+ * (Starlight has no og:image of its own). The URL MUST be absolute — OG scrapers
+ * do not resolve relative URLs — so it derives from `site` in astro.config.mjs.
+ *
+ * JSON-LD (change kb1r, homepage only): one inert application/ld+json block
+ * carrying WebSite + SoftwareApplication. Emitted here (gated on pathname '/')
+ * rather than via index.mdx frontmatter `head:` to keep the JSON authorable as a
+ * plain object — JSON.stringify never produces `<` or raw HTML, so set:html is
+ * safe and the body survives emission byte-exact. Inert data, not executable JS
+ * (no Constitution I conflict).
  */
 import Default from '@astrojs/starlight/components/Head.astro';
 
 const beacon =
   '<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon=\'{"token": "11bda8377391420f9138b4cf3128dc6e"}\'></script>';
+
+const siteOrigin = new URL('/', Astro.site).origin;
+const ogImage = new URL('/og-image.png', Astro.site).href;
+const ogImageAlt = 'shll — seven small CLIs that force AI agents to plan before they code';
+
+const isHomepage = Astro.url.pathname === '/';
+const jsonLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      name: 'shll',
+      url: siteOrigin,
+    },
+    {
+      '@type': 'SoftwareApplication',
+      name: 'shll toolkit',
+      applicationCategory: 'DeveloperApplication',
+      operatingSystem: 'macOS, Linux',
+      offers: { '@type': 'Offer', price: 0, priceCurrency: 'USD' },
+      url: 'https://github.com/sahil87',
+    },
+  ],
+});
 ---
 
 <Default />
+<meta property="og:image" content={ogImage} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content={ogImageAlt} />
+<meta name="twitter:image" content={ogImage} />
+{isHomepage && <script type="application/ld+json" set:html={jsonLd} />}
 {import.meta.env.PROD && <Fragment set:html={beacon} />}
