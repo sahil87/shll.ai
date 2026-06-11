@@ -1,0 +1,5 @@
+{"action":"enter","driver":"fab-new","event":"stage-transition","stage":"intake","ts":"2026-06-10T18:13:46Z"}
+{"args":"Homepage content for newcomers: what-is-this prose block, ls tools/ grid with per-tool one-liners, textual explanation adjacent to loop diagram, visible brew install one-liner — terminal-themed, real indexable HTML text","cmd":"fab-new","event":"command","ts":"2026-06-10T18:13:46Z"}
+{"delta":"+3.8","event":"confidence","score":3.8,"trigger":"calc-score","ts":"2026-06-10T18:14:41Z"}
+{"delta":"+0.0","event":"confidence","score":3.8,"trigger":"calc-score","ts":"2026-06-10T18:14:46Z"}
+{"cmd":"fab-draft","event":"command","ts":"2026-06-10T18:14:46Z"}
