@@ -58,6 +58,36 @@ import VersionTable from '../../components/VersionTable.astro';
 
 <hr />
 
+{/* What is this — real, indexable HTML prose under a `cat` motif (change ld0j).
+    Copy lifted from getting-started/overview.md + philosophy.md, not invented. */}
+<section class="not-content" aria-label="About the shll toolkit">
+<pre class="shell-session shell-caption not-content">
+<span class="shell-line"><span class="shell-prompt">$</span> cat ABOUT.md</span>
+</pre>
+<div class="home-prose">
+<p>The <strong>shll toolkit</strong> is seven small CLIs that work together to make AI-assisted coding tractable. Each tool is independent, brew-installable, and useful on its own — together they compose into a pipeline that runs from idea capture to merged PR, with the AI doing the typing.</p>
+<p>Built for developers running multiple coding agents in parallel: every backlog, plan, and cost report is a plain file you can <code>cat</code>, <code>grep</code>, and <code>git diff</code> — the contract lives in the file, not in hidden state.</p>
+</div>
+</section>
+
+{/* Tools directory — seven real links styled as an `ls` listing (change ld0j).
+    One-liners stay at the "what it's for" level and name no commands or flags
+    (the vn39 hard rule for hand-written prose). */}
+<section class="not-content" aria-label="The seven tools">
+<pre class="shell-session shell-caption not-content">
+<span class="shell-line"><span class="shell-prompt">$</span> ls tools/</span>
+</pre>
+<ul class="tools-listing">
+<li><a href="/tools/idea/overview/">idea</a><span class="tool-desc">capture ideas and feed a backlog without breaking flow</span></li>
+<li><a href="/tools/hop/overview/">hop</a><span class="tool-desc">a personal directory of your git repos — jump anywhere, batch-update from anywhere</span></li>
+<li><a href="/tools/fab-kit/overview/">fab-kit</a><span class="tool-desc">the planning harness — a constitution and a plan before any agent writes code</span></li>
+<li><a href="/tools/wt/overview/">wt</a><span class="tool-desc">disposable git worktrees so each change works in isolation</span></li>
+<li><a href="/tools/run-kit/overview/">run-kit</a><span class="tool-desc">one dashboard to watch every agent session</span></li>
+<li><a href="/tools/tu/overview/">tu</a><span class="tool-desc">track what your AI coding sessions cost</span></li>
+<li><a href="/tools/shll/overview/">shll</a><span class="tool-desc">the bootstrap — install and update the whole toolkit</span></li>
+</ul>
+</section>
+
 <pre class="shell-session shell-caption not-content">
 <span class="shell-line shell-comment"># the loop — one idea fans out into parallel agents, converges into one dashboard</span>
 </pre>
@@ -68,10 +98,26 @@ import VersionTable from '../../components/VersionTable.astro';
   alt="The toolkit loop: idea, fab-kit, wt, run-kit, hop, tu"
 />
 
+{/* Textual explanation adjacent to the diagram (change ld0j) — real prose,
+    replacing the two comment-styled one-worder lines (the links move in here).
+    Satisfies the constitution's Accessibility SHOULD for decorative diagrams. */}
+<div class="home-prose not-content">
+<p>One idea fans out into parallel agents — each in its own isolated working copy — and converges back into a single dashboard. Inside the loop, <a href="/tools/idea/overview/">idea</a> captures the backlog, <a href="/tools/fab-kit/overview/">fab-kit</a> turns an item into a plan, <a href="/tools/wt/overview/">wt</a> gives each change a disposable worktree, and <a href="/tools/run-kit/overview/">run-kit</a> watches every session. Around the loop, <a href="/tools/hop/overview/">hop</a> jumps between repos, <a href="/tools/tu/overview/">tu</a> tracks what it all costs, and <a href="/tools/shll/overview/">shll</a> keeps the toolkit installed.</p>
+</div>
+
+{/* Install one-liner for people who scroll (change ld0j). Commands are verbatim
+    from getting-started/install.md — do not edit them here without updating
+    there. The $ prompt is user-select:none, so selection copies commands only. */}
+<section class="not-content" aria-label="Install">
 <pre class="shell-session shell-caption not-content">
-<span class="shell-line shell-comment"># inside:  <a href="/tools/idea/overview/">idea</a> captures · <a href="/tools/fab-kit/overview/">fab-kit</a> plans · <a href="/tools/wt/overview/">wt</a> isolates · <a href="/tools/run-kit/overview/">run-kit</a> watches</span>
-<span class="shell-line shell-comment"># around: <a href="/tools/hop/overview/">hop</a> navigates · <a href="/tools/tu/overview/">tu</a> tracks cost · <a href="/tools/shll/overview/">shll</a> bootstraps</span>
+<span class="shell-line shell-comment"># one brew tap, one install command, the whole toolkit</span>
 </pre>
+<pre class="shell-session not-content">
+<span class="shell-line"><span class="shell-prompt">$</span> brew install sahil87/tap/shll</span>
+<span class="shell-line"><span class="shell-prompt">$</span> shll install</span>
+<span class="shell-line shell-comment"># full steps → <a href="/getting-started/install/">getting-started/install</a></span>
+</pre>
+</section>
 
 <pre class="shell-session shell-caption not-content">
 <span class="shell-line shell-comment"># Questions or feedback? → <a href="https://discord.gg/32XHh5mJYn">Join the Discord</a></span>
