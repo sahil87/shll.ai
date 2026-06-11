@@ -10,7 +10,17 @@
  *
  * Placement convention: rendered near the top of every tool overview page,
  * just under the H1. See docs/memory/conventions/tool-page-rubric.
+ *
+ * Star count (change d9qb): the row shows the repo's star count as build-time
+ * social proof — fetched once per repo per build (src/lib/github-stars.ts),
+ * rendered statically (Constitution I), at most ~24h stale via the daily
+ * scheduled pulls (the help refresh's captured_at churn commits daily — see
+ * github-stars.ts). FAIL-SOFT: on any fetch failure the count is null and
+ * the button renders exactly as before this change — count omitted, no
+ * placeholder, never a failed build.
  */
+import { getStarCount, formatStarCount } from '../lib/github-stars.ts';
+
 interface Props {
   /** Tool slug — names the repo at `github.com/sahil87/<tool>`. */
   tool: string;
@@ -26,12 +36,25 @@ if (!tool) {
 }
 
 const href = `https://github.com/sahil87/${tool}`;
+const stars = await getStarCount(tool);
 ---
 
 <div class="gh-button not-content">
   <a class="gh-link" href={href}>
     <span class="gh-label">View on GitHub</span>
     <span class="gh-slug">github.com/sahil87/{tool}</span>
+    {
+      /* Rendered ONLY with a real count — null omits the span entirely (no
+         placeholder), keeping the no-count markup identical to pre-d9qb. The
+         glyph is decorative (aria-hidden); the sr-only text gives screen
+         readers "N GitHub stars" instead of a bare "star one-point-two-k". */
+      stars !== null && (
+        <span class="gh-stars">
+          <span class="gh-star-glyph" aria-hidden="true">★</span>
+          {formatStarCount(stars)}<span class="sr-only"> GitHub stars</span>
+        </span>
+      )
+    }
     <span class="gh-arrow" aria-hidden="true">↗</span>
   </a>
 </div>
@@ -73,6 +96,27 @@ const href = `https://github.com/sahil87/${tool}`;
   }
   .gh-slug {
     color: var(--c-fg-dim);
+  }
+  /* Star count (change d9qb) — dim like the slug (it is metadata, not the
+     action), with the glyph in the accent like the arrow. Both colors are
+     --c-* tokens, so dark-mode parity is automatic (Constitution V). */
+  .gh-stars {
+    color: var(--c-fg-dim);
+  }
+  .gh-star-glyph {
+    color: var(--c-accent);
+  }
+  /* Screen-reader-only label for the count (the CommandReference idiom). */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
   }
   .gh-arrow {
     color: var(--c-accent);

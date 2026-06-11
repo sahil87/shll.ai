@@ -45,6 +45,14 @@ jobs:
       - name: Build with Astro
         working-directory: ${{ env.SITE_DIR }}
         run: pnpm build
+        env:
+          # Automatic token for the build-time per-tool star-count fetch
+          # (src/lib/github-stars.ts): unauthenticated GitHub API calls from
+          # shared Actions-runner IPs rate-limit unpredictably; the token
+          # raises the limit with zero secret management. The fetch is
+          # fail-soft — without the token (or on any API failure) the build
+          # still succeeds and the counts are simply omitted.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

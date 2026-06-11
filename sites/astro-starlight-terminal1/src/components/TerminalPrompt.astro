@@ -1346,6 +1346,17 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
         return [
           { text: 'a developer who plans before they code.', classes: 'shell-out' },
           { text: '(everyone else is just typing.)', classes: 'shell-comment' },
+          // The real answer, after the bit (change d9qb): the egg lands the
+          // joke, then delivers — the same three author links the homepage
+          // `$ whoami` section carries (the footer carries LinkedIn and
+          // noon.design; hand-copy drift surface — the LinkedIn handle is
+          // deliberately `ahujasahil`, NOT `sahil87`).
+          // html: true is the man/ls/toolNavLine trusted-static-string pattern.
+          {
+            text: 'also: Sahil Ahuja — <a href="https://github.com/sahil87">github</a> · <a href="https://www.linkedin.com/in/ahujasahil/">linkedin</a> · <a href="https://noon.design">noon.design</a>',
+            classes: 'shell-out shell-dim',
+            html: true,
+          },
         ];
       },
 
