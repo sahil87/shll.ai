@@ -33,6 +33,10 @@ export const COWSAY_WRAP = 40;
  * bubble.
  */
 export function cowsayBubble(text: string, width = COWSAY_WRAP): string[] {
+  // Clamp the public width param to a positive integer — a non-positive
+  // width would make the hard-split below slice nothing and loop forever
+  // (kd5e PR review).
+  width = Math.max(1, Math.floor(width));
   const trimmed = text.trim();
   const words = trimmed === '' ? [] : trimmed.split(/\s+/);
   const rows: string[] = [];
@@ -57,7 +61,10 @@ export function cowsayBubble(text: string, width = COWSAY_WRAP): string[] {
   }
   if (cur !== '' || rows.length === 0) rows.push(cur);
 
-  const inner = Math.max(...rows.map((r) => r.length));
+  // Reduce, not Math.max(...spread): cowsay text is user-controlled (paste),
+  // and spreading a huge row array as arguments can overflow the engine's
+  // argument limit (kd5e PR review).
+  const inner = rows.reduce((max, r) => Math.max(max, r.length), 0);
   const pad = (r: string) => r.padEnd(inner);
   const out: string[] = [` ${'_'.repeat(inner + 2)}`];
   if (rows.length === 1) {

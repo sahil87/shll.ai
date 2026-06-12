@@ -83,6 +83,12 @@ test('cowsayBubble: a word longer than the width hard-splits instead of overflow
   assert.deepEqual(rows, [' ______', '/ abcd \\', '| efgh |', '\\ ij   /', ' ------']);
 });
 
+test('cowsayBubble: a non-positive width clamps to 1 instead of looping forever (kd5e PR review)', () => {
+  // width 0 and width 1 must agree — the clamp floors the public param at 1.
+  assert.deepEqual(cowsayBubble('ab', 0), cowsayBubble('ab', 1));
+  assert.deepEqual(cowsayBubble('ab', 1), [' ___', '/ a \\', '\\ b /', ' ---']);
+});
+
 test('cowsayBubble: every row stays within the width budget at the default wrap', () => {
   const text = 'the quick brown fox jumps over the lazy dog and keeps going well past forty characters';
   const rows = cowsayBubble(text);
