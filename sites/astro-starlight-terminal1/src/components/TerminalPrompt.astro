@@ -111,6 +111,22 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
     parsePlayHash,
     serializeTranscript,
   } from '../lib/terminal-share.ts';
+  // Arcade-pass logic (change kd5e) — the lib pattern a SIXTH time: the
+  // cowsay bubble builder, the cmatrix line generator (RNG injected so
+  // tests pin shape deterministically), and the snake game core (init,
+  // steering, the pure state → state tick, the board renderer), pinned by
+  // scripts/terminal-toys.test.mjs. The island keeps only the timers, the
+  // DOM writes, and the key wiring.
+  import {
+    cowsayBubble,
+    cmatrixLines,
+    snakeInit,
+    snakeStep,
+    snakeTurn,
+    renderSnakeBoard,
+    type SnakeDir,
+    type SnakeState,
+  } from '../lib/terminal-toys.ts';
 
   // ── Types ────────────────────────────────────────────────────────────────
   // `ariaHidden` (change o33t): hides the line from the cuur aria-live
@@ -438,6 +454,23 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
       'play <tool> — a ~10s illustrated short of what a tool does',
       "honest fake: nothing really runs. ends at the tool's pages. Ctrl-C bails.",
     ),
+    // The arcade pass (change kd5e) — appended after all existing entries
+    // (the o33t/cdbr/37ng/tx5p/4vkd/jf9k convention), matching their
+    // COMMANDS positions in ascending-effort order. All three are unlisted
+    // eggs: answered here and by `man <cmd>` via the o33t bridge, never
+    // enumerated in bare `help`.
+    cowsay: helpDetail(
+      'cowsay [text] — a cow says your text',
+      "no text? the cow borrows a fortune. they share a writers' room.",
+    ),
+    cmatrix: helpDetail(
+      'cmatrix — one screen of digital rain',
+      'finite by design. Ctrl-C unplugs it sooner.',
+    ),
+    snake: helpDetail(
+      'snake — the classic, playable',
+      'arrows/wasd steer · q quits · r restarts. keyboard only — sorry, touch.',
+    ),
   };
 
   // Dev aphorisms for `fortune` — all tie to "plan before they code".
@@ -542,6 +575,43 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
   // rm's 300 and tail's 700; per-tool PLAY_SCRIPTS frame counts (~25-30)
   // tune each run to ≈10 s at this tick.
   const PLAY_TICK_MS = 350;
+
+  // ── The arcade pass (change kd5e) ────────────────────────────────────────
+  // cmatrix: fast cadence — the flood IS the bit (the YES_TICK_MS rationale)
+  // — and finite by construction (the no-runaway constraint): a fixed frame
+  // count, ~5.8 s end to end, killable like every stream. 72 cols sits
+  // inside the ~74-char `white-space: pre` budget (the CHEAT_LINE_WIDTH
+  // precedent). Reduced motion prints ONE static frame block of
+  // CMATRIX_REDUCE_LINES instead of the stream (a handler-level branch —
+  // the jf9k end-frame precedent, NOT the engine's all-at-once dump).
+  const CMATRIX_TICK_MS = 120;
+  const CMATRIX_CAP = 48;
+  const CMATRIX_COLS = 72;
+  const CMATRIX_REDUCE_LINES = 12;
+  // The ONE announced line closing every cmatrix run (the o33t
+  // one-announced-summary rule), on BOTH motion paths — self-identifying
+  // the rain as static (the AGENT_LOG honesty precedent).
+  const CMATRIX_SUMMARY = '(the rain is static — this site has no runtime. Ctrl-C ends it sooner.)';
+  // snake: board geometry sized so board + status row + game-over line +
+  // live prompt fit the 22rem session viewport (~14.5 lines) without
+  // scrollToBottom cropping the top border — 46×10 interior = 48×12 with
+  // borders, well inside the width budget. 140 ms reads as classic
+  // terminal-snake speed.
+  const SNAKE_TICK_MS = 140;
+  const SNAKE_COLS = 46;
+  const SNAKE_ROWS = 10;
+
+  // The cow (change kd5e) — island-side art like the shll splash and the sl
+  // locomotive (the lib builds only the bubble; art rows are presentation).
+  // Rendered ariaHidden: the announced `(the cow says: …)` line carries the
+  // readable content (the o33t live-region policy).
+  const COW_ART = [
+    '        \\   ^__^',
+    '         \\  (oo)\\_______',
+    '            (__)\\       )\\/\\',
+    '                ||----w |',
+    '                ||     ||',
+  ];
 
   // ── Cheatsheet (change cdbr) ─────────────────────────────────────────────
   // The deliberate full-roster reveal: `help` stays the curated short list and
@@ -650,6 +720,14 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
         { key: 'false' },
         { key: 'exit' },
         { key: 'shll' },
+        // The arcade pass (change kd5e): terminal-culture playthings —
+        // classics by definition. Membership here is what keeps the cdbr
+        // runtime coverage check from filing them under `uncategorized`.
+        // cowsay's display teaches the interesting invocation (the
+        // `cd <tool>` decoration precedent).
+        { key: 'cowsay', display: 'cowsay <text>' },
+        { key: 'cmatrix' },
+        { key: 'snake' },
       ],
     },
     {
@@ -1427,6 +1505,16 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
       // call stopReplay (see the kill switch's comment).
       stopReplay();
 
+      // ── Game mode (change kd5e) ─────────────────────────────────────────────
+      // While snake is active the game owns the keys — checked BEFORE every
+      // branch below so arrows can't recall history, letters can't type, and
+      // Enter can't commit mid-game. handleSnakeKey returns false only on
+      // Ctrl-L (after tearing the game down) so the normal branch below
+      // clears the transcript and emits its single prompt — the
+      // exactly-one-trailing-prompt invariant stays owned by the existing
+      // paths.
+      if (snakeGame && handleSnakeKey(e)) return;
+
       // ── Control keys (Ctrl-L clear, Ctrl-C cancel) ──────────────────────────
       // Each is a prompt-emitting path OUTSIDE the Enter→run→freshPrompt flow, so
       // each must emit EXACTLY ONE trailing prompt itself (the same invariant the
@@ -1550,6 +1638,12 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
       // Placed after the empty-line short-circuit above: a bare Enter during
       // `yes` does not kill it, just like a real shell.
       stopStream();
+      // And tears down an active snake game (change kd5e — the same
+      // contract extended): mid-game the only commit path is a by18 chip
+      // tap (typed keys are swallowed by the game branch), and the chip's
+      // command must not race a live game loop. The frozen board stays in
+      // the transcript as the artifact.
+      teardownSnake();
       run(raw);
       // Emit the next prompt. If a handler navigated away (cd/open/install),
       // window.location.assign is async — this prompt is appended before unload
@@ -2511,6 +2605,71 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
           { intervalMs: PLAY_TICK_MS, onDone: () => printPlayClosing(tool, script.summary) },
         );
       },
+
+      // ── The arcade pass (change kd5e) ─────────────────────────────────────
+      // The three commands people reflexively type into every terminal-shaped
+      // object: cowsay, cmatrix, snake — appended LAST in ascending-effort
+      // order (COMMANDS 64 → 67; the o33t/cdbr/37ng/tx5p/4vkd/jf9k
+      // append-after-existing convention keeps the suggester's tie-break
+      // favoring established keys). All three are unlisted eggs: bare `help`
+      // stays byte-identical; Tab completion, the did-you-mean suggester,
+      // and the cheatsheet coverage check pick them up via
+      // Object.keys(COMMANDS), zero wiring.
+
+      // cowsay [text…] — static print. Bare form speaks a random FORTUNES
+      // entry (the backlog's composition with `fortune` — one source, no
+      // drift). Bubble + cow rows are ariaHidden (the shll-splash policy);
+      // the ONE announced line carries the readable content. No motion —
+      // no prefers-reduced-motion interaction (the navigateWithBeat
+      // documented-no-interaction precedent).
+      cowsay(_args, ctx) {
+        const text = ctx.raw.trim() || FORTUNES[Math.floor(Math.random() * FORTUNES.length)];
+        return [
+          ...cowsayBubble(text).map((t) => ({ text: t, classes: 'shell-out', ariaHidden: true })),
+          ...COW_ART.map((t) => ({ text: t, classes: 'shell-out', ariaHidden: true })),
+          { text: `(the cow says: ${text})`, classes: 'shell-comment' },
+        ];
+      },
+
+      // cmatrix — one finite, interruptible screen of digital rain on the
+      // o33t engine (the `yes` shape: ariaHidden glyph frames, the announced
+      // summary as the final streamed line). shell-ok = theme-aware green
+      // via --c-* — dark/light parity with zero new color plumbing.
+      cmatrix() {
+        const summary: Line = { text: CMATRIX_SUMMARY, classes: 'shell-comment' };
+        const frame = (t: string): Line => ({ text: t, classes: 'shell-ok', ariaHidden: true });
+        if (prefersReducedMotion()) {
+          // Handler-level branch BEFORE startStream (the jf9k end-frame
+          // precedent): the backlog specifies ONE static frame — the
+          // engine's reduce fallback would dump all CMATRIX_CAP lines.
+          return [...cmatrixLines(CMATRIX_REDUCE_LINES, CMATRIX_COLS, Math.random).map(frame), summary];
+        }
+        startStream([...cmatrixLines(CMATRIX_CAP, CMATRIX_COLS, Math.random).map(frame), summary], {
+          intervalMs: CMATRIX_TICK_MS,
+        });
+      },
+
+      // snake — the real work: a playable game in an aria-hidden, in-place-
+      // rewritten board (see the Snake section below the streamer). A void
+      // handler (the demoHandler shape): commitLine's single freshPrompt is
+      // the only prompt emitted — the invariant holds by construction. The
+      // controls line prints via ctx.print (announced — one of the game's
+      // two announced moments) BEFORE startSnake appends the board, so it
+      // lands above. Under reduced motion the game declines with an honest
+      // static note (the backlog sanctions decline-or-pause; declining
+      // ships no motion to users who opted out).
+      snake(_args, ctx) {
+        if (prefersReducedMotion()) {
+          return [
+            {
+              text: 'snake needs motion — your system prefers reduced, so the game sits this one out.',
+              classes: 'shell-out',
+            },
+          ];
+        }
+        ctx.print([{ text: 'snake — arrows/wasd steer · q quits', classes: 'shell-comment' }]);
+        startSnake();
+      },
     };
 
     function exitHandler(): Line[] {
@@ -2845,6 +3004,164 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
         window.clearTimeout(streamFollowup);
         streamFollowup = undefined;
       }
+    }
+
+    // ── Snake (change kd5e) ──────────────────────────────────────────────────
+    // The first input-owning surface beyond streams/replay. A game cannot be
+    // append-only, so the board does NOT ride the line streamer: startSnake
+    // appends ONE aria-hidden container directly to `session` (the sl-train
+    // direct-DOM precedent — run() executes before commitLine's freshPrompt,
+    // so the board sits above the live prompt) and each tick rewrites its
+    // textContent in place (\n rows under the session's `white-space: pre`;
+    // existing .shell-line/.shell-out classes — no new CSS). All game logic
+    // is the pure lib (terminal-toys.ts); the island owns only the timer,
+    // the DOM writes, and the key wiring. `snakeGame !== undefined` is the
+    // game-mode flag onKeydown checks at the top (see handleSnakeKey).
+    // Live-region posture: every board rewrite is aria-hidden garbage; the
+    // announced moments are the start controls line (the handler), ONE
+    // `game over — score: N` per crash, and the quit confirmation.
+    let snakeGame: { state: SnakeState; board: HTMLElement; timer: number | undefined } | undefined;
+
+    // Steering map: arrows AND wasd (lowercased e.key). Object.hasOwn-guarded
+    // at the lookup (the o33t idiom — keyed by user input).
+    const SNAKE_KEY_DIRS: Record<string, SnakeDir> = {
+      arrowup: 'up',
+      w: 'up',
+      arrowdown: 'down',
+      s: 'down',
+      arrowleft: 'left',
+      a: 'left',
+      arrowright: 'right',
+      d: 'right',
+    };
+    // Non-printable keys the game swallows besides single chars: everything
+    // that would type into the prompt, move focus, or scroll the page.
+    // Deliberately NOT F-keys/Escape/etc. — browser chrome stays usable
+    // mid-game (swallowing exists to protect the prompt, not to jail the
+    // tab).
+    const SNAKE_SWALLOW_KEYS = ['tab', 'enter', 'backspace', 'delete', 'pageup', 'pagedown', 'home', 'end'];
+
+    function startSnake(): void {
+      const board = document.createElement('span');
+      board.className = 'shell-line shell-out';
+      board.setAttribute('aria-hidden', 'true');
+      session!.appendChild(board);
+      snakeGame = { state: snakeInit(SNAKE_COLS, SNAKE_ROWS, Math.random), board, timer: undefined };
+      drawSnake();
+      snakeGame.timer = window.setInterval(snakeTick, SNAKE_TICK_MS);
+    }
+
+    // One in-place rewrite: lib-rendered board rows + the island's status
+    // row, joined with newlines (one block element — scroll position is
+    // never touched mid-game).
+    function drawSnake(): void {
+      if (!snakeGame) return;
+      const { state, board } = snakeGame;
+      const status = state.over
+        ? `  game over — score: ${state.score} · r restarts · q quits`
+        : `  score: ${state.score} · arrows/wasd steer · q quits`;
+      board.textContent = [...renderSnakeBoard(state), status].join('\n');
+    }
+
+    function snakeTick(): void {
+      if (!snakeGame || snakeGame.state.over) return;
+      snakeGame.state = snakeStep(snakeGame.state, Math.random);
+      drawSnake();
+      if (snakeGame.state.over) {
+        // Freeze: stop the clock but keep the game-mode flag — the over
+        // state still owns the keys (r restarts, q releases). The score is
+        // announced ONCE here (the o33t one-announced-summary rule);
+        // printBeforePrompt lands it between the board and the live prompt.
+        window.clearInterval(snakeGame.timer);
+        snakeGame.timer = undefined;
+        printBeforePrompt({ text: `game over — score: ${snakeGame.state.score}`, classes: 'shell-out' });
+      }
+    }
+
+    // r/Enter on a game-over board: a fresh game in the SAME container.
+    function restartSnake(): void {
+      if (!snakeGame) return;
+      snakeGame.state = snakeInit(SNAKE_COLS, SNAKE_ROWS, Math.random);
+      drawSnake();
+      snakeGame.timer = window.setInterval(snakeTick, SNAKE_TICK_MS);
+    }
+
+    // q / Ctrl-C: release the keys. The frozen board is deliberately LEFT in
+    // the transcript (the sl train removes itself; a frozen final board is
+    // the better share/screenshot artifact). One announced line confirms the
+    // release — without it a sighted-or-not user has no signal that typing
+    // works again.
+    function quitSnake(): void {
+      if (!snakeGame) return;
+      const { score } = snakeGame.state;
+      teardownSnake();
+      printBeforePrompt({ text: `(snake: keys released — final score ${score}.)`, classes: 'shell-comment' });
+    }
+
+    // Silent teardown — timer + flag only, board untouched. Called by quit,
+    // by commitLine (a by18 chip commit mid-game — the commitLine→stopStream
+    // precedent extended to game teardown), and by the game branch's Ctrl-L
+    // path (where clear() then removes the board with the transcript).
+    function teardownSnake(): void {
+      if (!snakeGame) return;
+      if (snakeGame.timer !== undefined) window.clearInterval(snakeGame.timer);
+      snakeGame = undefined;
+    }
+
+    // The game-mode key handler — onKeydown delegates here while snakeGame
+    // is set, BEFORE its Ctrl/history/Tab/Enter branches: the game owns the
+    // keys until it releases them (the o33t stream-cancel + key-capture
+    // discipline extended from "any key kills the replay" to a real input
+    // takeover). Returns true when the key is consumed (caller returns);
+    // false to fall through (the Ctrl-L teardown path — the normal branch
+    // below then clears the transcript and emits its single prompt).
+    function handleSnakeKey(e: KeyboardEvent): boolean {
+      const plainCtrl = e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey;
+      const key = e.key.toLowerCase();
+      if (plainCtrl && key === 'l') {
+        // Tear down, then fall through to the normal Ctrl-L branch: the
+        // transcript (frozen board included) clears and exactly one fresh
+        // prompt is emitted there — never here.
+        teardownSnake();
+        return false;
+      }
+      if (plainCtrl && key === 'c') {
+        e.preventDefault();
+        quitSnake();
+        return true;
+      }
+      if (e.ctrlKey || e.metaKey || e.altKey) {
+        // Other modified combos (Ctrl-Shift-C copy, Cmd-R, …) stay native:
+        // consumed past the terminal's branches, but never preventDefault'd
+        // — they can't type into the prompt, and jailing browser chrome
+        // serves no game purpose.
+        return true;
+      }
+      const dir = Object.hasOwn(SNAKE_KEY_DIRS, key) ? SNAKE_KEY_DIRS[key] : undefined;
+      if (dir) {
+        // preventDefault is load-bearing: arrows otherwise drive history
+        // recall (the branch below) and page scroll.
+        e.preventDefault();
+        if (snakeGame && !snakeGame.state.over) {
+          snakeGame.state = snakeTurn(snakeGame.state, dir);
+        }
+        return true;
+      }
+      if (key === 'q') {
+        e.preventDefault();
+        quitSnake();
+        return true;
+      }
+      if (snakeGame!.state.over && (key === 'r' || key === 'enter')) {
+        e.preventDefault();
+        restartSnake();
+        return true;
+      }
+      // Everything that would type into the prompt or move the page is
+      // swallowed — no typing mid-game. (Enter lands here while playing:
+      // no commit, no prompt.)
+      if (key.length === 1 || SNAKE_SWALLOW_KEYS.includes(key)) e.preventDefault();
+      return true;
     }
 
     // ── Shareable session helpers (change tx5p) ──────────────────────────────

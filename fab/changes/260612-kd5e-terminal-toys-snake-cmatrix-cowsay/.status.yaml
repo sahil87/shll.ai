@@ -1,0 +1,49 @@
+id: kd5e
+name: 260612-kd5e-terminal-toys-snake-cmatrix-cowsay
+created: 2026-06-12T09:36:25Z
+created_by: sahil-noon
+change_type: feat
+issues: []
+progress:
+    intake: done
+    apply: done
+    review: done
+    hydrate: done
+    ship: active
+    review-pr: pending
+plan:
+    generated: true
+    task_count: 11
+    acceptance_count: 19
+    acceptance_completed: 19
+confidence:
+    certain: 6
+    confident: 6
+    tentative: 0
+    unresolved: 0
+    score: 3.2
+    fuzzy: true
+    dimensions:
+        signal: 85.4
+        reversibility: 80.4
+        competence: 85.8
+        disambiguation: 81.3
+stage_metrics:
+    intake: {started_at: "2026-06-12T09:36:25Z", driver: fab-new, iterations: 1, completed_at: "2026-06-12T09:43:24Z"}
+    apply: {started_at: "2026-06-12T09:43:24Z", driver: fab-fff, iterations: 1, completed_at: "2026-06-12T10:03:18Z"}
+    review: {started_at: "2026-06-12T10:03:18Z", driver: fab-fff, iterations: 1, completed_at: "2026-06-12T10:19:11Z"}
+    hydrate: {started_at: "2026-06-12T10:19:11Z", driver: fab-fff, iterations: 1, completed_at: "2026-06-12T10:34:14Z"}
+    ship: {started_at: "2026-06-12T10:34:14Z", driver: fab-fff, iterations: 1}
+prs: []
+true_impact:
+    added: 2913
+    deleted: 23
+    net: 2890
+    excluding:
+        added: 1540
+        deleted: 23
+        net: 1517
+    computed_at: "2026-06-12T10:34:14Z"
+    computed_at_stage: hydrate
+# true_impact: lazily created on first apply-finish (no placeholder here).
+last_updated: 2026-06-12T10:34:14Z
