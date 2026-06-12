@@ -99,6 +99,18 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
     formatSubcommandLine,
     type ToolHelpDoc,
   } from '../lib/terminal-toolcard.ts';
+  // Share + deep-link replay logic (change tx5p) — the lib pattern a FIFTH
+  // time: the #play= hash grammar (parse + build, round-tripping), the shared
+  // replayable predicate (recording and parsing can never drift), and the
+  // self-advertising transcript serializer, pinned by
+  // scripts/terminal-share.test.mjs. The DOM walk and the clipboard stay
+  // island-side; the lib takes plain strings.
+  import {
+    buildPlayHash,
+    isReplayable,
+    parsePlayHash,
+    serializeTranscript,
+  } from '../lib/terminal-share.ts';
 
   // ── Types ────────────────────────────────────────────────────────────────
   // `ariaHidden` (change o33t): hides the line from the cuur aria-live
@@ -387,6 +399,13 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
       "fab — fab-kit's card, by its binary name  (alias of fab-kit)",
       "the same card — fab is what you actually type. 'cd fab-kit' navigates.",
     ),
+    // The share→replay loop (change tx5p) — appended after all existing
+    // entries (the o33t/cdbr/37ng convention), matching its COMMANDS
+    // position. `man share` answers from this via the o33t bridge.
+    share: helpDetail(
+      'share — copy this session as text + a replay link',
+      'your transcript, framed for pasting — with a link that replays it live.',
+    ),
   };
 
   // Dev aphorisms for `fortune` — all tie to "plan before they code".
@@ -534,6 +553,7 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
         { key: 'history' },
         { key: 'help' },
         { key: 'cheatsheet' }, // a key must be covered somewhere; help lists help
+        { key: 'share' }, // session utility, beside help/history/clear (change tx5p)
       ],
     },
     {
@@ -639,6 +659,16 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
   }
   const TOOL_HELP: Record<string, ToolHelpDoc> = loadToolHelp();
 
+  // ── Share + deep-link replay (change tx5p) ───────────────────────────────
+  // Replay cadences, named per the HINT_*/NAV_BEAT_MS convention.
+  // REPLAY_TYPE_MS is HINT_TYPE_MS's cadence — "the existing typing cadence";
+  // the gap lets each replayed command's output land before the next types;
+  // the start delay lets the greeting print and the resting anchor settle.
+  // REPLAY_CAP lives in terminal-share.ts (shared by parse and build).
+  const REPLAY_TYPE_MS = 70;
+  const REPLAY_GAP_MS = 700;
+  const REPLAY_START_DELAY_MS = 600;
+
   // Shared media-query check (change o33t): the streamer's all-at-once
   // fallback, `yes`'s static variant, and the rm-deluxe wipe-skip all branch
   // on it — and the 23xc idle ghost hint now reuses it too.
@@ -696,6 +726,17 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
         // sessionStorage unavailable (private mode / quota) — degrade to in-memory.
       }
     }
+
+    // ── Replay-link recording (change tx5p) ──────────────────────────────────
+    // The commands committed THIS PAGE VIEW that `share`'s #play= link will
+    // replay. Deliberately NOT history[] — that array persists across page
+    // views via sessionStorage and would not match the visible transcript —
+    // and never persisted anywhere (page-view-scoped, hash-only state).
+    // Filtered at record time (in commitLine) by the SAME replayable
+    // predicate the #play= hash parser uses — one predicate, two call sites,
+    // so a generated link replays exactly what it claims. buildPlayHash caps
+    // the link at the first REPLAY_CAP commands in commit order.
+    const sessionCommands: string[] = [];
 
     // The active prompt line: replace the static "$ ▊" with a prompt + typeable
     // input region, followed by a block cursor (▊) that matches the static skin.
@@ -864,6 +905,10 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
     // formatted clipboard payload can't break the single-line prompt — robust
     // regardless of contenteditable plaintext support.
     function onPaste(e: ClipboardEvent): void {
+      // A mouse-driven context-menu paste is an interaction too (change
+      // tx5p): kill any in-flight deep-link replay, like the keydown and
+      // chip-tap paths — no keystroke fires on this route.
+      stopReplay();
       e.preventDefault();
       const text = (e.clipboardData?.getData('text/plain') ?? '').replace(/\r?\n/g, ' ');
       const sel = window.getSelection();
@@ -977,6 +1022,12 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
       // dispatch, so e.g. Tab as the very first keystroke dismisses the ghost
       // before completion logic runs (change 23xc).
       dismissIdleHint();
+      // And kill any in-flight deep-link replay (change tx5p): ANY keystroke
+      // interrupts it — which subsumes Ctrl-C — like interrupting a
+      // paste-bomb. Sits up here with the hint dismissal, before branch
+      // dispatch; replay's own commits go through commitLine, which does NOT
+      // call stopReplay (see the kill switch's comment).
+      stopReplay();
 
       // ── Control keys (Ctrl-L clear, Ctrl-C cancel) ──────────────────────────
       // Each is a prompt-emitting path OUTSIDE the Enter→run→freshPrompt flow, so
@@ -1087,6 +1138,12 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
         saveHistory();
       }
       historyCursor = history.length;
+
+      // Record for the share link (change tx5p): replayable commits only —
+      // the same predicate the #play= parser applies, so recording and
+      // parsing can never drift. Nav commands and `share` itself fail the
+      // predicate (REPLAY_DENY) and are never recorded.
+      if (isReplayable(raw, COMMANDS)) sessionCommands.push(raw);
 
       // A newly committed command kills any active stream (change o33t) —
       // deliberate contrast with pendingNav, which commitLine does NOT clear
@@ -1276,6 +1333,12 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
           { text: '  fortune         a dev aphorism', classes: 'shell-out' },
           { text: '  history         list previously entered commands', classes: 'shell-out' },
           { text: '  clear           clear the screen', classes: 'shell-out' },
+          // The second sanctioned change to bare `help` ever (change tx5p,
+          // user-confirmed; the first was cdbr's footer splice): `share` is
+          // a real listed utility like history/clear — its entire purpose is
+          // discovery→reach, and an unlisted share command converts nobody.
+          // The eggs-stay-unlisted stance is untouched (share is not an egg).
+          { text: '  share           copy this session + a replay link', classes: 'shell-out' },
           { text: '', classes: 'shell-out' },
           // The one sanctioned change to bare `help` (change cdbr): keep the
           // curiosity tease, append the cheatsheet pointer. The curated list
@@ -1935,6 +1998,53 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
       tu: toolCardHandler('tu'),
       rk: toolCardHandler('run-kit'),
       fab: toolCardHandler('fab-kit'),
+
+      // ── Shareable session (change tx5p) ────────────────────────────────────
+      // The play→share→replay loop's outbound half: serialize the visible
+      // transcript (what the eye sees — aria-hidden art included, the live
+      // prompt as a bare `$`), frame it self-advertisingly, copy it to the
+      // clipboard, and print the matching #play= deep link. A real listed
+      // utility (bare `help`'s curated list — the SECOND sanctioned change
+      // ever, after cdbr's footer splice; user-confirmed), not an egg.
+      // Appended LAST in both COMMANDS and HELP_DETAIL (the o33t/cdbr/37ng
+      // convention — the suggester tie-break keeps favoring established
+      // keys); Tab-completion, the did-you-mean suggester, and the cheatsheet
+      // coverage check pick it up via Object.keys(COMMANDS), zero wiring.
+      share() {
+        // Serialize NOW, inside run(): the just-committed `$ share` line is
+        // already frozen and no live prompt exists yet, so the walk captures
+        // exactly what the eye sees; the lib appends the bare-$ prompt line.
+        const playHash = buildPlayHash(sessionCommands);
+        // The printed/footer link uses location.origin + pathname (works on
+        // previews/dev); the lib's `# replayed from` footer stays the
+        // literal https://shll.ai brand copy. Omitted entirely (along with
+        // the printed link line below) when nothing replayable was recorded.
+        const playLink =
+          playHash === '' ? undefined : `${location.origin}${location.pathname}${playHash}`;
+        const block = serializeTranscript(collectTranscriptLines(), { playLink });
+        // The copy resolves async; by then commitLine has emitted the fresh
+        // prompt, so printBeforePrompt lands the confirmation above it — the
+        // sha256sum placement precedent.
+        void copyShareText(block).then((ok) => {
+          if (ok) {
+            printBeforePrompt({ text: 'transcript copied — paste it anywhere.', classes: 'shell-out' });
+            if (playLink) {
+              // Plain selectable text, deliberately NOT an html:true anchor:
+              // the href would embed user-derived content (the commands the
+              // visitor typed) — the trusted-static-string pattern of
+              // man/ls/toolNavLine does not extend to user-derived hrefs.
+              printBeforePrompt({ text: `replay link: ${playLink}`, classes: 'shell-out' });
+            }
+          } else {
+            // Honest failure — never a silent no-op: offer the block
+            // in-terminal so the visitor can still copy it by hand.
+            printBeforePrompt({ text: "clipboard unavailable — here's the transcript, copy it by hand:", classes: 'shell-out' });
+            for (const line of block.split('\n')) {
+              printBeforePrompt({ text: line, classes: 'shell-out shell-dim' });
+            }
+          }
+        });
+      },
     };
 
     function exitHandler(): Line[] {
@@ -2217,6 +2327,199 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
       }
     }
 
+    // ── Shareable session helpers (change tx5p) ──────────────────────────────
+    // The DOM walk behind `share`: every span.shell-line in DOM order, by
+    // textContent — the export mirrors what the EYE sees, so visually-present
+    // aria-hidden art rows (the shll splash, the sl train) are included; the
+    // SR-noise control they carry is a live-region concern, not a visual one.
+    // A LIVE prompt line is excluded (the lib renders it as the bare `$`):
+    // the gate is input.isContentEditable, mirroring printBeforePrompt's —
+    // during run() the previous input is already frozen, so in practice every
+    // line is captured, including the just-echoed `$ share`. The draft text
+    // and the ghost-hint span can never leak: the ghost is dismissed before
+    // any commit, and a live (draft-carrying) line is excluded here.
+    function collectTranscriptLines(): string[] {
+      return Array.from(session!.querySelectorAll<HTMLElement>('span.shell-line'))
+        .filter((el) => !(input.isContentEditable && el.contains(input)))
+        .map((el) => el.textContent ?? '');
+    }
+
+    // Clipboard write with a guarded legacy fallback. `share` always runs
+    // from a user gesture (Enter or a chip tap), so transient activation is
+    // present for the async API; where the API is absent or rejects, the
+    // hidden-textarea execCommand('copy') path is tried. Both failing
+    // resolves false — the caller prints an honest failure line. Never
+    // throws (the sessionStorage try/catch discipline).
+    async function copyShareText(text: string): Promise<boolean> {
+      if (navigator.clipboard?.writeText) {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch {
+          // permission denied / not focused — fall through to the legacy path
+        }
+      }
+      return copyViaExecCommand(text);
+    }
+
+    function copyViaExecCommand(text: string): boolean {
+      // Generic focus capture (review cycle 1): whatever held focus before
+      // the copy gets it back after — not only the terminal input. A
+      // chip-path share (a focused <button>) must not strand focus on body.
+      const prevFocus = document.activeElement;
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed'; // out of flow — selecting it must not scroll
+      ta.style.opacity = '0';
+      let ok = false;
+      try {
+        document.body.appendChild(ta);
+        ta.select();
+        ok = document.execCommand('copy');
+      } catch {
+        ok = false;
+      } finally {
+        // Removal and focus restore must run even when select()/execCommand
+        // throws — an invisible focused textarea left in the DOM would
+        // swallow every subsequent keystroke.
+        ta.remove();
+        // select() moved focus to the textarea; ta.remove() drops it to
+        // body. Restore the previous holder ONLY when there was one (never
+        // initiate focus — the no-autofocus principle stands for chip-tap
+        // shares, where body held focus and keeps it).
+        if (
+          prevFocus instanceof HTMLElement &&
+          prevFocus !== document.body &&
+          prevFocus.isConnected
+        ) {
+          prevFocus.focus();
+          // The caret needs re-placing only for the contenteditable prompt
+          // (a blur resets it) — the rm-deluxe conditional-restore precedent.
+          if (prevFocus === input && input.isContentEditable) caretToEnd();
+        }
+      }
+      return ok;
+    }
+
+    // ── Deep-link replay (change tx5p) ───────────────────────────────────────
+    // #play=ls,fortune auto-types and runs a pre-baked command sequence —
+    // the loop-closing half of `share`. Each command types into the live
+    // input at REPLAY_TYPE_MS (the ghost hint's cadence) and commits via
+    // commitLine(false) — the by18 chip path: full commit semantics (history
+    // push, stream kill, exitResting, fresh prompt) with NO focus steal; the
+    // 23xc no-autofocus decision extends to replay, and page scroll is never
+    // touched (the session's internal bottom-pinning after each commit is
+    // the normal post-interaction behavior). A replayed command that starts
+    // a stream runs it for the gap window; the next command's commitLine
+    // kills it — the existing commit-kills-stream contract, no special-casing.
+    let replayQueue: string[] = [];
+    let replayTimer: number | undefined; // pending start-delay / inter-command gap
+    let replayTyper: number | undefined; // active per-character typing interval
+
+    function startReplay(commands: string[]): void {
+      if (commands.length === 0) return;
+      // Machine interaction is still interaction: the idle ghost hint must
+      // not type over a replay. One-shot latch — it never re-arms.
+      dismissIdleHint();
+      if (prefersReducedMotion()) {
+        // No per-character animation, no inter-command gaps, no start delay:
+        // fill each command at once and commit — the whole replay resolves
+        // instantly (the streams a replayed command starts already print
+        // all-at-once under reduce). Nothing is ever in flight on this path,
+        // so the document-level kill listener below is never installed.
+        for (const cmd of commands) {
+          input.textContent = cmd;
+          commitLine(false);
+        }
+        return;
+      }
+      // The document-level kill listener (review cycle 1 must-fix): replay
+      // never focuses the input (R8), so on a #play= load activeElement is
+      // body and the input-scoped onKeydown can never fire — without this,
+      // NO keystroke (including Ctrl-C) could stop a replay. Installed only
+      // while a replay is in flight; stopReplay removes it (zero cost idle).
+      // Capture phase: an intermediate handler calling stopPropagation()
+      // (e.g. a search dialog) must not be able to swallow the interrupt.
+      document.addEventListener('keydown', onReplayKeydown, { capture: true });
+      replayQueue = commands.slice();
+      replayTimer = window.setTimeout(replayNext, REPLAY_START_DELAY_MS);
+    }
+
+    // Any keystroke, anywhere on the page, regardless of focus — which
+    // subsumes Ctrl-C — interrupts the replay like a paste-bomb.
+    function onReplayKeydown(): void {
+      stopReplay();
+    }
+
+    function replayNext(): void {
+      replayTimer = undefined;
+      const cmd = replayQueue.shift();
+      if (cmd === undefined) {
+        // Defensive (normally unreachable — natural completion stops after
+        // the last commit): cleanup must be unconditional so the document
+        // listener can never be orphaned.
+        stopReplay();
+        return;
+      }
+      let typed = 0;
+      replayTyper = window.setInterval(() => {
+        typed += 1;
+        input.textContent = cmd.slice(0, typed);
+        if (typed >= cmd.length) {
+          window.clearInterval(replayTyper);
+          replayTyper = undefined;
+          // Focus PRESERVATION, not initiation (R8): the user may have
+          // clicked/Tabbed into the input mid-replay; this commit's
+          // freezeInput() strips contenteditable from that focused element,
+          // so focus would silently fall to body. Capture before, restore
+          // onto the fresh prompt after, ONLY in that case (the rm-deluxe
+          // conditional-restore precedent at the wipe site) — replay itself
+          // never initiates focus, so the 23xc no-autofocus decision holds.
+          const hadFocus = document.activeElement === input;
+          commitLine(false); // reassigns `input` to the fresh prompt's
+          if (hadFocus) {
+            input.focus();
+            caretToEnd();
+          }
+          if (replayQueue.length > 0) {
+            replayTimer = window.setTimeout(replayNext, REPLAY_GAP_MS);
+          } else {
+            // Natural completion — nothing left in flight. stopReplay is the
+            // cleanup too (idempotent): here it only removes the
+            // document-level kill listener.
+            stopReplay();
+          }
+        }
+      }, REPLAY_TYPE_MS);
+    }
+
+    // The kill switch — a replay is interruptible like a paste-bomb. Wired
+    // into the document-level keydown listener above (any keystroke,
+    // REGARDLESS of focus — the canonical #play= scenario, where nothing has
+    // focused the input and activeElement is body), the FIRST statements of
+    // the input's onKeydown (the dismissIdleHint placement precedent), the
+    // chip-tap handler, and the input's paste handler (a mouse-driven
+    // context-menu paste is an interaction too). commitLine does NOT call
+    // stopReplay — replay commits through commitLine itself (the deliberate
+    // asymmetry, mirroring the pendingNav contrast: user action kills the
+    // replay; the replay's own machinery must not). Interrupting mid-word
+    // freezes whatever was typed — the next user action deals with the
+    // partial line exactly as if hand-typed. Idempotent and cheap, so the
+    // call sites need no active-flag gate.
+    function stopReplay(): void {
+      document.removeEventListener('keydown', onReplayKeydown, { capture: true });
+      replayQueue = [];
+      if (replayTyper !== undefined) {
+        window.clearInterval(replayTyper);
+        replayTyper = undefined;
+      }
+      if (replayTimer !== undefined) {
+        window.clearTimeout(replayTimer);
+        replayTimer = undefined;
+      }
+    }
+
     // Drive Starlight's EXISTING theme provider via the header <select>, so the
     // header toggle, <html data-theme>, and localStorage persistence all update
     // through Starlight's own onThemeChange (no reinvented persistence).
@@ -2316,6 +2619,9 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
       // listener ordering; dismissIdleHint is a one-shot latch, so the second
       // call is a no-op, never a double-fire.)
       dismissIdleHint();
+      // A chip tap also kills an in-flight deep-link replay (change tx5p) —
+      // the touch analogue of the onKeydown kill switch.
+      stopReplay();
       input.textContent = chip.dataset.cmd ?? '';
       commitLine(false);
     }
@@ -2360,6 +2666,22 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
       }
     });
     armIdleHint();
+    // Deep-link replay (change tx5p): parse #play=… AFTER the greeting and
+    // resting anchor settle. The RAW fragment via new URL(location.href) —
+    // NOT location.hash, which some engines (longstanding Firefox behavior)
+    // return percent-decoded, breaking the split-before-decode contract: an
+    // encoded %2C inside an arg would arrive as a raw separator, and tokens
+    // would be double-decoded (review cycle 1). The predicate drops unknown
+    // and REPLAY_DENY'd tokens silently (Object.hasOwn — the hash is
+    // user-controlled input keying a record lookup); zero survivors →
+    // startReplay no-ops and the load is byte-for-byte today's behavior.
+    // The hash is deliberately left in place (no replaceState): a reload
+    // replays again — a deep link is replayable by definition. startReplay
+    // dismisses the idle hint armed just above (machine interaction is
+    // still interaction).
+    startReplay(
+      parsePlayHash(new URL(location.href).hash, (cmd) => isReplayable(cmd, COMMANDS)),
+    );
   }
 </script>
 
