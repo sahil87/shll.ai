@@ -592,14 +592,15 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
   // one-announced-summary rule), on BOTH motion paths — self-identifying
   // the rain as static (the AGENT_LOG honesty precedent).
   const CMATRIX_SUMMARY = '(the rain is static — this site has no runtime. Ctrl-C ends it sooner.)';
-  // snake: board geometry sized so board + status row + game-over line +
-  // live prompt fit the 22rem session viewport (~14.5 lines) without
-  // scrollToBottom cropping the top border — 46×10 interior = 48×12 with
-  // borders, well inside the width budget. 140 ms reads as classic
-  // terminal-snake speed.
+  // snake: board geometry sized so the post-game-over stack — bordered
+  // board (SNAKE_ROWS + 2) + status row + announced game-over line +
+  // live prompt — fits the 22rem session viewport (~14.25 lines): 46×9
+  // interior = 48×11 with borders, a 14-line stack, no scrollToBottom
+  // crop of the top border (10 rows made it 15 and cropped). 140 ms
+  // reads as classic terminal-snake speed.
   const SNAKE_TICK_MS = 140;
   const SNAKE_COLS = 46;
-  const SNAKE_ROWS = 10;
+  const SNAKE_ROWS = 9;
 
   // The cow (change kd5e) — island-side art like the shll splash and the sl
   // locomotive (the lib builds only the bubble; art rows are presentation).
@@ -1405,9 +1406,13 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
     function onFocus(): void {
       dismissIdleHint();
       cursor?.classList.add('is-active');
+      // A blurred snake game paused its clock (change kd5e) — refocus
+      // is the resume gesture.
+      resumeSnake();
     }
     function onBlur(): void {
       cursor?.classList.remove('is-active');
+      pauseSnake();
     }
 
     // ── Idle ghost hint (change 23xc) ────────────────────────────────────────
@@ -2662,7 +2667,8 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
         if (prefersReducedMotion()) {
           return [
             {
-              text: 'snake needs motion — your system prefers reduced, so the game sits this one out.',
+              // ≤74 chars — the white-space:pre width budget (CHEAT_LINE_WIDTH).
+              text: 'snake needs motion — your system prefers reduced, so the game sits out.',
               classes: 'shell-out',
             },
           ];
@@ -3047,8 +3053,11 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
       board.setAttribute('aria-hidden', 'true');
       session!.appendChild(board);
       snakeGame = { state: snakeInit(SNAKE_COLS, SNAKE_ROWS, Math.random), board, timer: undefined };
-      drawSnake();
+      // Clock before first draw: drawSnake reads timer === undefined as
+      // the paused state (see pauseSnake), so an unstarted clock would
+      // render one frame of 'paused'.
       snakeGame.timer = window.setInterval(snakeTick, SNAKE_TICK_MS);
+      drawSnake();
     }
 
     // One in-place rewrite: lib-rendered board rows + the island's status
@@ -3056,10 +3065,12 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
     // never touched mid-game).
     function drawSnake(): void {
       if (!snakeGame) return;
-      const { state, board } = snakeGame;
+      const { state, board, timer } = snakeGame;
       const status = state.over
         ? `  game over — score: ${state.score} · r restarts · q quits`
-        : `  score: ${state.score} · arrows/wasd steer · q quits`;
+        : timer === undefined
+          ? `  paused — click the terminal to resume · score: ${state.score}`
+          : `  score: ${state.score} · arrows/wasd steer · q quits`;
       board.textContent = [...renderSnakeBoard(state), status].join('\n');
     }
 
@@ -3082,8 +3093,29 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
     function restartSnake(): void {
       if (!snakeGame) return;
       snakeGame.state = snakeInit(SNAKE_COLS, SNAKE_ROWS, Math.random);
-      drawSnake();
+      // Same clock-before-draw order as startSnake (the paused-row read).
       snakeGame.timer = window.setInterval(snakeTick, SNAKE_TICK_MS);
+      drawSnake();
+    }
+
+    // Focus-scoped capture (see handleSnakeKey) means a blurred input
+    // hears no keys — left running, the game would keep moving with the
+    // arrows scrolling the page and `q` dead. So blur pauses the clock
+    // and refocus resumes it: clicking back in IS the resume gesture
+    // (the focus-scoped tradeoff made honest). A game-over board has no
+    // clock to pause; timer === undefined doubles as the paused marker
+    // drawSnake reads for its status row.
+    function pauseSnake(): void {
+      if (!snakeGame || snakeGame.timer === undefined) return;
+      window.clearInterval(snakeGame.timer);
+      snakeGame.timer = undefined;
+      drawSnake();
+    }
+
+    function resumeSnake(): void {
+      if (!snakeGame || snakeGame.state.over || snakeGame.timer !== undefined) return;
+      snakeGame.timer = window.setInterval(snakeTick, SNAKE_TICK_MS);
+      drawSnake();
     }
 
     // q / Ctrl-C: release the keys. The frozen board is deliberately LEFT in
