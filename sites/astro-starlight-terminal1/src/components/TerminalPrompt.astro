@@ -130,6 +130,13 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
   // string queue; the demo's DEMO_SCRIPT steps carry the story layer a bare
   // replay can't.
   type ReplayStep = { narration?: string[]; command: string };
+  // One illustrated short (change jf9k): `frames` stream one per tick at
+  // PLAY_TICK_MS, hidden from the live region (the handler applies
+  // ariaHidden at the single stream site); `endFrame` is the settled static
+  // state prefers-reduced-motion shows INSTEAD of the stream; `summary` is
+  // the ONE announced line a screen reader hears in place of the hidden
+  // frames (the o33t one-announced-summary rule).
+  type PlayScript = { frames: Line[]; endFrame: Line[]; summary: string };
 
   // ── Constants (no magic strings) ───────────────────────────────────────────
   // The 7 tools, in the canonical order used across the site.
@@ -424,6 +431,13 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
       'tour — a guided tour of the shll toolkit  (alias of demo)',
       'auto-types the workflow story, one tool at a time. any key stops it.',
     ),
+    // The illustrated shorts (change jf9k) — appended after all existing
+    // entries (the o33t/cdbr/37ng/tx5p/4vkd convention), matching its
+    // COMMANDS position. `man play` answers via the o33t bridge.
+    play: helpDetail(
+      'play <tool> — a ~10s illustrated short of what a tool does',
+      "honest fake: nothing really runs. ends at the tool's pages. Ctrl-C bails.",
+    ),
   };
 
   // Dev aphorisms for `fortune` — all tie to "plan before they code".
@@ -524,6 +538,10 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
   const RM_TICK_MS = 300;
   const RM_BEAT_MS = 900;
   const SEQ_CAP = 100; // display cap for `seq` output lines
+  // `play <tool>` cadence (change jf9k) — readable but kinetic, between
+  // rm's 300 and tail's 700; per-tool PLAY_SCRIPTS frame counts (~25-30)
+  // tune each run to ≈10 s at this tick.
+  const PLAY_TICK_MS = 350;
 
   // ── Cheatsheet (change cdbr) ─────────────────────────────────────────────
   // The deliberate full-roster reveal: `help` stays the curated short list and
@@ -576,6 +594,11 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
         // not `classics` (terminal-culture gags, which demo is not). `tour`
         // is alias-folded via CHEATSHEET_ALIASES below.
         { key: 'demo' },
+        // The illustrated shorts (change jf9k): the same funnel shelf as
+        // demo — play is a funnel device, not a terminal-culture gag. The
+        // display teaches the invocation (the `cd <tool>` decoration
+        // precedent).
+        { key: 'play', display: 'play <tool>' },
       ],
     },
     {
@@ -754,6 +777,294 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
         html: true,
       },
     ],
+  };
+
+  // ── The illustrated shorts (change jf9k) ─────────────────────────────────
+  // Per-tool `play <tool>` scripts, one const beside the other rosters
+  // (SYNOPSIS / FAKE_ENV / CHEATSHEET_GROUPS / DEMO_SCRIPT). `frames` stream
+  // one per PLAY_TICK_MS via the o33t line streamer, hidden from the live
+  // region (the handler applies ariaHidden at the one stream site, so the
+  // hidden-frames rule can't drift across ~190 lines); `endFrame` is the
+  // settled final state prefers-reduced-motion shows INSTEAD of the stream;
+  // `summary` is the ONE announced line (the o33t rule — it doubles as the
+  // animation's resolution). All seven TOOLS play, shll included.
+  //
+  // Honesty discipline (the CRITICAL guardrail, the o33t self-identifying-
+  // stream ethos): every run opens with PLAY_OPENING, no frame implies a
+  // live process or network — completed-action log lines (the AGENT_LOG
+  // precedent), no spinners waiting on anything, no URLs being fetched, all
+  // names/numbers obviously-illustrative static literals. Every line stays
+  // within the ~74-char width budget (the GREETING/CHEAT_LINE_WIDTH
+  // precedent — longer lines clip into horizontal scroll under
+  // `white-space: pre`), and frames ride the existing .shell-* classes only
+  // (dark/light parity via --c-* for free, Constitution V).
+  const PLAY_OPENING: Line = {
+    text: '# illustration — nothing actually runs here. (Ctrl-C bails out.)',
+    classes: 'shell-out shell-comment',
+  };
+  const PLAY_SCRIPTS: Record<string, PlayScript> = {
+    idea: {
+      // One captured idea fans out into parallel agent lines.
+      frames: [
+        { text: 'one idea, caught before it evaporates:', classes: 'shell-out' },
+        { text: '', classes: 'shell-out' },
+        { text: '  captured: "make the changelog write itself"', classes: 'shell-out' },
+        { text: "  filed as idea #42 — capture is cheap. that's the point.", classes: 'shell-out shell-dim' },
+        { text: '', classes: 'shell-out' },
+        { text: 'fan-out: idea #42 → 4 agents', classes: 'shell-out' },
+        { text: '  agent-1  takes a slice: parse the git log', classes: 'shell-out' },
+        { text: '  agent-2  takes a slice: group by change type', classes: 'shell-out' },
+        { text: '  agent-3  takes a slice: draft the entries', classes: 'shell-out' },
+        { text: '  agent-4  takes a slice: lint the voice', classes: 'shell-out' },
+        { text: '', classes: 'shell-out' },
+        { text: '  agent-1  read the capture. context loaded.', classes: 'shell-out' },
+        { text: '  agent-2  read the capture. context loaded.', classes: 'shell-out' },
+        { text: '  agent-3  read the capture. context loaded.', classes: 'shell-out' },
+        { text: '  agent-4  read the capture. context loaded.', classes: 'shell-out' },
+        { text: '  agent-1  drafted a plan: 3 steps', classes: 'shell-out' },
+        { text: '  agent-3  drafted a plan: 4 steps', classes: 'shell-out' },
+        { text: '  agent-2  drafted a plan: 2 steps', classes: 'shell-out' },
+        { text: '  agent-4  drafted a plan: 2 steps', classes: 'shell-out' },
+        { text: '', classes: 'shell-out' },
+        { text: '  agent-2  ✓ grouping rules pinned', classes: 'shell-ok' },
+        { text: '  agent-1  ✓ parser sketched', classes: 'shell-ok' },
+        { text: '  agent-4  ✓ voice rules written', classes: 'shell-ok' },
+        { text: '  agent-3  ✓ entries drafted', classes: 'shell-ok' },
+        { text: '', classes: 'shell-out' },
+        { text: 'idea #42: one capture, four parallel takes.', classes: 'shell-out' },
+        { text: '  and none of them waited on you.', classes: 'shell-out shell-dim' },
+      ],
+      endFrame: [
+        { text: 'idea #42 — "make the changelog write itself"', classes: 'shell-out' },
+        { text: '  agent-1 ✓ · agent-2 ✓ · agent-3 ✓ · agent-4 ✓', classes: 'shell-ok' },
+        { text: '  one capture, four parallel takes — none of them waited on you.', classes: 'shell-out' },
+      ],
+      summary: '# idea: one idea in, four agents on it. capture first, fan out fast.',
+    },
+    hop: {
+      // A `you are here ▸` marker hopping across worktrees/branches/tools,
+      // context intact at every landing.
+      frames: [
+        { text: 'one marker, five jumps. watch the context survive every one:', classes: 'shell-out' },
+        { text: '', classes: 'shell-out' },
+        { text: '  you are here ▸ main                  task: review PR #12', classes: 'shell-out' },
+        { text: '', classes: 'shell-out' },
+        { text: 'hop → swift-fox', classes: 'shell-out' },
+        { text: '  you are here ▸ swift-fox (worktree)   task: dark-mode spike', classes: 'shell-out' },
+        { text: '  carried over: branch, task, the file you had open.', classes: 'shell-out shell-dim' },
+        { text: '', classes: 'shell-out' },
+        { text: 'hop → tu', classes: 'shell-out' },
+        { text: '  you are here ▸ tu (tool repo)         task: token report', classes: 'shell-out' },
+        { text: '  carried over: everything. nothing re-typed.', classes: 'shell-out shell-dim' },
+        { text: '', classes: 'shell-out' },
+        { text: 'hop → docs', classes: 'shell-out' },
+        { text: '  you are here ▸ docs (branch)          task: readme pass', classes: 'shell-out' },
+        { text: '  carried over: still everything.', classes: 'shell-out shell-dim' },
+        { text: '', classes: 'shell-out' },
+        { text: 'hop → swift-fox', classes: 'shell-out' },
+        { text: '  you are here ▸ swift-fox (worktree)   task: dark-mode spike', classes: 'shell-out' },
+        { text: '  exactly as you left it.', classes: 'shell-out shell-dim' },
+        { text: '', classes: 'shell-out' },
+        { text: 'hop → main', classes: 'shell-out' },
+        { text: '  you are here ▸ main                  task: review PR #12', classes: 'shell-out' },
+        { text: '', classes: 'shell-out' },
+        { text: 'five jumps later: back where you started.', classes: 'shell-out' },
+        { text: '  no stash, no scribbled notes, no "where was I".', classes: 'shell-out shell-dim' },
+        { text: '  nothing lost.', classes: 'shell-out shell-dim' },
+      ],
+      endFrame: [
+        { text: 'you are here ▸ main                  task: review PR #12', classes: 'shell-out' },
+        { text: '  five jumps — worktrees, a tool repo, a branch — context intact.', classes: 'shell-out' },
+        { text: '  back where you started. nothing lost.', classes: 'shell-ok' },
+      ],
+      summary: '# hop: jump anywhere — worktree, branch, tool — and land intact.',
+    },
+    'fab-kit': {
+      // A rough one-liner hardening into a spec: intake → assumptions
+      // scored → gate passed → plan checkboxes.
+      frames: [
+        { text: 'the input: "add dark mode" — one rough line. watch it harden:', classes: 'shell-out' },
+        { text: '', classes: 'shell-out' },
+        { text: 'intake drafted: origin · why · what changes', classes: 'shell-out' },
+        { text: '  who wants it, why now, what changes where — written down first.', classes: 'shell-out shell-dim' },
+        { text: '', classes: 'shell-out' },
+        { text: 'scoring the assumptions:', classes: 'shell-out' },
+        { text: '  #1  Certain    reuse the existing color tokens', classes: 'shell-out' },
+        { text: '  #2  Certain    respect prefers-color-scheme', classes: 'shell-out' },
+        { text: '  #3  Confident  the toggle lives in the header', classes: 'shell-out' },
+        { text: '  #4  Confident  persist the choice locally', classes: 'shell-out' },
+        { text: '  #5  Tentative  per-page override — out of scope', classes: 'shell-out' },
+        { text: '', classes: 'shell-out' },
+        { text: 'confidence gate: 3.4 ≥ 3.0 — passed', classes: 'shell-ok' },
+        { text: '  (below the gate it goes back for questions, not code.)', classes: 'shell-out shell-dim' },
+        { text: '', classes: 'shell-out' },
+        { text: 'plan generated: 5 requirements → 6 tasks → 9 checks', classes: 'shell-out' },
+        { text: '  [x] T001  define the dark palette', classes: 'shell-ok' },
+        { text: '  [x] T002  wire the header toggle', classes: 'shell-ok' },
+        { text: '  [x] T003  persist the choice', classes: 'shell-ok' },
+        { text: '  [x] T004  audit contrast in both themes', classes: 'shell-ok' },
+        { text: '  [x] T005  gate the animations', classes: 'shell-ok' },
+        { text: '  [x] T006  screenshot-diff the result', classes: 'shell-ok' },
+        { text: '', classes: 'shell-out' },
+        { text: '6 of 6 tasks checked. review: passed.', classes: 'shell-out' },
+        { text: '', classes: 'shell-out' },
+        { text: 'the spec existed before any code did.', classes: 'shell-out' },
+        { text: "  that's not overhead. that's the trick.", classes: 'shell-out shell-dim' },
+      ],
+      endFrame: [
+        { text: '"add dark mode" → intake ✓ → gate 3.4 ✓ → plan: 6 tasks, 9 checks', classes: 'shell-out' },
+        { text: '  the spec exists before any code does.', classes: 'shell-ok' },
+      ],
+      summary: '# fab-kit: a rough one-liner walks in, a reviewed plan walks out.',
+    },
+    wt: {
+      // Fake worktrees spinning up in parallel, each agent in a clean room.
+      frames: [
+        { text: "four agents, one repo. without isolation, that's a pile-up:", classes: 'shell-out' },
+        { text: '', classes: 'shell-out' },
+        { text: 'spinning up clean rooms:', classes: 'shell-out' },
+        { text: '  worktree: swift-fox    ready  (…/repo.worktrees/swift-fox)', classes: 'shell-out' },
+        { text: '  worktree: calm-otter   ready  (…/repo.worktrees/calm-otter)', classes: 'shell-out' },
+        { text: '  worktree: brave-heron  ready  (…/repo.worktrees/brave-heron)', classes: 'shell-out' },
+        { text: '  worktree: quiet-lynx   ready  (…/repo.worktrees/quiet-lynx)', classes: 'shell-out' },
+        { text: '  own checkout, own branch, own mess — each.', classes: 'shell-out shell-dim' },
+        { text: '', classes: 'shell-out' },
+        { text: 'agents in, doors closed:', classes: 'shell-out' },
+        { text: '  swift-fox    agent edits 14 files', classes: 'shell-out' },
+        { text: '  calm-otter   agent rewrites the parser', classes: 'shell-out' },
+        { text: '  brave-heron  agent reruns the test suite', classes: 'shell-out' },
+        { text: '  quiet-lynx   agent rebases its branch', classes: 'shell-out' },
+        { text: "  no shared state to fight over — there isn't any.", classes: 'shell-out shell-dim' },
+        { text: '', classes: 'shell-out' },
+        { text: '  swift-fox    ✓ committed', classes: 'shell-ok' },
+        { text: '  brave-heron  ✓ tests green', classes: 'shell-ok' },
+        { text: '  calm-otter   ✓ committed', classes: 'shell-ok' },
+        { text: '  quiet-lynx   ✓ rebased clean', classes: 'shell-ok' },
+        { text: '', classes: 'shell-out' },
+        { text: 'meanwhile, on main: nothing happened.', classes: 'shell-out' },
+        { text: '  exactly as planned.', classes: 'shell-out shell-dim' },
+        { text: '', classes: 'shell-out' },
+        { text: '4 worktrees · 4 agents · 0 collisions', classes: 'shell-out' },
+        { text: "  nobody stepped on anybody's toes. nobody could.", classes: 'shell-out shell-dim' },
+      ],
+      endFrame: [
+        { text: 'swift-fox ✓ · calm-otter ✓ · brave-heron ✓ · quiet-lynx ✓', classes: 'shell-ok' },
+        { text: '  4 isolated worktrees, 4 agents, 0 collisions — main untouched.', classes: 'shell-out' },
+      ],
+      summary: '# wt: every agent in its own worktree — zero stepped-on toes.',
+    },
+    'run-kit': {
+      // Scattered panes converging green, one by one, into one dashboard.
+      frames: [
+        { text: 'five agents, five panes. babysit five terminals? no. one view:', classes: 'shell-out' },
+        { text: '  (the old way: alt-tab, alt-tab, alt-tab, "wait, which one broke?")', classes: 'shell-out shell-dim' },
+        { text: '', classes: 'shell-out' },
+        { text: 'rk dashboard — 5 panes attached:', classes: 'shell-out' },
+        { text: '  pane 1  idea-fanout   ● busy', classes: 'shell-out' },
+        { text: '  pane 2  spec-review   ● busy', classes: 'shell-out' },
+        { text: '  pane 3  dark-mode     ● busy', classes: 'shell-out' },
+        { text: '  pane 4  test-suite    ● busy', classes: 'shell-out' },
+        { text: '  pane 5  docs-pass     ● busy', classes: 'shell-out' },
+        { text: '  every status in one place — no guesswork.', classes: 'shell-out shell-dim' },
+        { text: '', classes: 'shell-out' },
+        { text: '  pane 4  test-suite    47 passed so far, 0 failed', classes: 'shell-out' },
+        { text: '  pane 1  idea-fanout   4 agents writing', classes: 'shell-out' },
+        { text: '  pane 2  spec-review   3 findings, all minor', classes: 'shell-out' },
+        { text: '', classes: 'shell-out' },
+        { text: '  pane 3  dark-mode     ✓ green', classes: 'shell-ok' },
+        { text: '  one down, four to go.', classes: 'shell-out shell-dim' },
+        { text: '  pane 1  idea-fanout   ✓ green', classes: 'shell-ok' },
+        { text: '  pane 5  docs-pass     ✓ green', classes: 'shell-ok' },
+        { text: '  three of five. no tab-cycling required.', classes: 'shell-out shell-dim' },
+        { text: '  pane 4  test-suite    ✓ green — 112 passed, 0 failed', classes: 'shell-ok' },
+        { text: '  pane 2  spec-review   ✓ green', classes: 'shell-ok' },
+        { text: '', classes: 'shell-out' },
+        { text: 'dashboard: ✓ ✓ ✓ ✓ ✓', classes: 'shell-ok' },
+        { text: '  all panes green — and you watched it from one place.', classes: 'shell-out shell-dim' },
+      ],
+      endFrame: [
+        { text: 'rk dashboard: idea-fanout ✓  spec-review ✓  dark-mode ✓', classes: 'shell-ok' },
+        { text: '              test-suite ✓  docs-pass ✓', classes: 'shell-ok' },
+        { text: '  all panes green — one place to watch.', classes: 'shell-out' },
+      ],
+      summary: '# run-kit: scattered panes converge green in one dashboard.',
+    },
+    tu: {
+      // Per-agent token meters ticking up, then the totals line.
+      frames: [
+        { text: 'three agents, one budget. tu meters every token they spend:', classes: 'shell-out' },
+        { text: '', classes: 'shell-out' },
+        { text: '  agent-1  █░░░░░░░░░   2.1k', classes: 'shell-out' },
+        { text: '  agent-2  █░░░░░░░░░   1.8k', classes: 'shell-out' },
+        { text: '  agent-3  █░░░░░░░░░   2.4k', classes: 'shell-out' },
+        { text: '  agent-1  ██░░░░░░░░   4.9k', classes: 'shell-out' },
+        { text: '  agent-2  ██░░░░░░░░   4.0k', classes: 'shell-out' },
+        { text: '  agent-3  ███░░░░░░░   6.2k', classes: 'shell-out' },
+        { text: '  agent-1  ███░░░░░░░   6.8k', classes: 'shell-out' },
+        { text: '  agent-2  ███░░░░░░░   5.4k', classes: 'shell-out' },
+        { text: '  agent-3  ████░░░░░░   8.3k', classes: 'shell-out' },
+        { text: '  agent-1  ████░░░░░░   8.8k', classes: 'shell-out' },
+        { text: '  agent-3  █████░░░░░  10.5k', classes: 'shell-out' },
+        { text: '  agent-2  ████░░░░░░   6.9k', classes: 'shell-out' },
+        { text: '  agent-1  █████░░░░░  11.2k', classes: 'shell-out' },
+        { text: '  agent-3  ██████░░░░  13.0k', classes: 'shell-out' },
+        { text: '  agent-2  █████░░░░░   8.6k', classes: 'shell-out' },
+        { text: '', classes: 'shell-out' },
+        { text: '  agent-1  finished at 12.3k', classes: 'shell-out' },
+        { text: '  agent-2  finished at  9.8k', classes: 'shell-out' },
+        { text: '  agent-3  finished at 14.1k', classes: 'shell-out' },
+        { text: '', classes: 'shell-out' },
+        { text: 'totals — per agent, per run:', classes: 'shell-out' },
+        { text: '  agent-1  12.3k · agent-2  9.8k · agent-3  14.1k', classes: 'shell-out' },
+        { text: '  run total: 36.2k of the 50k budget', classes: 'shell-ok' },
+        { text: '', classes: 'shell-out' },
+        { text: 'tokens counted. budget respected. receipts kept.', classes: 'shell-out' },
+      ],
+      endFrame: [
+        { text: 'tu report — agent-1  12.3k · agent-2  9.8k · agent-3  14.1k', classes: 'shell-out' },
+        { text: '  run total: 36.2k of the 50k budget', classes: 'shell-ok' },
+        { text: '  tokens counted. budget respected. receipts kept.', classes: 'shell-out' },
+      ],
+      summary: '# tu: every token counted, every budget respected.',
+    },
+    shll: {
+      // The seven tools booting/assembling into one toolkit line. Yes,
+      // `play shll` plays the thing you're typing into — that's the bit.
+      frames: [
+        { text: 'seven small CLIs. one toolkit. watch it assemble:', classes: 'shell-out' },
+        { text: "  (yes, this one plays itself. it ties things together. it's fine.)", classes: 'shell-out shell-dim' },
+        { text: '', classes: 'shell-out' },
+        { text: '  [1/7] idea     ✓ linked', classes: 'shell-ok' },
+        { text: '        — captures ideas before they evaporate', classes: 'shell-out shell-dim' },
+        { text: '  [2/7] hop      ✓ linked', classes: 'shell-ok' },
+        { text: '        — jumps anywhere, context intact', classes: 'shell-out shell-dim' },
+        { text: '  [3/7] fab-kit  ✓ linked', classes: 'shell-ok' },
+        { text: '        — turns rough lines into reviewed specs', classes: 'shell-out shell-dim' },
+        { text: '  [4/7] wt       ✓ linked', classes: 'shell-ok' },
+        { text: '        — gives every agent a clean room', classes: 'shell-out shell-dim' },
+        { text: '  [5/7] run-kit  ✓ linked', classes: 'shell-ok' },
+        { text: '        — converges the panes into one dashboard', classes: 'shell-out shell-dim' },
+        { text: '  [6/7] tu       ✓ linked', classes: 'shell-ok' },
+        { text: '        — counts every token, keeps receipts', classes: 'shell-out shell-dim' },
+        { text: '  [7/7] shll     ✓ linked', classes: 'shell-ok' },
+        { text: '        — ties the other six together', classes: 'shell-out shell-dim' },
+        { text: '', classes: 'shell-out' },
+        { text: 'toolkit assembled: 7 of 7 ✓', classes: 'shell-ok' },
+        { text: '  one meta-CLI to bootstrap and update them all.', classes: 'shell-out shell-dim' },
+        { text: '', classes: 'shell-out' },
+        { text: 'the loop they make:', classes: 'shell-out' },
+        { text: '  capture → plan → isolate → watch → account', classes: 'shell-out' },
+        { text: '', classes: 'shell-out' },
+        { text: 'idea · hop · fab-kit · wt · run-kit · tu · shll', classes: 'shell-ok' },
+        { text: '  seven commands, one habit: plan first.', classes: 'shell-out shell-dim' },
+      ],
+      endFrame: [
+        { text: 'toolkit assembled: 7 of 7 ✓', classes: 'shell-ok' },
+        { text: '  idea · hop · fab-kit · wt · run-kit · tu · shll', classes: 'shell-out' },
+        { text: '  the meta-CLI that ties it all together.', classes: 'shell-out' },
+      ],
+      summary: '# shll: seven tools snap into one toolkit — shll is the thread.',
+    },
   };
 
   // Shared media-query check (change o33t): the streamer's all-at-once
@@ -1263,7 +1574,8 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
     // ── Tab-completion ───────────────────────────────────────────────────────────
     // Complete the token under edit (bash-like). First token completes against the
     // COMMANDS keys; the second token completes against TOOLS when the first token
-    // is a tool-arg command (cd/open/man). Resolution over the matching candidates:
+    // is a tool-arg command (cd/open/man — and play, since change jf9k).
+    // Resolution over the matching candidates:
     //   • single match    → fill it in, caret to end
     //   • longest common   → fill the shared prefix (partial completion), no listing
     //     prefix > typed
@@ -1271,7 +1583,7 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
     //     (no LCP gain)       ABOVE the still-live input, WITHOUT freezing it or
     //                         emitting a new prompt (input + caret stay untouched)
     //   • no match         → no-op (input unchanged, nothing printed)
-    const TOOL_ARG_COMMANDS = ['cd', 'open', 'man'];
+    const TOOL_ARG_COMMANDS = ['cd', 'open', 'man', 'play'];
 
     function completeInput(): void {
       const raw = input.textContent ?? '';
@@ -2145,6 +2457,60 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
       // safe only because the tour never navigates (see demoHandler).
       demo: demoHandler,
       tour: demoHandler,
+
+      // ── The illustrated shorts (change jf9k) ──────────────────────────────
+      // `play <tool>` — a ~10 s honest, ILLUSTRATIVE line-stream of what one
+      // tool does, funneling to that tool's pages. Appended LAST in COMMANDS
+      // (63 → 64 — the o33t/cdbr/37ng/tx5p/4vkd append-after-existing
+      // convention: the suggester's equal-distance tie-break keeps favoring
+      // established keys); Tab-completion (first token here, second token via
+      // TOOL_ARG_COMMANDS), the did-you-mean suggester, and the cheatsheet
+      // coverage check all pick it up via Object.keys(COMMANDS), zero wiring.
+      // Deliberately NOT in REPLAY_DENY (terminal-share.ts untouched):
+      // #play=play%20wt replays the animation safely — finite and
+      // non-navigating (see printPlayClosing).
+      play(args, ctx) {
+        const tool = (args[0] ?? '').toLowerCase();
+        if (!tool) {
+          return [{ text: 'usage: play <tool>   (try: ls)', classes: 'shell-out' }];
+        }
+        if (!isTool(tool)) return unknownTool(tool);
+        // Own-property guard (the o33t idiom) — defense in depth behind the
+        // isTool check: every TOOLS key has a script today, but a record
+        // lookup keyed by user input must never read bare.
+        const script = Object.hasOwn(PLAY_SCRIPTS, tool) ? PLAY_SCRIPTS[tool] : undefined;
+        if (!script) return unknownTool(tool);
+        // The honesty label prints IMMEDIATELY via ctx.print — the
+        // demoHandler precedent: under reduced motion the rest of this
+        // handler resolves synchronously, and a returned Line[] would land
+        // after it. Announced, dim, unconditional on BOTH paths — the
+        // CRITICAL guardrail (the o33t self-identifying-stream ethos).
+        ctx.print([PLAY_OPENING]);
+        if (prefersReducedMotion()) {
+          // Handler-level branch BEFORE startStream (the `yes` cap-swap
+          // precedent): the engine's own reduce fallback would dump ALL
+          // frames at once, but the contract here is a single settled
+          // end-frame — announced, the only content a reduce/SR user gets.
+          // printBeforePrompt appends inside run() (the o33t no-live-prompt
+          // fallback) — the same path the closing helper rides, so both land
+          // correctly by construction. The funnel prints unconditionally
+          // here: nothing to interrupt.
+          for (const ln of script.endFrame) printBeforePrompt(ln);
+          printPlayClosing(tool, script.summary);
+          return;
+        }
+        // The o33t line stream: frames append one per tick above the live
+        // prompt, hidden from the live region AT THE ONE STREAM SITE (rapid
+        // frames are announcement garbage — the summary in the closing block
+        // is what a screen reader hears instead). Kill discipline inherited:
+        // Ctrl-C, Ctrl-L, and any committed command stop the stream, and the
+        // closing funnel rides natural completion ONLY (the replayOnDone/
+        // printDemoClosing precedent — an interrupted play earns no pitch).
+        startStream(
+          script.frames.map((ln) => ({ ...ln, ariaHidden: true })),
+          { intervalMs: PLAY_TICK_MS, onDone: () => printPlayClosing(tool, script.summary) },
+        );
+      },
     };
 
     function exitHandler(): Line[] {
@@ -2196,6 +2562,26 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
     // interrupted tour earns no pitch).
     function printDemoClosing(): void {
       for (const ln of DEMO_SCRIPT.closing) printBeforePrompt(ln);
+    }
+
+    // The play closing funnel (change jf9k): ONE announced summary line (the
+    // o33t one-announced-summary rule — it doubles as the animation's
+    // resolution), the real toolNavLine anchors (zero copy duplication with
+    // the 37ng cards), and a dim typed invitation. play NEVER navigates and
+    // never calls navigateWithBeat — a machine-fired navigation mid-read is
+    // the exact hostility REPLAY_DENY exists to prevent, and never
+    // navigating is what keeps play replayable (the 4vkd demo precedent).
+    // printBeforePrompt lands the block above the live prompt on the onDone
+    // path and appends on the synchronous reduced-motion path (the o33t
+    // no-live-prompt fallback) — one helper, correct on both paths by
+    // construction.
+    function printPlayClosing(slug: string, summary: string): void {
+      printBeforePrompt({ text: summary, classes: 'shell-out shell-comment' });
+      printBeforePrompt(toolNavLine(slug));
+      printBeforePrompt({
+        text: `# see it for real: type 'cd ${slug}' ⏎`,
+        classes: 'shell-out shell-comment',
+      });
     }
 
     // Shared by curl/wget: deny the network honestly, each under its own name.
