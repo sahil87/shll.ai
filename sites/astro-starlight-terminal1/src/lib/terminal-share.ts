@@ -24,11 +24,13 @@ export const REPLAY_CAP = 10;
  * `install` would fire `window.location.assign` mid-replay — a URL-controlled
  * sequence must never yank the visitor off the page they were just handed a
  * link to — and a gesture-less replayed `share` would only hit the clipboard
- * permission wall. One shared list for BOTH the recording predicate and the
- * hash parser. Everything else (clear, theme, the eggs, the animated streams)
- * replays faithfully.
+ * permission wall. `snake` (change kd5e) is the same charter from the input
+ * side: an input-owning game a URL starts uninvited is exactly the yank this
+ * list exists to prevent. One shared list for BOTH the recording predicate
+ * and the hash parser. Everything else (clear, theme, the eggs, the animated
+ * streams — cmatrix and cowsay included) replays faithfully.
  */
-export const REPLAY_DENY: readonly string[] = ['cd', 'open', 'install', 'share'];
+export const REPLAY_DENY: readonly string[] = ['cd', 'open', 'install', 'share', 'snake'];
 
 /**
  * The first whitespace-delimited token of a command line, LOWERCASED — the

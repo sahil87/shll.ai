@@ -55,6 +55,7 @@ const CMDS = {
   open: 1,
   install: 1,
   share: 1,
+  snake: 1,
 };
 const replayable = (cmd) => isReplayable(cmd, CMDS);
 
@@ -197,8 +198,10 @@ test('isReplayable: every REPLAY_DENY entry is refused even though it IS a comma
     assert.equal(isReplayable(denied, CMDS), false, `${denied} must not be replayable`);
     assert.equal(isReplayable(`${denied} arg`, CMDS), false);
   }
-  // And the list is exactly the user-confirmed four.
-  assert.deepEqual([...REPLAY_DENY], ['cd', 'open', 'install', 'share']);
+  // And the list is exactly the pinned five: the user-confirmed tx5p four
+  // plus snake (change kd5e — an input-owning game must never start from a
+  // URL the visitor didn't ask to play).
+  assert.deepEqual([...REPLAY_DENY], ['cd', 'open', 'install', 'share', 'snake']);
 });
 
 test('isReplayable: prototype-chain names miss (Object.hasOwn, never a bare read)', () => {
