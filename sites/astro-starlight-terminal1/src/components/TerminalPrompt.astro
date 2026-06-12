@@ -123,6 +123,13 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
     clear: () => void;
     raw: string; // the full entered line, after the command token
   }
+  // One machine-typed step (change 4vkd, generalizing the tx5p replay queue):
+  // optional narration lines print (announced, dim) above the live prompt
+  // before the command types. The #play= path maps its bare tokens to
+  // narration-less steps — behaviorally byte-identical to the original
+  // string queue; the demo's DEMO_SCRIPT steps carry the story layer a bare
+  // replay can't.
+  type ReplayStep = { narration?: string[]; command: string };
 
   // ── Constants (no magic strings) ───────────────────────────────────────────
   // The 7 tools, in the canonical order used across the site.
@@ -406,6 +413,17 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
       'share — copy this session as text + a replay link',
       'your transcript, framed for pasting — with a link that replays it live.',
     ),
+    // The scripted tour (change 4vkd) — appended after all existing entries
+    // (the o33t/cdbr/37ng/tx5p convention), matching its COMMANDS position.
+    // `man demo`/`man tour` answer via the o33t bridge.
+    demo: helpDetail(
+      'demo — a guided tour of the shll toolkit  (alias: tour)',
+      'auto-types the workflow story, one tool at a time. any key stops it.',
+    ),
+    tour: helpDetail(
+      'tour — a guided tour of the shll toolkit  (alias of demo)',
+      'auto-types the workflow story, one tool at a time. any key stops it.',
+    ),
   };
 
   // Dev aphorisms for `fortune` — all tie to "plan before they code".
@@ -554,6 +572,10 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
         { key: 'help' },
         { key: 'cheatsheet' }, // a key must be covered somewhere; help lists help
         { key: 'share' }, // session utility, beside help/history/clear (change tx5p)
+        // The guided tour (change 4vkd): the session-utility/funnel shelf,
+        // not `classics` (terminal-culture gags, which demo is not). `tour`
+        // is alias-folded via CHEATSHEET_ALIASES below.
+        { key: 'demo' },
       ],
     },
     {
@@ -628,6 +650,7 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
     ':q': 'exit',
     rk: 'run-kit',
     fab: 'fab-kit',
+    tour: 'demo', // the guided tour's alias (change 4vkd) — the vi→vim precedent
   };
   // Width budget for the ` · `-joined command lines: 74 joined chars + the
   // 2-space indent = 76 total under the session's `white-space: pre` (the
@@ -668,6 +691,70 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
   const REPLAY_TYPE_MS = 70;
   const REPLAY_GAP_MS = 700;
   const REPLAY_START_DELAY_MS = 600;
+
+  // ── The scripted tour (change 4vkd) ──────────────────────────────────────
+  // The demo's inter-step gap. Deliberately longer than REPLAY_GAP_MS: a
+  // demo step prints a narration line plus a multi-line tool card the
+  // visitor is meant to actually READ, where replay's 700 ms gap is tuned
+  // for content the visitor has already seen. Bare #play= replays keep
+  // REPLAY_GAP_MS; the gap rides the engine entry point (startSequence's
+  // gapMs option), not the step.
+  const DEMO_GAP_MS = 1400;
+
+  // The tour script — one const beside the other rosters (SYNOPSIS /
+  // FAKE_ENV / CHEATSHEET_GROUPS). Five steps: the bare tool-name cards
+  // (change 37ng) give each one real, mechanically-synced content to show;
+  // `fab` and `rk` are the binary-alias keys — shorter to watch being
+  // typed, same card as their primaries. `hop` is omitted to keep the tour
+  // tight at five steps; the closing line names the WORKFLOW, not all seven
+  // binaries. The opening line self-announces interruptibility (the o33t
+  // honest-machinery ethos — self-identifying streams). The closing block
+  // is the conversion beat: a loop summary plus a printed clickable install
+  // anchor (the man/ls/toolNavLine trusted-static-string pattern — a static
+  // route constant) and a typed invitation. The tour NEVER auto-navigates —
+  // a machine-fired window.location.assign mid-read is the exact hostility
+  // REPLAY_DENY exists to prevent (see the demo handler). Narration lines
+  // stay within the ~74-char width discipline (the GREETING precedent —
+  // longer lines clip into horizontal scroll under `white-space: pre`).
+  const DEMO_SCRIPT: { opening: Line; steps: ReplayStep[]; closing: Line[] } = {
+    opening: {
+      text: '# the shll toolkit in ~60 seconds — any key bails out.',
+      classes: 'shell-out shell-comment',
+    },
+    steps: [
+      {
+        narration: ['# 1/5 — it starts with an idea. capture it before it evaporates:'],
+        command: 'idea',
+      },
+      {
+        narration: ['# 2/5 — plan first, code second. fab turns ideas into specs:'],
+        command: 'fab',
+      },
+      {
+        narration: ['# 3/5 — every agent gets its own worktree. no stepped-on toes:'],
+        command: 'wt',
+      },
+      {
+        narration: ['# 4/5 — watch all of them converge from one dashboard:'],
+        command: 'rk',
+      },
+      {
+        narration: ['# 5/5 — and tu keeps the agent accounts straight:'],
+        command: 'tu',
+      },
+    ],
+    closing: [
+      {
+        text: "# that's the loop: capture → plan → isolate → watch → account.",
+        classes: 'shell-out shell-comment',
+      },
+      {
+        text: `# get it: type 'install' ⏎ — or click <a href="${ROUTE_INSTALL}">${ROUTE_INSTALL}</a>`,
+        classes: 'shell-out shell-comment',
+        html: true,
+      },
+    ],
+  };
 
   // Shared media-query check (change o33t): the streamer's all-at-once
   // fallback, `yes`'s static variant, and the rm-deluxe wipe-skip all branch
@@ -2045,6 +2132,19 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
           }
         });
       },
+
+      // ── The scripted tour (change 4vkd) ────────────────────────────────────
+      // Two keys, one handler (the editorHandler/exitHandler precedent),
+      // appended strictly after `share` — COMMANDS grows 61 → 63 (the
+      // o33t/cdbr/37ng/tx5p append-after-existing convention: the suggester's
+      // equal-distance tie-break keeps favoring established keys).
+      // Tab-completion, the did-you-mean suggester, and the cheatsheet
+      // coverage check pick both up via Object.keys(COMMANDS), zero wiring.
+      // Deliberately NOT in REPLAY_DENY (terminal-share.ts untouched):
+      // #play=demo is a one-token link that plays the whole narrated tour —
+      // safe only because the tour never navigates (see demoHandler).
+      demo: demoHandler,
+      tour: demoHandler,
     };
 
     function exitHandler(): Line[] {
@@ -2062,6 +2162,40 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
     // Shared by less/more — byte-identical output from either key IS the gag.
     function lessHandler(): Line[] {
       return [{ text: 'less is more. more or less.', classes: 'shell-out' }];
+    }
+
+    // Shared by demo/tour — two keys, one handler (change 4vkd). The tour is
+    // the tx5p replay engine plus the one thing a bare #play= replay can't
+    // carry: a narration layer. The opening line prints IMMEDIATELY via
+    // print() rather than a returned Line[] — under reduced motion
+    // startSequence resolves the whole tour synchronously inside this call,
+    // and returned lines would land AFTER it. The closing CTA block rides
+    // the onDone hook (natural completion only). The tour NEVER navigates:
+    // it ends on a printed install anchor + a typed invitation — a
+    // machine-fired navigation mid-read is the exact hostility REPLAY_DENY
+    // exists to prevent, and never navigating is what keeps `demo` itself
+    // replayable.
+    //
+    // Recording note (change 4vkd, accepted + self-healing): the demo's
+    // machine commits (`demo` itself, then idea/fab/wt/rk/tu) all pass the
+    // replayable predicate in commitLine and land in sessionCommands like
+    // any commit, so a post-demo `share` link reads #play=demo,idea,… — a
+    // harmless duplication: on replay, `demo` REPLACES the in-flight queue
+    // (startSequence stops the previous sequence), so the duplicated tail
+    // is dropped. Suppressing machine-commit recording would fork
+    // commitLine's single-path semantics for a cosmetic.
+    function demoHandler(): void {
+      print([DEMO_SCRIPT.opening]);
+      startSequence(DEMO_SCRIPT.steps, { gapMs: DEMO_GAP_MS, onDone: printDemoClosing });
+    }
+
+    // The demo's closing CTA block — loop summary + the printed clickable
+    // install anchor + the type-'install' invitation. printBeforePrompt
+    // lands it above the final prompt (one-trailing-prompt by construction);
+    // runs only on natural completion (stopReplay clears the hook — an
+    // interrupted tour earns no pitch).
+    function printDemoClosing(): void {
+      for (const ln of DEMO_SCRIPT.closing) printBeforePrompt(ln);
     }
 
     // Shared by curl/wget: deny the network honestly, each under its own name.
@@ -2402,7 +2536,7 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
       return ok;
     }
 
-    // ── Deep-link replay (change tx5p) ───────────────────────────────────────
+    // ── Deep-link replay (change tx5p; step-generalized by change 4vkd) ──────
     // #play=ls,fortune auto-types and runs a pre-baked command sequence —
     // the loop-closing half of `share`. Each command types into the live
     // input at REPLAY_TYPE_MS (the ghost hint's cadence) and commits via
@@ -2413,24 +2547,97 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
     // the normal post-interaction behavior). A replayed command that starts
     // a stream runs it for the gap window; the next command's commitLine
     // kills it — the existing commit-kills-stream contract, no special-casing.
-    let replayQueue: string[] = [];
+    //
+    // Change 4vkd generalizes the queue from bare command strings to
+    // ReplayStep ({ narration?, command }): startReplay maps #play= tokens
+    // to narration-less steps (byte-identical behavior), while the demo
+    // enqueues DEMO_SCRIPT's narrated steps through startSequence — which
+    // also carries the per-sequence gap (demo reads slower than replay) and
+    // an onDone completion hook (the demo's closing CTA block).
+    let replayQueue: ReplayStep[] = [];
     let replayTimer: number | undefined; // pending start-delay / inter-command gap
     let replayTyper: number | undefined; // active per-character typing interval
+    let replayGapMs = REPLAY_GAP_MS; // per-sequence inter-step gap (demo: DEMO_GAP_MS)
+    let replayOnDone: (() => void) | undefined; // natural-completion hook; stopReplay clears it
+    // Sequence epoch (change 4vkd): incremented by every startSequence. A
+    // machine-committed command can start its OWN sequence synchronously
+    // inside commitLine (`demo`/`tour` — startSequence stops this one and
+    // takes over the queue/timers/listener); the outer sequence's post-commit
+    // continuation compares the epoch and yields instead of double-scheduling
+    // against the new sequence's timers.
+    let replayEpoch = 0;
 
+    // The #play= entry point: bare tokens become narration-less steps — the
+    // pre-4vkd behavior, byte-identical.
     function startReplay(commands: string[]): void {
       if (commands.length === 0) return;
+      startSequence(commands.map((command) => ({ command })));
+    }
+
+    // The generalized engine entry (change 4vkd). Options follow the
+    // startStream({ intervalMs, onDone? }) shape: gapMs is the inter-step
+    // gap (default REPLAY_GAP_MS; the demo passes DEMO_GAP_MS), onDone runs
+    // after the last step's commit — on NATURAL completion only (stopReplay
+    // clears it: an interrupted tour earns no closing pitch).
+    function startSequence(
+      steps: ReplayStep[],
+      opts: { gapMs?: number; onDone?: () => void } = {},
+    ): void {
+      if (steps.length === 0) return;
+      // Starting a machine sequence REPLACES any in-flight one (the
+      // startStream-stops-previous precedent): a replayed `demo`
+      // (#play=demo,…) drops the surviving tokens after it — which is also
+      // what makes post-demo share links self-healing (see the demo handler).
+      stopReplay();
+      replayEpoch += 1;
       // Machine interaction is still interaction: the idle ghost hint must
       // not type over a replay. One-shot latch — it never re-arms.
       dismissIdleHint();
       if (prefersReducedMotion()) {
-        // No per-character animation, no inter-command gaps, no start delay:
-        // fill each command at once and commit — the whole replay resolves
-        // instantly (the streams a replayed command starts already print
-        // all-at-once under reduce). Nothing is ever in flight on this path,
-        // so the document-level kill listener below is never installed.
-        for (const cmd of commands) {
-          input.textContent = cmd;
-          commitLine(false);
+        // No per-character animation, no inter-step gaps, no start delay:
+        // print each step's narration, fill the command at once, and commit —
+        // the whole sequence (closing block included) resolves synchronously
+        // (the streams a replayed command starts already print all-at-once
+        // under reduce). Nothing is ever in flight on this path, so the
+        // document-level kill listener below is never installed.
+        const epoch = replayEpoch;
+        const runAll = () => {
+          for (const step of steps) {
+            // A committed step may have started its own sequence (`demo`) —
+            // the epoch bump says it replaced this one; drop what survives.
+            if (replayEpoch !== epoch) return;
+            for (const n of step.narration ?? []) {
+              printBeforePrompt({ text: n, classes: 'shell-out shell-comment' });
+            }
+            // Focus PRESERVATION, not initiation — the replayNext/rm-deluxe
+            // conditional-restore precedent: a typed `demo` reaches here with
+            // the input focused (Enter's freshPrompt(true)), and each
+            // commit's freezeInput would silently drop that focus to body.
+            // At activation (#play= under reduce) nothing holds focus, so
+            // this is a no-op there — byte-identical to the pre-4vkd loop.
+            const hadFocus = document.activeElement === input;
+            input.textContent = step.command;
+            commitLine(false);
+            if (hadFocus) {
+              input.focus();
+              caretToEnd();
+            }
+          }
+          if (replayEpoch === epoch) opts.onDone?.();
+        };
+        if (input.isContentEditable) {
+          // Activation path (#play= at load): the live prompt exists — run
+          // synchronously, byte-identical to the pre-4vkd reduce loop.
+          runAll();
+        } else {
+          // Started from inside run() (a typed or replayed `demo`): the
+          // previous input is frozen and the live prompt doesn't exist until
+          // the in-flight commitLine emits it — filling the frozen element
+          // would corrupt the just-echoed `$ demo` line. queueMicrotask runs
+          // after that commit completes but BEFORE any user event can be
+          // processed (events are tasks, not microtasks), so the deferral is
+          // user-invisible and nothing is ever observably in flight.
+          queueMicrotask(runAll);
         }
         return;
       }
@@ -2442,7 +2649,9 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
       // Capture phase: an intermediate handler calling stopPropagation()
       // (e.g. a search dialog) must not be able to swallow the interrupt.
       document.addEventListener('keydown', onReplayKeydown, { capture: true });
-      replayQueue = commands.slice();
+      replayGapMs = opts.gapMs ?? REPLAY_GAP_MS;
+      replayOnDone = opts.onDone;
+      replayQueue = steps.slice();
       replayTimer = window.setTimeout(replayNext, REPLAY_START_DELAY_MS);
     }
 
@@ -2454,14 +2663,23 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
 
     function replayNext(): void {
       replayTimer = undefined;
-      const cmd = replayQueue.shift();
-      if (cmd === undefined) {
+      const step = replayQueue.shift();
+      if (step === undefined) {
         // Defensive (normally unreachable — natural completion stops after
         // the last commit): cleanup must be unconditional so the document
         // listener can never be orphaned.
         stopReplay();
         return;
       }
+      // Narration first (change 4vkd — demo steps only; #play= steps carry
+      // none): dim comment lines above the live prompt, ANNOUNCED (no
+      // ariaHidden — the narration IS the story, the `tail` precedent for
+      // slow meaningful lines). printBeforePrompt keeps the live prompt the
+      // trailing line by construction.
+      for (const n of step.narration ?? []) {
+        printBeforePrompt({ text: n, classes: 'shell-out shell-comment' });
+      }
+      const cmd = step.command;
       let typed = 0;
       replayTyper = window.setInterval(() => {
         typed += 1;
@@ -2477,18 +2695,29 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
           // conditional-restore precedent at the wipe site) — replay itself
           // never initiates focus, so the 23xc no-autofocus decision holds.
           const hadFocus = document.activeElement === input;
+          const epoch = replayEpoch;
           commitLine(false); // reassigns `input` to the fresh prompt's
           if (hadFocus) {
             input.focus();
             caretToEnd();
           }
+          // The committed command may have started its OWN machine sequence
+          // (`demo`/`tour` call startSequence inside run(), which stops this
+          // one and takes over the queue/timers/listener — change 4vkd).
+          // Scheduling the next step here would race the new sequence; its
+          // epoch bump is the yield signal.
+          if (replayEpoch !== epoch) return;
           if (replayQueue.length > 0) {
-            replayTimer = window.setTimeout(replayNext, REPLAY_GAP_MS);
+            replayTimer = window.setTimeout(replayNext, replayGapMs);
           } else {
             // Natural completion — nothing left in flight. stopReplay is the
-            // cleanup too (idempotent): here it only removes the
-            // document-level kill listener.
+            // cleanup too (idempotent): here it removes the document-level
+            // kill listener and clears the completion hook — so capture the
+            // hook first and run it after (the demo's closing CTA block
+            // prints on natural completion ONLY; change 4vkd).
+            const done = replayOnDone;
             stopReplay();
+            done?.();
           }
         }
       }, REPLAY_TYPE_MS);
@@ -2510,6 +2739,10 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
     function stopReplay(): void {
       document.removeEventListener('keydown', onReplayKeydown, { capture: true });
       replayQueue = [];
+      // The completion hook dies with the sequence (change 4vkd): an
+      // interrupted tour prints no closing CTA — already-printed narration
+      // stays, the partial line freezes, exactly like a hand-typed abort.
+      replayOnDone = undefined;
       if (replayTyper !== undefined) {
         window.clearInterval(replayTyper);
         replayTyper = undefined;
