@@ -105,7 +105,7 @@ The docs/site tree is the **third consumer** of the pull architecture (`help-col
 
 | Shared pattern | README slice | docs/site tree |
 |----------------|--------------|----------------|
-| Daily scheduled pull, off deploy path | `refresh-readme.yml` (README step) | the **sibling step** in the same workflow |
+| Daily scheduled pull, off deploy *build* path (dispatches `deploy.yml` after a real commit — `xs1j` — but never builds/deploys itself) | `refresh-readme.yml` (README step) | the **sibling step** in the same workflow |
 | Repo-root data surviving a live-site swap | `content/<slug>/README.md` | `content/<slug>/site/**` |
 | Pure, dependency-free, native-test-pinned build-time logic | `extractReadme`/`findUnknownTokens` | `rewriteDocsSiteLinks`/`rewriteReadmeDocsSiteLinks`/`findClosureViolations` (same module) |
 | Ascend-to-root `import.meta.url` build-time read | `ReadmeSlice` → `content/` | dynamic route → `content/` (via `repo-root.ts`) |
