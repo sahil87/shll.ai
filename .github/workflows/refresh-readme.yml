@@ -1,8 +1,8 @@
-name: Scheduled README refresh
+name: 'Refresh: README'
 
 # The PULL side of the README-extraction contract (see
 # docs/specs/readme-extraction-contract.md). The README-prose SIBLING of
-# scheduled-help-refresh.yml: where that job pulls the machine-generated command
+# refresh-help.yml: where that job pulls the machine-generated command
 # reference (JSON, validated against a Zod schema), this job pulls a deduced,
 # curated slice of each tool's authored README (markdown). On a daily schedule
 # (and on demand), it fetches each of the 7 toolkit repos' README.md, runs the
@@ -11,7 +11,7 @@ name: Scheduled README refresh
 # src/lib/extract-readme.ts), and DIRECT-COMMITS the slice to
 # content/<slug>/README.md on main.
 #
-# DESIGN (mirrors scheduled-help-refresh.yml; see readme-extraction-contract §8):
+# DESIGN (mirrors refresh-help.yml; see readme-extraction-contract §8):
 #   - SIBLING, not an extension of the help-refresh job. Distinct data kind
 #     (markdown slices → content/, not JSON → help/), so each workflow stays
 #     single-purpose and the help-refresh job is untouched (lower blast radius).
@@ -31,29 +31,38 @@ name: Scheduled README refresh
 #     fetched (network/404 on all branches) keeps its last-good committed slice and
 #     is logged — that is a REAL failure, distinct from divergence. The CLI exits
 #     non-zero ONLY when the input README cannot be read; that path keeps last-good.
-#   - OFF THE DEPLOY PATH: this workflow does NOT deploy. When it commits to main,
-#     the EXISTING deploy.yml push-to-main deploy ships the updated slices
-#     (Constitution IV) — no new deploy trigger here. A flaky fetch therefore
-#     breaks the REFRESH for that tool, not the deploy: the site keeps shipping the
-#     last-good committed slice.
+#   - DRIVES THE DEPLOY VIA workflow_dispatch (only on a real commit): a push
+#     made with the default GITHUB_TOKEN does NOT trigger deploy.yml's on:push
+#     (GitHub's recursion guard), so after committing a real change this workflow
+#     explicitly dispatches deploy.yml (`gh workflow run deploy.yml --ref main`).
+#     workflow_dispatch is exempt from the recursion guard, so no extra secret is
+#     needed (still just the default GITHUB_TOKEN, now with actions:write to
+#     dispatch). The dispatch fires ONLY when the commit step pushed a change — a
+#     no-op refresh deploys nothing. A flaky fetch therefore breaks the REFRESH
+#     for that tool, not the deploy: the site keeps shipping the last-good
+#     committed slice. (On a day both refreshes commit, two dispatches fire;
+#     deploy.yml's `concurrency: group: pages` serializes them safely.)
 
 on:
   # Daily off-peak refresh. 41 minutes past 07 UTC — a quiet hour, and an offset
-  # from scheduled-help-refresh.yml's 07:13 so the two pulls don't race on a
+  # from refresh-help.yml's 07:13 so the two pulls don't race on a
   # direct commit to main at the same minute.
   schedule:
     - cron: '41 7 * * *'
   # On-demand: trigger manually after a tool README change to refresh immediately.
   workflow_dispatch:
 
-# Minimal permissions: just enough to commit the refreshed content/*/README.md to main.
+# Minimal permissions: commit the refreshed content/*/README.md to main
+# (contents:write) and dispatch deploy.yml via workflow_dispatch after a real
+# commit (actions:write).
 permissions:
   contents: write
+  actions: write
 
 # Avoid overlapping refreshes racing on a direct commit to main (and avoid racing
 # the help-refresh: distinct group, but both push to main — keep this one serial).
 concurrency:
-  group: scheduled-readme-refresh
+  group: refresh-readme
   cancel-in-progress: false
 
 jobs:
@@ -73,7 +82,7 @@ jobs:
       # SAME toolchain that builds the site (pnpm 10, Node 22 — well past 22.18, so
       # native .ts type-stripping is on by default; extract-readme.ts is type-only
       # for schemas.ts, so no astro:content alias is needed). Cache keyed on the
-      # live site's lockfile, matching scheduled-help-refresh.yml.
+      # live site's lockfile, matching refresh-help.yml.
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -272,9 +281,12 @@ jobs:
       # slice AND the docs/site tree for every tool that was fetchable (divergences
       # / closure violations carry a `::warning::` in the run log, not an exclusion).
       # Uses the default GITHUB_TOKEN (no PR, no auto-merge, no SHLLAI_TOKEN). Commits
-      # only when there is an actual change. The push to main then triggers the
-      # EXISTING deploy.yml deploy (Constitution IV) — no deploy logic lives here.
+      # only when there is an actual change. On a real commit it sets the `committed`
+      # step output so the Trigger-deploy step below fires; on a no-op refresh it
+      # exits 0 WITHOUT setting it (a no-op is success, and must not deploy
+      # byte-identical output).
       - name: Commit refreshed content slices
+        id: commit
         run: |
           set -euo pipefail
           git config user.name  "github-actions[bot]"
@@ -295,3 +307,16 @@ jobs:
 
           git commit -m "chore(content): refresh README + docs/site slices via scheduled puller"
           git push
+          echo "committed=true" >> "$GITHUB_OUTPUT"
+
+      # Drive the deploy. A push made with the default GITHUB_TOKEN does NOT trigger
+      # deploy.yml's on:push (GitHub's recursion guard), so we explicitly dispatch
+      # the deploy via workflow_dispatch (exempt from the guard — no new secret).
+      # Gated on a REAL commit having happened above, so a no-op refresh deploys
+      # nothing. deploy.yml already declares workflow_dispatch; the job's
+      # actions:write permission lets the default token dispatch it.
+      - name: Trigger deploy
+        if: steps.commit.outputs.committed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run deploy.yml --ref main

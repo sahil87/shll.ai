@@ -1,4 +1,4 @@
-name: Scheduled help refresh
+name: 'Refresh: Help'
 
 # The PULL side of the help-collection contract (see
 # docs/memory/conventions/help-collection.md and the forward contract at
@@ -21,11 +21,16 @@ name: Scheduled help refresh
 #     exits 0 AND emits parseable JSON. A failing tool keeps its last-good
 #     committed file. A MISSING help/tu.json is the expected interim state
 #     (tu's help-dump is in progress), not a failure.
-#   - OFF THE DEPLOY PATH: this workflow does NOT deploy. When it commits to
-#     main, the EXISTING deploy.yml push-to-main deploy ships the updated help
-#     (Constitution IV) — no new deploy trigger is added here. A flaky brew tap
-#     or a broken tool release therefore breaks the REFRESH, not the deploy:
-#     the site keeps shipping last-good committed help.
+#   - DRIVES THE DEPLOY VIA workflow_dispatch (only on a real commit): a push
+#     made with the default GITHUB_TOKEN does NOT trigger deploy.yml's on:push
+#     (GitHub's recursion guard), so after committing a real change this workflow
+#     explicitly dispatches deploy.yml (`gh workflow run deploy.yml --ref main`).
+#     workflow_dispatch is exempt from the recursion guard, so no extra secret is
+#     needed (still just the default GITHUB_TOKEN, now with actions:write to
+#     dispatch). The dispatch fires ONLY when the commit step pushed a change — a
+#     no-op refresh deploys nothing. A flaky brew tap or a broken tool release
+#     therefore breaks the REFRESH, not the deploy: the site keeps shipping
+#     last-good committed help.
 #
 # RUNNER: ubuntu-latest with Linuxbrew. The sahil87/tap is confirmed Linux-capable
 # (ships Linux bottles / source-buildable Linux formulae for all 7 CLIs, including
@@ -42,13 +47,15 @@ on:
   # On-demand: trigger manually after a tool release to refresh immediately.
   workflow_dispatch:
 
-# Minimal permissions: just enough to commit the refreshed help/*.json to main.
+# Minimal permissions: commit the refreshed help/*.json to main (contents:write)
+# and dispatch deploy.yml via workflow_dispatch after a real commit (actions:write).
 permissions:
   contents: write
+  actions: write
 
 # Avoid overlapping refreshes racing on a direct commit to main.
 concurrency:
-  group: scheduled-help-refresh
+  group: refresh-help
   cancel-in-progress: false
 
 jobs:
@@ -223,10 +230,12 @@ jobs:
 
       # DIRECT COMMIT to main, reached ONLY when validation passed. Commits the
       # refreshed help/*.json with the default GITHUB_TOKEN (no PR, no auto-merge,
-      # no SHLLAI_TOKEN). Commits only when there is an actual change. The push to
-      # main then triggers the EXISTING deploy.yml deploy (Constitution IV) — no
-      # deploy logic lives here.
+      # no SHLLAI_TOKEN). Commits only when there is an actual change. On a real
+      # commit it sets the `committed` step output so the Trigger-deploy step below
+      # fires; on a no-op refresh it exits 0 WITHOUT setting it (a no-op is success,
+      # and must not deploy byte-identical output).
       - name: Commit refreshed help files
+        id: commit
         run: |
           set -euo pipefail
           git config user.name  "github-actions[bot]"
@@ -242,3 +251,16 @@ jobs:
 
           git commit -m "chore(help): refresh help/*.json via scheduled puller"
           git push
+          echo "committed=true" >> "$GITHUB_OUTPUT"
+
+      # Drive the deploy. A push made with the default GITHUB_TOKEN does NOT trigger
+      # deploy.yml's on:push (GitHub's recursion guard), so we explicitly dispatch
+      # the deploy via workflow_dispatch (exempt from the guard — no new secret).
+      # Gated on a REAL commit having happened above, so a no-op refresh deploys
+      # nothing. deploy.yml already declares workflow_dispatch; the job's
+      # actions:write permission lets the default token dispatch it.
+      - name: Trigger deploy
+        if: steps.commit.outputs.committed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run deploy.yml --ref main

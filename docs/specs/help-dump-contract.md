@@ -138,7 +138,7 @@ When the schema does evolve (the explicit follow-on enrichment change), new fiel
 
 ## §Pull model — no push required (migration, dated 2026-06-03)
 
-> **Bounded, dated section.** As of **2026-06-03**, shll.ai pulls help via `help-dump` (the scheduled refresh job `.github/workflows/scheduled-help-refresh.yml` — change `oa63`). The prior **push** model — each tool repo running producer CI that walks its Cobra tree, writes JSON, and opens an auto-merged PR into shll.ai — is **retired**. This section can collapse into the changelog once all 7 repos finish teardown.
+> **Bounded, dated section.** As of **2026-06-03**, shll.ai pulls help via `help-dump` (the scheduled refresh job `.github/workflows/refresh-help.yml` — change `oa63`). The prior **push** model — each tool repo running producer CI that walks its Cobra tree, writes JSON, and opens an auto-merged PR into shll.ai — is **retired**. This section can collapse into the changelog once all 7 repos finish teardown.
 
 ### What each tool repo can now DELETE
 
@@ -163,7 +163,7 @@ There are **three** distinct names per tool, which are not always equal:
 - **formula name** — the Homebrew formula shll.ai installs (`brew install sahil87/tap/<formula>`).
 - **binary name** — the executable shll.ai invokes (`<binary> help-dump`), also carried in the JSON's `tool` field.
 
-For most tools all three match; for some they diverge — e.g. `run-kit` → file slug `run-kit`, **formula `rk`**, binary `rk` (the formula is `rk`, **not** `run-kit`); `fab-kit` → slug `fab-kit`, formula `fab-kit`, binary `fab`. **This mapping lives entirely in shll.ai's scheduled job** (the `slug:formula:binary` table in `.github/workflows/scheduled-help-refresh.yml`) — conflating the three is a real bug (using the slug as the formula name makes `brew install` fail for `run-kit`). **A tool author therefore never reasons about any of these** — not to find their old producer (they grep for their push *wiring* / `SHLLAI_TOKEN`), and not for anything in `help-dump` (it just emits to stdout). The teardown directive below is written without any `<slug>`/`<formula>` reference for this reason.
+For most tools all three match; for some they diverge — e.g. `run-kit` → file slug `run-kit`, **formula `rk`**, binary `rk` (the formula is `rk`, **not** `run-kit`); `fab-kit` → slug `fab-kit`, formula `fab-kit`, binary `fab`. **This mapping lives entirely in shll.ai's scheduled job** (the `slug:formula:binary` table in `.github/workflows/refresh-help.yml`) — conflating the three is a real bug (using the slug as the formula name makes `brew install` fail for `run-kit`). **A tool author therefore never reasons about any of these** — not to find their old producer (they grep for their push *wiring* / `SHLLAI_TOKEN`), and not for anything in `help-dump` (it just emits to stdout). The teardown directive below is written without any `<slug>`/`<formula>` reference for this reason.
 
 ### Teardown directive (paste to a tool-repo agent)
 
