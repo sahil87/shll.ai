@@ -6,10 +6,14 @@
  * BUILD TIME with native fetch (no new dependency — Constitution VI) and
  * resolves to `stargazers_count`; the count renders statically (Constitution
  * I — no client-side fetch). Freshness rides the existing daily scheduled
- * pulls: scheduled-help-refresh.yml's per-run `captured_at` churn reliably
- * lands a commit every day (scheduled-readme-refresh.yml commits only when
- * slices changed) → push to main → deploy, so a rendered count is at most
- * ~24h stale.
+ * pulls: refresh-help.yml's per-run `captured_at` churn reliably lands a
+ * commit every day (refresh-readme.yml commits only when slices changed).
+ * That commit only DEPLOYS because each refresh job explicitly dispatches
+ * deploy.yml via workflow_dispatch after committing (change xs1j) — a push
+ * made with the default GITHUB_TOKEN is suppressed from triggering
+ * deploy.yml's on:push by GitHub's recursion guard, so the commit alone would
+ * NOT redeploy (before xs1j the site only redeployed on the next human merge).
+ * commit → dispatch → deploy, so a rendered count is at most ~24h stale.
  *
  * FAIL-SOFT BY CONTRACT: any failure — network error, non-200 (404, 403
  * rate-limit), missing/malformed `stargazers_count` — resolves to null with

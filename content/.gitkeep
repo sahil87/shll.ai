@@ -1,6 +1,6 @@
 # README-slice collector (repo-root, sibling to help/).
 #
-# The scheduled readme-refresh workflow (.github/workflows/scheduled-readme-refresh.yml)
+# The scheduled readme-refresh workflow (.github/workflows/refresh-readme.yml)
 # commits each tool's deduced README slice here as content/<slug>/README.md.
 # See docs/specs/readme-extraction-contract.md (§8 Pull model).
 #

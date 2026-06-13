@@ -277,7 +277,7 @@ already trusts.
 ## §8 Pull model — the consumer (sibling of the help refresh)
 
 shll.ai pulls README slices via a scheduled refresh job, a **sibling** of
-[`scheduled-help-refresh.yml`](../../.github/workflows/scheduled-help-refresh.yml) — kept distinct
+[`refresh-help.yml`](../../.github/workflows/refresh-help.yml) — kept distinct
 because it is a different data kind (markdown slices, not the JSON command tree) with a different
 verifier (§7 command/flag cross-check, a report-only reporter — not Zod-schema validation).
 
