@@ -95,6 +95,19 @@ rk serve --stop                         # graceful shutdown
 
 The daemon runs in its own dedicated tmux server (`rk-daemon`), completely separate from your agent sessions. Restart the daemon and your agents keep running — the dashboard reconnects automatically.
 
+## Status dots — read every window at a glance
+
+Each window in the sidebar, dashboard, and pane panel carries a single **status dot** that tells you where it sits in the fab → PR lifecycle and how healthy it is — using two orthogonal channels:
+
+- **Hue = phase** (where in the journey): ![](https://img.shields.io/badge/intake-60a5fa?label=) intake → ![](https://img.shields.io/badge/exec-fbbf24?label=) execution (apply/review) + completion (hydrate) → ![](https://img.shields.io/badge/ship-9ece6a?label=) shipping (ship/review-pr) → ![](https://img.shields.io/badge/pr-c084fc?label=) the live PR. A plain window with no fab change is gray — color is reserved for the journey.
+- **Shape = status** (health), one vocabulary across every phase: **ring** = pending · **solid circle** = active/ready · **dashed ring + red center** = failed · **square** = done/merged · **gray ring** = skipped/closed.
+
+Exactly one signal drives the dot, in precedence order **PR > fab > tmux**.
+
+![StatusDot stage × status matrix](docs/img/status-dot-matrix.svg)
+
+See the [status dot reference](docs/site/status-dot.md) for the full matrix, the per-state rendering, and the design rationale.
+
 ## Boards — watch many panes at once
 
 A **board** is a named, cross-server pane dashboard. Pin any tmux window from any server into a board, and the board renders all pinned panes side-by-side in a horizontally-scrollable layout — perfect for watching three parallel agent sessions, or comparing a `just dev` server's output against the agent that's editing it.
@@ -124,6 +137,41 @@ Some browser features (clipboard, secure context) require HTTPS. Accessing rk fr
 
 For a stable custom hostname or public access via Funnel, see the [Tailscale guide](docs/site/install.md).
 
+## Push notifications
+
+Any process on the box can push a real OS-level notification to your phone or
+desktop — even when the RunKit PWA tab is **closed** — via Web Push:
+
+```sh
+rk notify "deploy finished" --title "CI"
+```
+
+`rk notify` POSTs to the local server, which fans the message out to every
+subscribed browser using the Web Push protocol (signed with a server-side VAPID
+key persisted under `~/.rk/`). It is **fail-silent**: if the server is
+unreachable or returns an error it exits 0 and prints nothing, so it never
+stalls a calling script or agent loop.
+
+**Opt in from the browser**: click the **bell icon** in the top bar (or open the
+command palette with `Cmd+K` and run **Notifications: Enable push**). This
+requests notification permission and subscribes the current device. There is no
+settings page — the bell dropdown and the palette are the opt-in gestures. The
+bell dropdown also offers **Send test notification** (a local test that bypasses
+the server) and a **Notifications help** link.
+
+See the [notifications guide](docs/site/notifications.md) for setup and the
+common "it says sent but nothing appears" troubleshooting (almost always an
+OS-level notification block — e.g. macOS Focus mode).
+
+> **Secure-context requirement**: Web Push (service worker + `PushManager`)
+> only works in a [secure context](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts) —
+> that means **HTTPS or `localhost`**. Hitting rk on `localhost:3000` or behind
+> a TLS reverse proxy (e.g. `tailscale serve`, see
+> [Drive it from your phone](#drive-it-from-your-phone-https-over-tailscale))
+> both qualify. Over plain HTTP to a remote host, the browser silently refuses
+> to register the service worker and the **Enable push** command will report
+> that a secure context is required.
+
 ## Shell completion
 
 `rk shell-init <shell>` emits eval-safe tab-completion for your shell. Add this line to your rc file:
@@ -145,6 +193,7 @@ Supports `zsh`, `bash`, `fish`, and `powershell`. Completion-only — rk has no 
 | `rk serve` | Start the HTTP server (foreground or daemon). |
 | `rk status` | Show a tmux session summary. |
 | `rk context` | Print agent-optimized environment info (server URL, ports, etc.) — designed to be read by AI agents inside an rk-spawned workspace. |
+| `rk notify` | Send a Web Push notification to your subscribed devices (see [Push notifications](#push-notifications)). Fail-silent. |
 | `rk doctor` | Check runtime dependencies. Run this first when something breaks. |
 | `rk init-conf` | Scaffold default `tmux.conf` and `tmux.d/` drop-in directory to `~/.rk/`. Optional. |
 | `rk update` | Upgrade via Homebrew and restart the daemon. |
