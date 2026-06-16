@@ -1,14 +1,14 @@
 {
   "tool": "rk",
-  "version": "v2.3.0",
-  "captured_at": "2026-06-15T09:22:31Z",
+  "version": "v2.3.8",
+  "captured_at": "2026-06-16T09:08:11Z",
   "schema_version": 1,
   "root": {
     "name": "rk",
     "path": "rk",
     "short": "rk — tmux session manager with web UI",
     "usage": "rk",
-    "text": "Usage:\n  rk\n  rk [command]\n\nAvailable Commands:\n  completion  Generate the autocompletion script for the specified shell\n  context     Show agent-optimized environment info\n  daemon      Manage the background rk daemon (tmux-managed rk serve)\n  doctor      Check runtime dependencies\n  help        Help about any command\n  init-conf   Scaffold default tmux.conf and tmux.d/ drop-in directory to ~/.rk/\n  reaper      Reap leaked test tmux servers and stale sockets by prefix\n  riff        Create a worktree, tmux window, and Claude Code session\n  serve       Start the HTTP server (foreground)\n  shell-init  emit shell integration (completion) for zsh or bash\n  status      Show tmux session summary\n  update      Update rk to the latest version\n\nUse \"rk [command] --help\" for more information about a command.\n",
+    "text": "Usage:\n  rk\n  rk [command]\n\nAvailable Commands:\n  completion  Generate the autocompletion script for the specified shell\n  context     Show agent-optimized environment info\n  daemon      Manage the background rk daemon (tmux-managed rk serve)\n  doctor      Check runtime dependencies\n  help        Help about any command\n  init-conf   Scaffold default tmux.conf and tmux.d/ drop-in directory to ~/.rk/\n  notify      Send a Web Push notification to subscribed devices\n  reaper      Reap leaked test tmux servers and stale sockets by prefix\n  riff        Create a worktree, tmux window, and Claude Code session\n  serve       Start the HTTP server (foreground)\n  shell-init  emit shell integration (completion) for zsh or bash\n  status      Show tmux session summary\n  update      Update rk to the latest version\n\nUse \"rk [command] --help\" for more information about a command.\n",
     "commands": [
       {
         "name": "context",
@@ -73,6 +73,14 @@
         "short": "Scaffold default tmux.conf and tmux.d/ drop-in directory to ~/.rk/",
         "usage": "rk init-conf [flags]",
         "text": "Usage:\n  rk init-conf [flags]\n\nFlags:\n      --force   Overwrite existing config\n",
+        "commands": []
+      },
+      {
+        "name": "notify",
+        "path": "rk notify",
+        "short": "Send a Web Push notification to subscribed devices",
+        "usage": "rk notify <message> [flags]",
+        "text": "Usage:\n  rk notify <message> [flags]\n\nFlags:\n      --title string   Optional notification title\n",
         "commands": []
       },
       {

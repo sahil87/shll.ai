@@ -1,7 +1,7 @@
 {
   "tool": "hop",
-  "version": "v0.1.17",
-  "captured_at": "2026-06-15T09:22:31Z",
+  "version": "v0.1.18",
+  "captured_at": "2026-06-16T09:08:11Z",
   "schema_version": 1,
   "root": {
     "name": "hop",
@@ -64,7 +64,7 @@
         "path": "hop ls",
         "short": "list all repos as aligned name/path columns",
         "usage": "hop ls [flags]",
-        "text": "Usage:\n  hop ls [flags]\n\nFlags:\n      --trees wt list --json   list worktrees per repo via wt list --json\n",
+        "text": "Usage:\n  hop ls [flags]\n\nFlags:\n      --json                   emit machine-readable JSON (composes with --trees)\n      --trees wt list --json   list worktrees per repo via wt list --json\n",
         "commands": []
       },
       {
