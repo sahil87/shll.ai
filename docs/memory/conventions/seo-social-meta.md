@@ -1,4 +1,5 @@
 ---
+type: memory
 description: "The SEO & social-share layer on the live Starlight site: Starlight's emitted-by-default baseline (do not re-add it), the site-wide og:image/twitter:image set appended in the `Head.astro` override (absolute URL from `Astro.site`), the committed 1200×630 terminal-card `og-image.png` + its unwired one-off generator script, the homepage frontmatter `head:` overrides (keyword title, `og:type=website`), the homepage-only WebSite+SoftwareApplication JSON-LD (`JSON.stringify` + `set:html` in Head, not frontmatter), and the redirect-stub exclusion"
 ---
 # SEO & Social-Share Meta
@@ -11,7 +12,7 @@ How the live site (`sites/astro-starlight-terminal1`) presents in link previews 
 
 ## Site-wide og:image set (`Head.astro`)
 
-`src/components/Head.astro` (the registered `components.Head` override — pattern + escaping gotcha documented in [tool-page-rubric → site chrome overrides](./tool-page-rubric.md#site-chrome-overrides-header-logo-footer-head-change-i2b0)) appends after `<Default />`, on every rendered page:
+`src/components/Head.astro` (the registered `components.Head` override — pattern + escaping gotcha documented in [tool-page-rubric → site chrome overrides](/conventions/tool-page-rubric.md#site-chrome-overrides-header-logo-footer-head-change-i2b0)) appends after `<Default />`, on every rendered page:
 
 - `og:image` — **absolute** URL (`https://shll.ai/og-image.png`). OG scrapers do not resolve relative URLs, so absoluteness is load-bearing. The URL derives from `Astro.site` (`new URL('/og-image.png', Astro.site)`), never hardcoded — `site: 'https://shll.ai'` in `astro.config.mjs` is the single origin source.
 - `og:image:width` 1200 / `og:image:height` 630 / `og:image:alt` (the tagline).
@@ -49,9 +50,3 @@ One `<script type="application/ld+json">` block on the homepage only, carrying a
 - **Append vs. override, chosen per tag.** Tags Starlight does not emit (the og:image set) are appended after `<Default />` in the Head override; tags it does emit (`title`, `og:title`, `og:type`) are overridden through frontmatter `head:` where Starlight's merge dedupes. Using the right mechanism per tag is what keeps every built page at exactly one instance of each.
 - **JSON-LD lives beside the other literal-emission head injections.** `Head.astro` already owned the `set:html` literal-emission pattern (the Cloudflare beacon, change `i2b0`); the JSON-LD reuses it rather than introducing a second authoring home in frontmatter.
 - **The OG card is an artifact, its generator is a tool — only the artifact ships.** Committing the PNG keeps the build dependency-free; committing the unwired script keeps the card reproducible. Neither couples to `package.json`.
-
-## Changelog
-
-| Date | Change |
-|------|--------|
-| 2026-06-11 | Created (change `kb1r`): site-wide og:image/twitter:image set appended in `Head.astro` (absolute from `Astro.site`, width/height/alt; redirect stubs excluded by design), `public/og-image.png` regenerated 512×512 → 1200×630 dark terminal card via the new unwired `scripts/generate-og-image.mjs` (stdlib + Playwright-cached Chromium, zero deps), homepage frontmatter `head:` overrides (`shll — the AI coding toolkit` title + matching `og:title`, `og:type=website`; docs pages keep `article`), and homepage-only WebSite+SoftwareApplication JSON-LD emitted from `Head.astro` (`pathname === '/'`, `JSON.stringify` + `set:html`) rather than frontmatter. Recorded Starlight's emitted-by-default baseline and the append-vs-override mechanism choice. |
