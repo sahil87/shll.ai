@@ -1,0 +1,26 @@
+{"action":"enter","driver":"fab-new","event":"stage-transition","stage":"intake","ts":"2026-06-18T05:26:42Z"}
+{"args":"Fix the favicon on the live site (sites/astro-starlight-terminal1) so the hexagon logo appears consistently everywhere, eliminating any place where a generic/default browser icon shows instead. Three fixes: (1) set favicon config explicitly in astro.config.mjs; (2) give the 7 short-URL redirect pages a favicon by replacing config-level redirects with real redirect pages under src/pages/ that carry \u003clink rel=icon\u003e; (3) regenerate a real multi-resolution favicon.ico from the hexagon SVG.","cmd":"fab-new","event":"command","ts":"2026-06-18T05:26:43Z"}
+{"delta":"+0.0","event":"confidence","score":0,"trigger":"calc-score","ts":"2026-06-18T05:28:42Z"}
+{"cmd":"fab-switch","event":"command","ts":"2026-06-18T05:29:48Z"}
+{"cmd":"fab-clarify","event":"command","ts":"2026-06-18T05:33:02Z"}
+{"delta":"+4.1","event":"confidence","score":4.1,"trigger":"calc-score","ts":"2026-06-18T05:33:26Z"}
+{"delta":"+0.0","event":"confidence","score":4.1,"trigger":"calc-score","ts":"2026-06-18T05:33:33Z"}
+{"delta":"+0.0","event":"confidence","score":4.1,"trigger":"calc-score","ts":"2026-06-18T05:33:56Z"}
+{"delta":"+0.0","event":"confidence","score":4.1,"trigger":"calc-score","ts":"2026-06-18T05:34:09Z"}
+{"delta":"+0.0","event":"confidence","score":4.1,"trigger":"calc-score","ts":"2026-06-18T05:34:22Z"}
+{"delta":"+0.0","event":"confidence","score":4.1,"trigger":"calc-score","ts":"2026-06-18T05:34:35Z"}
+{"delta":"+0.0","event":"confidence","score":4.1,"trigger":"calc-score","ts":"2026-06-18T05:34:50Z"}
+{"delta":"+0.0","event":"confidence","score":4.1,"trigger":"calc-score","ts":"2026-06-18T05:35:04Z"}
+{"delta":"+0.0","event":"confidence","score":4.1,"trigger":"calc-score","ts":"2026-06-18T05:35:23Z"}
+{"delta":"+0.0","event":"confidence","score":4.1,"trigger":"calc-score","ts":"2026-06-18T05:35:36Z"}
+{"delta":"+0.0","event":"confidence","score":4.1,"trigger":"calc-score","ts":"2026-06-18T05:35:44Z"}
+{"delta":"+0.0","event":"confidence","score":4.1,"trigger":"calc-score","ts":"2026-06-18T05:35:59Z"}
+{"delta":"+0.0","event":"confidence","score":4.1,"trigger":"calc-score","ts":"2026-06-18T05:36:05Z"}
+{"cmd":"fab-fff","event":"command","ts":"2026-06-18T05:36:40Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"apply","ts":"2026-06-18T05:36:40Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"review","ts":"2026-06-18T05:40:55Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"hydrate","ts":"2026-06-18T05:47:38Z"}
+{"event":"review","result":"passed","ts":"2026-06-18T05:47:38Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"ship","ts":"2026-06-18T05:50:30Z"}
+{"action":"enter","driver":"git-pr","event":"stage-transition","stage":"review-pr","ts":"2026-06-18T05:52:29Z"}
+{"event":"review","result":"passed","ts":"2026-06-18T06:01:14Z"}
