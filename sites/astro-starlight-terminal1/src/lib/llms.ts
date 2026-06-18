@@ -22,6 +22,11 @@
  *   - flattenMdx — a pragmatic strip of frontmatter, `import` lines, and JSX
  *     component tags from an MDX body, leaving readable prose for a text/plain
  *     dump (exact fidelity is not required — intake Assumption #5/#7).
+ *   - absolutize — rewrite root-relative URLs (`/tools/idea/overview/`) in
+ *     appended docs content to site-absolute (`https://shll.ai/tools/idea/…`),
+ *     so the absolute-URL discipline (intake Assumption #2) holds for the whole
+ *     emitted file, not just the curated index. Both markdown `](/path)` and
+ *     HTML `href`/`src="/path"` forms are covered.
  *
  * All disk reads are build-time only (Constitution I) and fail-soft per tool:
  * a missing slice/JSON degrades to null (the caller emits a noted omission and
@@ -176,5 +181,40 @@ export function flattenMdx(body: string): string {
 
   // Collapse 3+ consecutive blank lines left by removals down to one, and trim.
   out = out.replace(/\n{3,}/g, '\n\n').trim();
+  return out;
+}
+
+/**
+ * Rewrite root-relative URLs in appended docs content (README slices and
+ * flattened MDX) to site-absolute, so /llms-full.txt honors the same
+ * absolute-URL discipline as the curated /llms.txt index (intake Assumption #2;
+ * og:image precedent in seo-social-meta.md). README slices are already mostly
+ * absolutized by the puller's link transforms, but the hand-authored MDX bodies
+ * carry root-relative links (`[overview](/tools/idea/overview/)`, the homepage's
+ * `<a href="/tools/…">`) — emitting those verbatim would leak relative URLs an
+ * agent cannot resolve out of the toolkit context.
+ *
+ * Only genuine ROOT-relative URLs (a single leading `/`) are rewritten — both
+ * markdown link targets `](/path)` and HTML `href`/`src` attributes. Left
+ * untouched: already-absolute (`https://`), protocol-relative (`//host`),
+ * fragment-only (`#anchor`), and document-relative (`./x`, `../x`) targets, plus
+ * the leading-`/`-less tokens (`/N`, `/usr/bin`) that legitimately appear inside
+ * canonical README prose — guarded by requiring the char after `/` to begin a
+ * path segment and by anchoring on the link/attr syntax, never a bare `/`.
+ * `origin` is `Astro.site` (`https://shll.ai`), normalized to no trailing slash.
+ */
+export function absolutize(content: string, origin: string): string {
+  const base = origin.replace(/\/+$/, '');
+  // A root-relative path: one leading `/`, NOT `//` (protocol-relative).
+  // markdown: `](/path)` — capture up to the closing paren.
+  let out = content.replace(
+    /\]\(\/(?!\/)([^)\s]*)\)/g,
+    (_m, p) => `](${base}/${p})`,
+  );
+  // HTML attributes: `href="/path"` / `src="/path"` (single or double quotes).
+  out = out.replace(
+    /\b(href|src)=(["'])\/(?!\/)([^"']*)\2/g,
+    (_m, attr, q, p) => `${attr}=${q}${base}/${p}${q}`,
+  );
   return out;
 }

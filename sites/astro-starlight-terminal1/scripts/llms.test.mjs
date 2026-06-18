@@ -20,7 +20,7 @@ import assert from 'node:assert/strict';
 // schemas.ts import). Must run before the dynamic import below.
 register('./astro-content-alias.mjs', import.meta.url);
 
-const { TOOLS, stripToolPrefix, renderCommandTree, flattenMdx } = await import(
+const { TOOLS, stripToolPrefix, renderCommandTree, flattenMdx, absolutize } = await import(
   '../src/lib/llms.ts'
 );
 
@@ -107,4 +107,44 @@ test('flattenMdx strips a leading YAML frontmatter block', () => {
   const out = flattenMdx('---\ntitle: X\ndescription: Y\n---\n\nBody prose.');
   assert.ok(!out.includes('title: X'), `frontmatter survived: ${out}`);
   assert.equal(out, 'Body prose.');
+});
+
+const ORIGIN = 'https://shll.ai';
+
+test('absolutize rewrites root-relative markdown link targets', () => {
+  assert.equal(
+    absolutize('See the [overview](/tools/idea/overview/) page.', ORIGIN),
+    'See the [overview](https://shll.ai/tools/idea/overview/) page.',
+  );
+});
+
+test('absolutize rewrites root-relative href and src attributes', () => {
+  assert.equal(
+    absolutize('<a href="/tools/wt/">wt</a> and <img src="/og-image.png">', ORIGIN),
+    '<a href="https://shll.ai/tools/wt/">wt</a> and <img src="https://shll.ai/og-image.png">',
+  );
+});
+
+test('absolutize leaves already-absolute, protocol-relative, fragment, and doc-relative URLs alone', () => {
+  const md = [
+    '[abs](https://example.com/x)',
+    '[proto](//cdn.example.com/y)',
+    '[frag](#section)',
+    '[dot](./sibling.md)',
+    '[up](../parent.md)',
+  ].join('\n');
+  assert.equal(absolutize(md, ORIGIN), md);
+});
+
+test('absolutize does not touch leading-/-less tokens that appear in prose', () => {
+  // `/N` (run-kit), a flag value, and a bare path in code — none are link/attr syntax.
+  const prose = 'Run with `-N /3` or see `/usr/local/bin`; ratio 1/2 holds.';
+  assert.equal(absolutize(prose, ORIGIN), prose);
+});
+
+test('absolutize normalizes a trailing slash on origin (no doubled slash)', () => {
+  assert.equal(
+    absolutize('[x](/a/b)', 'https://shll.ai/'),
+    '[x](https://shll.ai/a/b)',
+  );
 });

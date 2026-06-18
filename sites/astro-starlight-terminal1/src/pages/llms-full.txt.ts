@@ -28,7 +28,7 @@
  */
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
-import { TOOLS, readHelpDoc, readReadmeSlice, renderCommandTree, flattenMdx } from '../lib/llms.ts';
+import { TOOLS, readHelpDoc, readReadmeSlice, renderCommandTree, flattenMdx, absolutize } from '../lib/llms.ts';
 import { repoRootFromModuleUrl } from '../lib/repo-root.ts';
 
 /** A docs-collection id prefix → human heading for the hand-authored MDX section. */
@@ -39,7 +39,9 @@ const MDX_GROUPS: { heading: string; match: (id: string) => boolean }[] = [
   { heading: 'Tool overviews', match: (id) => /^tools\/[^/]+\/overview$/.test(id) },
 ];
 
-export const GET: APIRoute = async () => {
+export const GET: APIRoute = async ({ site }) => {
+  // `site` is guaranteed present — astro.config.mjs sets `site: 'https://shll.ai'`.
+  const origin = site!.href;
   const repoRoot = repoRootFromModuleUrl(import.meta.url);
   const parts: string[] = ['# shll — full toolkit content', ''];
 
@@ -49,7 +51,7 @@ export const GET: APIRoute = async () => {
 
     const readme = readReadmeSlice(repoRoot, tool);
     if (readme) {
-      parts.push(readme, '');
+      parts.push(absolutize(readme, origin), '');
     } else {
       parts.push(`_(README slice unavailable — content/${tool}/README.md missing; omitted.)_`, '');
     }
@@ -74,7 +76,7 @@ export const GET: APIRoute = async () => {
     parts.push(`## ${group.heading}`, '');
     for (const entry of entries) {
       const title = (entry.data.title ?? entry.id).trim();
-      const flat = flattenMdx(entry.body ?? '');
+      const flat = absolutize(flattenMdx(entry.body ?? ''), origin);
       parts.push(`### ${title}`, '');
       parts.push(flat.length > 0 ? flat : '_(no prose content)_', '');
     }
