@@ -148,8 +148,9 @@ if (toolPageMatch) {
         `Head: invalid help document at ${helpPath} — does not match HelpDocSchema:\n${detail}`,
       );
     }
-    // Insert `description` after `name` for graph readability (key order is
-    // cosmetic in JSON-LD; consumers key by name, not position).
+    // Attach `description` (single-sourced from help/<tool>.json `root.short`).
+    // Assigned after object creation, so it lands as the last key — key order is
+    // cosmetic in JSON-LD anyway; consumers key by name, not position.
     softwareApplication.description = doc.root.short;
   }
 
