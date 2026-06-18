@@ -7,7 +7,11 @@ import GithubButton from '../../../../components/GithubButton.astro';
 
 <GithubButton tool="fab-kit" />
 
-`fab-kit` is a development toolkit for AI-assisted coding: a 6-stage pipeline (intake → apply → review → hydrate → ship → review-PR), standalone CLI tools, and batch orchestration for running multiple agents in parallel. Plain markdown prompts — no SDK, no vendor lock-in.
+`fab-kit` is a planning harness for AI coding agents — a 6-stage pipeline (intake → apply → review → hydrate → ship → review-PR) that forces an agent to plan before it writes code, plus standalone CLI tools and batch orchestration for running multiple agents in parallel. The whole workflow is plain Markdown prompts and checked-in artifacts — no SDK, no vendor lock-in, nothing hidden from `git`. It's for developers who've watched an agent code straight from a one-line prompt and want a constitution and a plan in place first.
+
+## How it fits
+
+`fab-kit` is the engine of the loop: it turns an **[idea](../../idea/overview/)** backlog item into a planned change (via `/fab-new`), runs that change inside a disposable **[wt](../../wt/overview/)** worktree, and you watch every agent session from the **[run-kit](../../run-kit/overview/)** dashboard.
 
 ## Where to next
 

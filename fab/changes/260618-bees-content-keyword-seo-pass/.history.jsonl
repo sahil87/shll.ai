@@ -1,0 +1,11 @@
+{"action":"enter","driver":"fab-new","event":"stage-transition","stage":"intake","ts":"2026-06-18T07:03:43Z"}
+{"args":"Content / keyword depth pass on the live site (sites/astro-starlight-terminal1) — editorial SEO: unique meta descriptions per tool page, ranking-oriented homepage/overview framing, internal linking, title/meta audit. Backlog #3 of 3. Respect canonical-source discipline (no README slice edits), vn39 help-json cross-check for command mentions, static-first zero new deps.","cmd":"fab-new","event":"command","ts":"2026-06-18T07:03:43Z"}
+{"delta":"+4.0","event":"confidence","score":4,"trigger":"calc-score","ts":"2026-06-18T09:44:29Z"}
+{"cmd":"fab-fff","event":"command","ts":"2026-06-18T09:45:47Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"apply","ts":"2026-06-18T09:46:01Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"review","ts":"2026-06-18T09:53:55Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"hydrate","ts":"2026-06-18T10:00:32Z"}
+{"event":"review","result":"passed","ts":"2026-06-18T10:00:32Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"ship","ts":"2026-06-18T10:06:16Z"}
+{"action":"enter","driver":"git-pr","event":"stage-transition","stage":"review-pr","ts":"2026-06-18T10:07:42Z"}
+{"event":"review","result":"passed","ts":"2026-06-18T10:09:14Z"}

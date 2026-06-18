@@ -3,7 +3,7 @@ title: Overview
 description: What the shll toolkit is, who it's for, and how the pieces fit together.
 ---
 
-The **shll toolkit** is seven small CLIs that work together to make AI-assisted coding tractable. Each tool is independent, brew-installable, and useful on its own — but they compose into a pipeline that runs from idea capture to merged PR with the AI doing the typing.
+The **shll toolkit** is seven small CLIs for AI-assisted coding — independent tools that compose into one workflow. Each is brew-installable and useful on its own, but together they run the whole loop: from capturing an idea to a merged pull request, with the AI doing the typing. It's built for developers running multiple coding agents in parallel who want a plan and a paper trail, not a black box — every backlog, plan, and cost report is a plain file you can `cat`, `grep`, and `git diff`.
 
 ## The shape
 
@@ -16,7 +16,7 @@ idea  →  fab-kit  →  wt        →  run-kit
  └── backlog feeds /fab-new
 ```
 
-`tu` watches the cost of all of it. `hop` is a personal directory of your git repos — jump between them and batch-update them from anywhere. `shll` is the bootstrap.
+The chain runs **[idea](/tools/idea/overview/)** → **[fab-kit](/tools/fab-kit/overview/)** → **[wt](/tools/wt/overview/)** → **[run-kit](/tools/run-kit/overview/)**: a backlog item becomes a planned change, the change runs in its own worktree, and the dashboard watches every agent. Around the chain, **[tu](/tools/tu/overview/)** watches the cost of all of it, **[hop](/tools/hop/overview/)** is a personal directory of your git repos — jump between them and batch-update them from anywhere — and **[shll](/tools/shll/overview/)** is the bootstrap that installs and updates the whole set.
 
 ## What's on this site
 

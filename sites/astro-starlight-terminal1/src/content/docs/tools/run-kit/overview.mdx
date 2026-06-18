@@ -7,7 +7,11 @@ import GithubButton from '../../../../components/GithubButton.astro';
 
 <GithubButton tool="run-kit" />
 
-`rk riff` spawns AI coding agents in parallel git worktrees; `rk serve` is a browser dashboard that lets you watch them all — from your desk or your phone.
+`run-kit` is a browser dashboard for tmux and Claude Code workspaces — one place to watch every AI coding agent you have running. `rk riff` spawns agents in parallel git worktrees; `rk serve` opens the dashboard that lets you watch them all, from your desk or your phone (mobile-friendly over Tailscale). When you're running many agents at once, `run-kit` is the cross-session view that turns a wall of tmux panes into a single screen.
+
+## How it fits
+
+`run-kit` is the window onto everything else: it watches the agent sessions running in your **[wt](../../wt/overview/)** worktrees, so a whole fan-out of parallel changes lives on one screen. Pair it with **[tu](../../tu/overview/)** to keep the running cost of those sessions in view.
 
 ## Where to next
 
