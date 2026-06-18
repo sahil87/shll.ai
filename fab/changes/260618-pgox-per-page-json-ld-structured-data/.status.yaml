@@ -1,0 +1,53 @@
+id: pgox
+name: 260618-pgox-per-page-json-ld-structured-data
+created: 2026-06-18T05:38:40Z
+created_by: sahil-noon
+change_type: feat
+issues: []
+progress:
+    intake: done
+    apply: done
+    review: done
+    hydrate: done
+    ship: done
+    review-pr: done
+plan:
+    generated: true
+    task_count: 9
+    acceptance_count: 14
+    acceptance_completed: 0
+confidence:
+    certain: 3
+    confident: 9
+    tentative: 0
+    unresolved: 0
+    score: 4.2
+    fuzzy: true
+    dimensions:
+        signal: 88.3
+        reversibility: 82.9
+        competence: 81.7
+        disambiguation: 78.8
+stage_metrics:
+    intake: {started_at: "2026-06-18T05:38:40Z", driver: fab-new, iterations: 1, completed_at: "2026-06-18T06:07:19Z"}
+    apply: {started_at: "2026-06-18T06:07:19Z", driver: fab-fff, iterations: 1, completed_at: "2026-06-18T06:14:41Z"}
+    review: {started_at: "2026-06-18T06:14:41Z", driver: fab-fff, iterations: 1, completed_at: "2026-06-18T06:21:59Z"}
+    hydrate: {started_at: "2026-06-18T06:21:59Z", driver: fab-fff, iterations: 1, completed_at: "2026-06-18T06:28:09Z"}
+    ship: {started_at: "2026-06-18T06:28:09Z", driver: fab-fff, iterations: 1, completed_at: "2026-06-18T06:30:02Z"}
+    review-pr: {started_at: "2026-06-18T06:30:02Z", driver: git-pr, iterations: 1, completed_at: "2026-06-18T06:35:50Z"}
+prs:
+    - https://github.com/sahil87/shll.ai/pull/70
+change_type_source: explicit
+true_impact:
+    added: 0
+    deleted: 0
+    net: 0
+    excluding:
+        added: 0
+        deleted: 0
+        net: 0
+    computed_at: "2026-06-18T06:28:09Z"
+    computed_at_stage: hydrate
+summary: 'Per-page JSON-LD: Head.astro route dispatcher adds a per-tool SoftwareApplication+BreadcrumbList graph on 2-segment tool pages (description single-sourced from help/<tool>.json root.short, absolute URLs from Astro.site, missing→omit-description/invalid→build-fail), plus a new /tools index page (ToolsIndex.astro, JSON-single-sourced one-liners, VersionTable build-stop, unlinked sidebar group); homepage block unchanged.'
+# true_impact: lazily created on first apply-finish (no placeholder here).
+last_updated: 2026-06-18T06:35:50Z
