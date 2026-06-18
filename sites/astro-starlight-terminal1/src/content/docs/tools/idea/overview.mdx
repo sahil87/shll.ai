@@ -7,7 +7,11 @@ import GithubButton from '../../../../components/GithubButton.astro';
 
 <GithubButton tool="idea" />
 
-`idea` captures and manages a per-repo backlog in a plain Markdown file (`fab/backlog.md`) — worktree-aware, queryable from the CLI, and the same file `fab-kit`'s `/fab-new` reads.
+`idea` is a plain-Markdown backlog tracker for AI-assisted development — it captures and manages a per-repo backlog in a single `fab/backlog.md` file, worktree-aware and queryable from the CLI. It's the same file `fab-kit`'s `/fab-new` reads to start a change, so a captured idea flows straight into the planning pipeline. If you run multiple coding agents in parallel, `idea` is where work waits its turn — no app to open, no database to query, just a file you can `cat`, `grep`, and `git diff`.
+
+## How it fits
+
+`idea` feeds the pipeline: a backlog item becomes a change in **[fab-kit](../../fab-kit/overview/)** via `/fab-new`, which runs inside an isolated **[wt](../../wt/overview/)** worktree. Watch what the whole run costs with **[tu](../../tu/overview/)**.
 
 ## Where to next
 

@@ -7,7 +7,11 @@ import GithubButton from '../../../../components/GithubButton.astro';
 
 <GithubButton tool="shll" />
 
-`shll` composes the per-tool CLIs — it doesn't replace them. One command to install, update, and shell-wire every tool in the toolkit.
+`shll` is the meta-CLI that bootstraps the whole AI coding toolkit — one command to install, update, and shell-wire every tool at once. It composes the per-tool CLIs rather than replacing them: `shll install` brings down each binary, and `shll update` keeps them current. It's the first thing you run and the one command you keep around to keep everything in sync.
+
+## How it fits
+
+`shll` is the bootstrap for everything else — see [Install everything](/getting-started/install/) to set up the toolkit in one go. From there the loop runs: **[idea](../../idea/overview/)** captures work, **[fab-kit](../../fab-kit/overview/)** plans it, **[wt](../../wt/overview/)** isolates it, and **[run-kit](../../run-kit/overview/)** watches it.
 
 ## Where to next
 

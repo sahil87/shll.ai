@@ -7,7 +7,11 @@ import GithubButton from '../../../../components/GithubButton.astro';
 
 <GithubButton tool="wt" />
 
-`wt` wraps `git worktree` with opinionated defaults: worktrees are sibling directories (`<repo>.worktrees/<name>/`), names are memorable adjective-noun pairs, and a shell wrapper makes `cd`-into-worktree from a menu work.
+`wt` is an opinionated git worktree wrapper built for parallel AI coding — one worktree per change, one agent session per worktree, zero merge conflicts between them. It wraps `git worktree` with defaults that make the pattern effortless: worktrees are sibling directories (`<repo>.worktrees/<name>/`), names are memorable adjective-noun pairs, and a shell wrapper makes `cd`-into-worktree from a menu work. If you're running several coding agents at once, `wt` is what keeps each one in its own isolated working copy.
+
+## How it fits
+
+`wt` is where the work happens: each **[fab-kit](../../fab-kit/overview/)** change gets its own disposable worktree, so parallel agents never collide. Watch every worktree's session at a glance in the **[run-kit](../../run-kit/overview/)** dashboard.
 
 ## Where to next
 
