@@ -1,0 +1,94 @@
+---
+/**
+ * ToolsIndex — the `/tools` directory listing, self-updating at BUILD TIME.
+ *
+ * Renders the seven tools as a terminal-styled `<ul class="tools-listing">`
+ * (the same markup + classes the homepage `ls tools/` block uses, so dark-mode
+ * parity via --c-* tokens is automatic — Constitution V). The ONLY value pulled
+ * from data is each tool's one-line `description`: it is read from each tool's
+ * `<repo-root>/help/<slug>.json` `root.short` and validated against
+ * `HelpDocSchema`. Everything else — the roster, display order, display labels,
+ * and overview routes — is SITE-AUTHORED here in the component.
+ *
+ * This single-sourcing is binding: the tool one-liner must NOT become a fourth
+ * hand-copy of the descriptions (the codebase already documents the existing
+ * copies — see docs/memory/conventions/tool-page-rubric). Mirrors
+ * VersionTable.astro's split (site-authored roster + JSON-sourced value) and
+ * its repo-root resolution (ascend from import.meta.url to the dir holding
+ * `help/`, robust across `astro dev` and the Vite-bundled `astro build` chunk).
+ *
+ * Use the FILE SLUG for the label + route (`run-kit`, not the binary `rk`) — a
+ * directory/section reference per the `rk` vs `run-kit` rule.
+ *
+ * A rostered `help/<slug>.json` that is MISSING or fails schema validation is a
+ * build-stopping condition (a committed directory page must list every tool;
+ * an incomplete roster is a defect that must not deploy) — mirroring
+ * VersionTable.astro / CommandIndex.astro, NOT the soft-miss the inert JSON-LD
+ * branch in Head.astro uses.
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+import { HelpDocSchema } from '../lib/schemas.ts';
+import { repoRootFromModuleUrl } from '../lib/repo-root.ts';
+
+interface RosterEntry {
+  /** help/<slug>.json file slug + docs route segment (e.g. "run-kit"). */
+  slug: string;
+  /** Site-authored display label (the file slug — "run-kit", not "rk"). */
+  label: string;
+  /** Overview route on this site (the tool's canonical entry page). */
+  route: string;
+}
+
+/**
+ * Site-authored roster (order, labels, routes live HERE, not in JSON).
+ * Order mirrors the homepage `ls tools/` listing so the two directory views
+ * stay consistent. The label/route use the file slug per the `rk` vs `run-kit`
+ * rule — `run-kit`, never the binary `rk`.
+ */
+const ROSTER: RosterEntry[] = [
+  { slug: 'idea', label: 'idea', route: '/tools/idea/overview/' },
+  { slug: 'hop', label: 'hop', route: '/tools/hop/overview/' },
+  { slug: 'fab-kit', label: 'fab-kit', route: '/tools/fab-kit/overview/' },
+  { slug: 'wt', label: 'wt', route: '/tools/wt/overview/' },
+  { slug: 'run-kit', label: 'run-kit', route: '/tools/run-kit/overview/' },
+  { slug: 'tu', label: 'tu', route: '/tools/tu/overview/' },
+  { slug: 'shll', label: 'shll', route: '/tools/shll/overview/' },
+];
+
+const repoRoot = repoRootFromModuleUrl(import.meta.url);
+const helpDir = path.join(repoRoot, 'help');
+
+interface ToolRow extends RosterEntry {
+  description: string;
+}
+
+const rows: ToolRow[] = ROSTER.map((entry) => {
+  const file = path.join(helpDir, `${entry.slug}.json`);
+  let raw: string;
+  try {
+    raw = fs.readFileSync(file, 'utf8');
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `ToolsIndex: required help document missing at ${file} (rostered tool "${entry.slug}"):\n${detail}`,
+    );
+  }
+  let doc;
+  try {
+    doc = HelpDocSchema.parse(JSON.parse(raw));
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `ToolsIndex: invalid help document at ${file} — does not match HelpDocSchema:\n${detail}`,
+    );
+  }
+  return { ...entry, description: doc.root.short };
+});
+---
+
+<ul class="tools-listing">
+  {rows.map((row) => (
+    <li><a href={row.route}>{row.label}</a><span class="tool-desc">{row.description}</span></li>
+  ))}
+</ul>

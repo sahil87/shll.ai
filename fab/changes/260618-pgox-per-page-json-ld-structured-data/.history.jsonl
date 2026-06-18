@@ -1,0 +1,24 @@
+{"action":"enter","driver":"fab-new","event":"stage-transition","stage":"intake","ts":"2026-06-18T05:38:40Z"}
+{"args":"Extend JSON-LD structured data beyond the homepage on the live site (sites/astro-starlight-terminal1): per-tool SoftwareApplication + BreadcrumbList on tool pages, descriptions single-sourced from help/\u003ctool\u003e.json, route-gated in Head.astro. Backlog #2 of 3.","cmd":"fab-new","event":"command","ts":"2026-06-18T05:38:40Z"}
+{"cmd":"fab-new","event":"command","ts":"2026-06-18T05:38:44Z"}
+{"delta":"+4.0","event":"confidence","score":4,"trigger":"calc-score","ts":"2026-06-18T05:43:35Z"}
+{"cmd":"fab-clarify","event":"command","ts":"2026-06-18T05:45:26Z"}
+{"delta":"+0.0","event":"confidence","score":4,"trigger":"calc-score","ts":"2026-06-18T05:49:32Z"}
+{"delta":"+0.1","event":"confidence","score":4.1,"trigger":"calc-score","ts":"2026-06-18T05:49:52Z"}
+{"delta":"+0.0","event":"confidence","score":4.1,"trigger":"calc-score","ts":"2026-06-18T05:49:59Z"}
+{"delta":"+0.1","event":"confidence","score":4.2,"trigger":"calc-score","ts":"2026-06-18T05:50:21Z"}
+{"delta":"+0.0","event":"confidence","score":4.2,"trigger":"calc-score","ts":"2026-06-18T05:50:25Z"}
+{"delta":"+0.0","event":"confidence","score":4.2,"trigger":"calc-score","ts":"2026-06-18T05:50:38Z"}
+{"delta":"+0.0","event":"confidence","score":4.2,"trigger":"calc-score","ts":"2026-06-18T05:50:53Z"}
+{"delta":"+0.0","event":"confidence","score":4.2,"trigger":"calc-score","ts":"2026-06-18T05:51:08Z"}
+{"delta":"+0.0","event":"confidence","score":4.2,"trigger":"calc-score","ts":"2026-06-18T05:51:14Z"}
+{"delta":"+0.0","event":"confidence","score":4.2,"trigger":"calc-score","ts":"2026-06-18T05:51:28Z"}
+{"delta":"+0.0","event":"confidence","score":4.2,"trigger":"calc-score","ts":"2026-06-18T05:51:47Z"}
+{"delta":"+0.0","event":"confidence","score":4.2,"trigger":"calc-score","ts":"2026-06-18T05:51:57Z"}
+{"delta":"+0.0","event":"confidence","score":4.2,"trigger":"calc-score","ts":"2026-06-18T05:52:06Z"}
+{"cmd":"fab-fff","event":"command","ts":"2026-06-18T06:07:08Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"apply","ts":"2026-06-18T06:07:19Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"review","ts":"2026-06-18T06:14:41Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"hydrate","ts":"2026-06-18T06:21:59Z"}
+{"event":"review","result":"passed","ts":"2026-06-18T06:21:59Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"ship","ts":"2026-06-18T06:28:09Z"}

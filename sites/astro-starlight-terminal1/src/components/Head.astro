@@ -41,7 +41,30 @@
  * plain object — JSON.stringify never produces `<` or raw HTML, so set:html is
  * safe and the body survives emission byte-exact. Inert data, not executable JS
  * (no Constitution I conflict).
+ *
+ * Per-tool JSON-LD (change pgox): the homepage block above is now one branch of
+ * a route DISPATCHER. Every `/tools/<tool>/<page>/` page emits its own inert
+ * application/ld+json @graph with two nodes — a per-tool SoftwareApplication
+ * (name = file slug; description single-sourced from help/<tool>.json `root.short`)
+ * and a 4-crumb BreadcrumbList (Home › Tools › <tool> › <page>) with all `item`
+ * URLs absolute, derived from `Astro.site`. Route detection parses
+ * Astro.url.pathname with `^/tools/([^/]+)/([^/]+)/?$` — the same pathname-gate
+ * idiom as the homepage branch (NOT starlightRoute.id). The two branches are
+ * mutually exclusive; the homepage block is unchanged byte-for-byte.
+ *
+ * Failure split (mirrors CommandReference.astro, NOT VersionTable's build-stop —
+ * this is inert SEO metadata, not a correctness-critical committed artifact):
+ *   - MISSING help/<tool>.json (ENOENT) → emit the SoftwareApplication node
+ *     WITHOUT its `description` field and continue the build (an absent producer
+ *     file is an expected interim state; the BreadcrumbList needs no help JSON
+ *     and always emits).
+ *   - PRESENT but schema-invalid → HelpDocSchema.parse throws (wrapped with the
+ *     filename) so `astro build` FAILS (a committed malformed file is a defect).
  */
+import fs from 'node:fs';
+import path from 'node:path';
+import { HelpDocSchema } from '../lib/schemas.ts';
+import { repoRootFromModuleUrl } from '../lib/repo-root.ts';
 import Default from '@astrojs/starlight/components/Head.astro';
 
 const beacon =
@@ -70,6 +93,93 @@ const jsonLd = JSON.stringify({
     },
   ],
 });
+
+// --- Per-tool JSON-LD branch (change pgox) ---------------------------------
+// Mutually exclusive with the homepage branch above: a tool page can never be
+// `/`, and `/` never matches the tool-page regex. Parse pathname for the same
+// reason the homepage uses pathname (one consistent gate idiom in this file).
+const toolPageMatch = Astro.url.pathname.match(/^\/tools\/([^/]+)\/([^/]+)\/?$/);
+
+/** Reserved per-tool page slugs → display labels for the breadcrumb crumb.
+ *  A future docs-site page slug falls back to a title-cased segment so its
+ *  breadcrumb is still valid rather than blank. */
+const PAGE_LABELS: Record<string, string> = {
+  overview: 'Overview',
+  readme: 'Readme',
+  commands: 'Commands',
+};
+function pageLabel(slug: string): string {
+  return PAGE_LABELS[slug] ?? slug.charAt(0).toUpperCase() + slug.slice(1);
+}
+
+let toolJsonLd: string | null = null;
+if (toolPageMatch) {
+  const [, tool, page] = toolPageMatch;
+
+  // SoftwareApplication: name is the FILE SLUG (e.g. "run-kit"), not the binary.
+  // description is single-sourced from help/<tool>.json `root.short`.
+  const softwareApplication: Record<string, unknown> = {
+    '@type': 'SoftwareApplication',
+    name: tool,
+    applicationCategory: 'DeveloperApplication',
+    operatingSystem: 'macOS, Linux',
+    offers: { '@type': 'Offer', price: 0, priceCurrency: 'USD' },
+    url: `https://github.com/sahil87/${tool}`,
+  };
+
+  const helpPath = path.join(repoRootFromModuleUrl(import.meta.url), 'help', `${tool}.json`);
+  let raw: string | undefined;
+  try {
+    raw = fs.readFileSync(helpPath, 'utf8');
+  } catch (err) {
+    // MISSING (ENOENT) → omit `description` only, keep building. Anything else
+    // (e.g. EACCES) is a real fault — rethrow.
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
+  }
+  if (raw !== undefined) {
+    // PRESENT but invalid → let parse throw, wrapped with the filename, so the
+    // build FAILS (a committed malformed help file is a defect).
+    let doc;
+    try {
+      doc = HelpDocSchema.parse(JSON.parse(raw));
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      throw new Error(
+        `Head: invalid help document at ${helpPath} — does not match HelpDocSchema:\n${detail}`,
+      );
+    }
+    // Insert `description` after `name` for graph readability (key order is
+    // cosmetic in JSON-LD; consumers key by name, not position).
+    softwareApplication.description = doc.root.short;
+  }
+
+  // BreadcrumbList: all four `item` URLs absolute, derived from Astro.site —
+  // never hardcode the origin (`site: 'https://shll.ai'` is the single source).
+  const breadcrumbList = {
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: new URL('/', Astro.site).href },
+      { '@type': 'ListItem', position: 2, name: 'Tools', item: new URL('/tools/', Astro.site).href },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: tool,
+        item: new URL(`/tools/${tool}/overview/`, Astro.site).href,
+      },
+      {
+        '@type': 'ListItem',
+        position: 4,
+        name: pageLabel(page),
+        item: new URL(`/tools/${tool}/${page}/`, Astro.site).href,
+      },
+    ],
+  };
+
+  toolJsonLd = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@graph': [softwareApplication, breadcrumbList],
+  });
+}
 ---
 
 <Default />
@@ -79,4 +189,5 @@ const jsonLd = JSON.stringify({
 <meta property="og:image:alt" content={ogImageAlt} />
 <meta name="twitter:image" content={ogImage} />
 {isHomepage && <script type="application/ld+json" set:html={jsonLd} />}
+{toolJsonLd && <script type="application/ld+json" set:html={toolJsonLd} />}
 {import.meta.env.PROD && <Fragment set:html={beacon} />}
