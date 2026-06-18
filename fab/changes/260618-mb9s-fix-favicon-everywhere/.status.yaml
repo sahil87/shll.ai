@@ -1,0 +1,51 @@
+id: mb9s
+name: 260618-mb9s-fix-favicon-everywhere
+created: 2026-06-18T05:26:42Z
+created_by: sahil-noon
+change_type: fix
+issues: []
+progress:
+    intake: done
+    apply: done
+    review: done
+    hydrate: done
+    ship: active
+    review-pr: pending
+plan:
+    generated: true
+    task_count: 4
+    acceptance_count: 8
+    acceptance_completed: 8
+confidence:
+    certain: 3
+    confident: 3
+    tentative: 1
+    unresolved: 0
+    score: 4.1
+    fuzzy: true
+    dimensions:
+        signal: 87.1
+        reversibility: 80.7
+        competence: 83.0
+        disambiguation: 80.4
+stage_metrics:
+    intake: {started_at: "2026-06-18T05:26:42Z", driver: fab-new, iterations: 1, completed_at: "2026-06-18T05:36:40Z"}
+    apply: {started_at: "2026-06-18T05:36:40Z", driver: fab-fff, iterations: 1, completed_at: "2026-06-18T05:40:55Z"}
+    review: {started_at: "2026-06-18T05:40:55Z", driver: fab-fff, iterations: 1, completed_at: "2026-06-18T05:47:38Z"}
+    hydrate: {started_at: "2026-06-18T05:47:38Z", driver: fab-fff, iterations: 1, completed_at: "2026-06-18T05:50:30Z"}
+    ship: {started_at: "2026-06-18T05:50:30Z", driver: fab-fff, iterations: 1}
+prs: []
+change_type_source: explicit
+true_impact:
+    added: 0
+    deleted: 0
+    net: 0
+    excluding:
+        added: 0
+        deleted: 0
+        net: 0
+    computed_at: "2026-06-18T05:50:30Z"
+    computed_at_stage: hydrate
+summary: Set favicon explicitly and regenerated public/favicon.ico as a true multi-resolution ICO; documented in tool-page-rubric site-chrome section
+# true_impact: lazily created on first apply-finish (no placeholder here).
+last_updated: 2026-06-18T05:50:51Z

@@ -29,6 +29,12 @@ export default defineConfig({
     starlight({
       title: 'shll',
       description: 'The shll AI coding toolkit — 7 CLIs that play well together.',
+      // Explicit hexagon favicon. The .svg is emitted by default, but declaring
+      // it documents intent; the by-convention root /favicon.ico fallback (used by
+      // headless routes — robots.txt, sitemaps, the <meta refresh> redirect stubs)
+      // is the real multi-resolution ICO at public/favicon.ico (see
+      // scripts/generate-favicon-ico.mjs).
+      favicon: '/favicon.svg',
       customCss: ['./src/styles/terminal.css'],
       expressiveCode: {
         // Match Starlight's theme toggle: dark = terminal-dark, light = paper.
