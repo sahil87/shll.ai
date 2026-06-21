@@ -1,14 +1,14 @@
 {
   "tool": "wt",
-  "version": "v0.0.16",
-  "captured_at": "2026-06-20T08:21:31Z",
+  "version": "v0.0.17",
+  "captured_at": "2026-06-21T08:42:14Z",
   "schema_version": 1,
   "root": {
     "name": "wt",
     "path": "wt",
     "short": "Git worktree management — create, list, open, delete worktrees",
     "usage": "wt [flags]",
-    "text": "Git worktree management — create, list, open, delete worktrees.\n\nShell wrapper (recommended):\n  To enable the \"Open here\" menu option (cd into a worktree in the current\n  shell), add this to your shell profile (~/.bashrc or ~/.zshrc):\n\n    eval \"$(wt shell-init)\"\n\nUsage:\n  wt [command]\n\nAvailable Commands:\n  create      Create a git worktree\n  delete      Delete a git worktree\n  init        Run worktree init script\n  list        List all git worktrees\n  open        Open a directory or worktree in an application\n  shell-init  Output shell wrapper function for eval\n  update      self-update the wt binary via Homebrew\n\nFlags:\n  -h, --help      help for wt\n  -v, --version   version for wt\n\nUse \"wt [command] --help\" for more information about a command.",
+    "text": "Git worktree management — create, list, open, delete worktrees.\n\nShell wrapper (recommended):\n  To enable the \"Open here\" menu option (cd into a worktree in the current\n  shell), add this to your shell profile (~/.bashrc or ~/.zshrc):\n\n    eval \"$(wt shell-init)\"\n\nUsage:\n  wt [command]\n\nAvailable Commands:\n  create      Create a git worktree\n  delete      Delete a git worktree\n  go          Select a worktree of the current repo and navigate there\n  init        Run worktree init script\n  list        List all git worktrees\n  open        Open a directory or worktree in an application\n  shell-init  Output shell wrapper function for eval\n  update      self-update the wt binary via Homebrew\n\nFlags:\n  -h, --help      help for wt\n  -v, --version   version for wt\n\nUse \"wt [command] --help\" for more information about a command.",
     "commands": [
       {
         "name": "create",
@@ -24,6 +24,14 @@
         "short": "Delete a git worktree",
         "usage": "wt delete [worktree-names...] [flags]",
         "text": "Delete one or more git worktrees with optional branch cleanup.\n\nPositional arguments are interpreted as worktree names to delete.\nResolution order: --stale, --delete-all, positional args, --worktree-name (deprecated), current worktree, interactive selection.\n\nUsage:\n  wt delete [worktree-names...] [flags]\n\nFlags:\n      --delete-all             Delete all worktrees\n      --delete-branch string   Delete associated branch: true, false, or auto (default: auto — deletes only when branch matches worktree name)\n      --delete-remote string   Delete remote branch: true (default) or false\n  -h, --help                   help for delete\n      --non-interactive        No prompts, use defaults\n      --stale string[=\"7d\"]    Select idle worktrees (filesystem mtime older than the threshold) for deletion. Bare --stale uses the 7d default; --stale=Nd overrides (e.g. --stale=30d). The '=' is required.\n  -s, --stash                  Stash uncommitted changes before deleting",
+        "commands": []
+      },
+      {
+        "name": "go",
+        "path": "wt go",
+        "short": "Select a worktree of the current repo and navigate there",
+        "usage": "wt go [name] [flags]",
+        "text": "Select a worktree of the current repository and navigate there.\n\nUnlike \"wt open\", \"wt go\" does not launch any application — it only changes the\nshell's working directory to the selected worktree (open=launcher, go=selector).\n\nWhen called without arguments, shows a worktree-selection menu for the current\nrepo (newest-first, branch shown per entry). The menu is reachable from anywhere\nin the repository — the main repo or inside another worktree.\n\nWhen called with a name, resolves it as a worktree (case-insensitive) and\nnavigates there directly, with no menu.\n\nNavigation reuses the same shell-cd plumbing as the \"Open here\" launcher option:\nthe resolved absolute path is written to WT_CD_FILE (when set) and also printed\nto stdout as the last line, so both the shell wrapper (eval \"$(wt shell-init)\")\nand the scripting form (cd \"$(command wt go some-name)\") work.\n\nRequires a git repository — worktree resolution walks the repo's worktree list.\n\nUsage:\n  wt go [name] [flags]\n\nFlags:\n  -h, --help              help for go\n      --non-interactive   No prompts; require a worktree name",
         "commands": []
       },
       {
@@ -47,7 +55,7 @@
         "path": "wt open",
         "short": "Open a directory or worktree in an application",
         "usage": "wt open [name|path] [flags]",
-        "text": "Open a directory in a detected application (editor, terminal, file manager).\n\nWhen called without arguments from a worktree, opens the current worktree.\nWhen called without arguments from the main repo, shows a worktree-selection menu.\nWhen called without arguments from a non-git directory, opens the current working directory.\n\nPath arguments are accepted regardless of git context. Worktree-name resolution\nrequires a git repository.\n\nUsage:\n  wt open [name|path] [flags]\n\nFlags:\n      --app string   Open in specified app, skipping the menu\n  -h, --help         help for open",
+        "text": "Open a directory in a detected application (editor, terminal, file manager).\n\nWhen called without arguments from a worktree, opens the current worktree.\nWhen called without arguments from the main repo, shows a worktree-selection menu.\nWhen called without arguments from a non-git directory, opens the current working directory.\n\nPath arguments are accepted regardless of git context. Worktree-name resolution\nrequires a git repository.\n\nWith --go, \"wt open\" first performs \"wt go\"'s worktree selection (a menu when no\nname is given, or resolve-by-name when a name is given) and then launches the\nselected worktree — composing the selector and the launcher. --go requires a git\nrepository and composes with --app.\n\nUsage:\n  wt open [name|path] [flags]\n\nFlags:\n      --app string   Open in specified app, skipping the menu\n      --go           Select a worktree (menu or by name) first, then launch it\n  -h, --help         help for open",
         "commands": []
       },
       {
