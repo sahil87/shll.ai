@@ -1,7 +1,7 @@
 {
   "tool": "rk",
-  "version": "v2.3.10",
-  "captured_at": "2026-06-24T08:21:23Z",
+  "version": "v2.3.11",
+  "captured_at": "2026-06-25T08:21:47Z",
   "schema_version": 1,
   "root": {
     "name": "rk",
