@@ -5,6 +5,25 @@ description: Why these tools exist and what they refuse to do.
 
 The shll toolkit is built on a few opinions about how AI-assisted coding should work. Not all of them are universal — they're choices, with tradeoffs.
 
+## Not a coding agent — a layer above one
+
+shll is not another coding agent, and it doesn't want to be. It's the workflow layer that sits *above* the agent you already use. The coding agent writes the code; shll handles everything around it — capturing the idea, writing the plan, isolating the work, and watching the session.
+
+It's analogous to how GitHub Actions didn't replace Git — it organized and automated the work around it. shll doesn't compete with Claude Code, Codex, or Cursor; it organizes and scales how you use them. Switch agents tomorrow and the toolkit comes with you.
+
+## Who it's for
+
+This is workflow infrastructure, and infrastructure earns its weight at scale. If you're just getting started with AI coding, you don't need it yet — learn to collaborate with a single agent first, and reach for shll when the workflow around that agent starts to hurt.
+
+It starts to pay off when you:
+
+- work in large repositories
+- run more than one coding agent, or more than one feature, in parallel
+- want a written plan before any code gets written
+- want that plan, and the backlog and the cost trail, stored in Git as plain files
+
+If none of that is true yet, the toolkit is overkill — and saying so is part of the point.
+
 ## Plain text, not databases
 
 Every persistent artifact in this toolkit is a file you can `cat`, `grep`, and `git diff`. The backlog (`idea`) is a markdown file. Plans (`fab-kit`) are markdown files. Worktree state (`wt`) lives in your filesystem. Cost data (`tu`) is JSON you can dump.
