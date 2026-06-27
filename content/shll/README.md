@@ -2,7 +2,7 @@ One command to install, update, and shell-wire every tool in the [@sahil87 toolk
 
 ## Why shll?
 
-- **One-shot install** — `shll install` runs `brew install sahil87/tap/<formula>` for every roster tool you don't already have. Idempotent and safe to re-run.
+- **One-shot install** — `shll install` records per-formula Homebrew trust and then runs `brew install sahil87/tap/<formula>` for every roster tool you don't already have. Idempotent and safe to re-run.
 - **One-line shell integration** — `shll shell-setup` appends a single eval line to your rc file that wires up `hop`, `wt`, and any future toolkit shell-init in one block. No more managing four eval lines.
 - **One update for everything** — `shll update` runs `brew update` once, then upgrades every installed roster tool in sequence. Skips ones you don't have. Skips itself if it wasn't installed via brew.
 - **Paste-friendly version dump** — `shll version` prints one row per tool, ideal for bug reports.
@@ -16,27 +16,32 @@ Per-tool CLIs continue to work standalone — `shll` wraps them, it does not rep
 From a clean machine to a fully wired toolkit:
 
 ```sh
-brew install sahil87/tap/shll       # or: brew install sahil87/tap/all
-shll install                        # brew-installs every roster tool you're missing
-shll shell-setup --trust-tap        # wire your shell + record trust for sahil87/tap
-exec $SHELL                         # reload so the shell integration takes effect
+brew trust --formula sahil87/tap/shll            # bootstrap: trust shll
+brew install sahil87/tap/shll                    # bootstrap: install shll itself
+shll install                                     # trusts (per-formula) + installs the other 6
+shll shell-setup                                 # rc wiring
+exec $SHELL                                      # reload so the shell integration takes effect
 ```
 
 That's it. `hop`, `wt`, and the other tools are now installed and their shell integration is live.
 
-For the deeper install guide — brew vs the `all` meta-formula, from-source builds, the full `shll shell-setup` rc-wiring, and the tap-trust matrix — see [docs/site/install.md](docs/site/install.md).
+The first line is a one-time **bootstrap**: shll can't trust its own formula before it exists, so you trust-and-install `shll` itself with brew directly. From there, `shll install` owns trust for the other six tools — it runs `brew trust --formula sahil87/tap/<formula>` before each install (drop the trust step with `--no-trust` if you manage trust yourself). Prefer it as one chained line? `brew trust --formula sahil87/tap/shll && brew install sahil87/tap/shll && shll install && shll shell-setup && exec $SHELL`.
 
-`--trust-tap` records genuine Homebrew trust for `sahil87/tap` so brew stops nagging about non-official taps — drop it (`shll shell-setup`) to leave brew's tap-trust posture unchanged. See [`--trust-tap`](#--trust-tap--resolve-the-homebrew-tap-trust-warning) for what it does and the side effects, or [Troubleshooting](#tap-sahil87tap-is-allowed-by-default-warning) for the lighter alternatives.
+> **Why `brew trust` first?** Homebrew 6.0 made tap-trust a **hard install requirement** (it defaults `HOMEBREW_REQUIRE_TAP_TRUST=1`). shll's tap formulae download a binary and run a sandboxed `def install` (not a bottle pour), and that sandboxed step re-checks trust against a real persisted trust record — so naming the formula on the CLI is not enough; you must trust it first. Requires **Homebrew ≥ 6.0.4** (an earlier 6.0.x Linux sandbox bug is fixed there); if you're on 6.0.0–6.0.3, run `brew update` first. See [Troubleshooting](#tap-sahil87tap-must-be-trusted-before-install) for the full explanation.
+
+For the deeper install guide — brew vs the `all` meta-formula, from-source builds, the full `shll shell-setup` rc-wiring, and the tap-trust details — see [docs/site/install.md](docs/site/install.md).
 
 ## Install
 
 ```sh
-brew install sahil87/tap/shll
+brew trust --formula sahil87/tap/shll && brew install sahil87/tap/shll
 ```
 
-`shll` is also installed transitively via the `all` meta-formula (`brew install sahil87/tap/all`), which pulls in every roster tool at once.
+The `brew trust` is required on Homebrew 6.0+ (which defaults to requiring explicit tap trust) — shll's formula runs a sandboxed install that needs a real trust record. Requires Homebrew ≥ 6.0.4; on 6.0.0–6.0.3, `brew update` first.
 
-For the full guide — brew vs `all`, from-source builds, shell wiring, and the `--trust-tap` ceremony — see [docs/site/install.md](docs/site/install.md).
+`shll` is also installed transitively via the `all` meta-formula (`brew trust --formula sahil87/tap/all && brew install sahil87/tap/all`), which pulls in every roster tool at once.
+
+For the full guide — brew vs `all`, from-source builds, shell wiring, and the tap-trust details — see [docs/site/install.md](docs/site/install.md).
 
 ### From source
 
@@ -53,14 +58,17 @@ Builds the binary and copies it to `~/.local/bin/shll`. Make sure that directory
 ### `shll install` — bootstrap missing tools
 
 ```sh
-shll install                 # install every missing roster tool
+shll install                 # trust + install every missing roster tool
 shll install hop wt          # install only a named subset
+shll install --no-trust      # skip the per-formula trust step
 shll install --dry-run       # preview the brew install plan, change nothing
 ```
 
-Iterates the roster in leaves-first order (`wt`, `idea`, `tu`, `rk`, `hop`, `fab-kit`) and runs `brew install sahil87/tap/<formula>` for each one that's missing. Already-installed tools are skipped silently. Does NOT upgrade — use `shll update` for that.
+Iterates the roster in leaves-first order (`wt`, `idea`, `tu`, `rk`, `hop`, `fab-kit`) and, for each one that's missing, records per-formula Homebrew trust (`brew trust --formula sahil87/tap/<formula>`) **before** running `brew install sahil87/tap/<formula>`. Homebrew 6.0 makes tap-trust a hard install requirement, so this is what lets the install proceed; `brew trust` is idempotent, so re-runs stay clean. Already-installed tools are skipped silently. Does NOT upgrade — use `shll update` for that.
 
-Pass one or more tool names to install only that subset (processed in roster order regardless of arg order); an unknown name is a hard error. Unlike `shll update`, `shll` itself is NOT a valid install target — you can't brew-install the running orchestrator. `--dry-run` runs the read-only install-status probes, prints the exact `brew install` commands the real run would execute, then exits without installing anything.
+Pass `--no-trust` to skip the trust step entirely (for users who manage trust themselves). If your Homebrew is too old to ship `brew trust` (pre-6.0, where trust isn't required anyway), the trust step is skipped gracefully and the install proceeds.
+
+Pass one or more tool names to install only that subset (processed in roster order regardless of arg order); an unknown name is a hard error. Unlike `shll update`, `shll` itself is NOT a valid install target — you can't brew-install the running orchestrator (it's the one-time bootstrap `brew trust --formula sahil87/tap/shll && brew install sahil87/tap/shll`). `--dry-run` runs the read-only install-status probes, prints the exact `brew install` commands the real run would execute, then exits without installing anything.
 
 Each install prints a `[N/M]` progress header, and a timing summary tail closes the run.
 
@@ -87,11 +95,10 @@ Each tool gets a `[N/M]` progress header, and a timing summary tail (`Done — N
 shll shell-setup              # auto-detect shell, append eval block to your rc file
 shll shell-setup --print      # dry-run: print the block to stdout, modify nothing
 shll shell-setup --uninstall  # clean removal of the block
-shll shell-setup --trust-tap  # also record genuine Homebrew trust for sahil87/tap
 shll shell-setup --rc-file ~/.zshrc.local   # override the target path
 ```
 
-The appended block is sentinel-wrapped and idempotent — re-running is a no-op when the lines are already present:
+`shell-setup` is **pure rc-wiring** — it maintains only the eval line and touches no Homebrew state. (Tap trust lives in `shll install`, which trusts each formula it installs; there is no `--trust-tap` flag.) The appended block is sentinel-wrapped and idempotent — re-running is a no-op when the line is already present:
 
 ```sh
 # >>> shll >>>
@@ -101,23 +108,7 @@ eval "$(shll shell-init zsh)"
 
 The rc file is opened with plain `O_APPEND`, so dotfile-manager symlinks (chezmoi, dotbot, stow, yadm) are preserved. Default targets: `${ZDOTDIR:-$HOME}/.zshrc` for zsh, `$HOME/.bash_profile` (macOS) or `$HOME/.bashrc` (Linux) for bash.
 
-#### `--trust-tap` — resolve the Homebrew tap-trust warning
-
-`--trust-tap` is not a mode — it **composes** with the default, `--print`, and `--uninstall` paths. On a normal install it does the full genuine-trust setup in one command:
-
-1. Runs `brew trust --tap sahil87/tap` (Homebrew's own trust ceremony — idempotent, safe to re-run).
-2. Adds `export HOMEBREW_REQUIRE_TAP_TRUST=1` to the shll block, so brew enforces explicit trust:
-
-```sh
-# >>> shll >>>
-export HOMEBREW_REQUIRE_TAP_TRUST=1
-eval "$(shll shell-init zsh)"
-# <<< shll <<<
-```
-
-It works whether or not you've already run `shll shell-setup` — the export line is merged into your existing block (no duplicates, no second block). `--trust-tap --print` shows the resulting combined block without touching anything. `--uninstall` removes the whole block (both lines) but does **not** run `brew untrust` — the trust record is inert without the policy line and harmless to leave; reverse it yourself with `brew untrust --tap sahil87/tap` if you want.
-
-If your Homebrew is too old to ship `brew trust` (or brew isn't installed), `--trust-tap` degrades gracefully: it writes the eval line so you still get shell integration, **skips** the export line (setting it without a trust record would make brew *block* the tap), and tells you about the lighter env-var alternatives below.
+> **Upgrading from an older shll?** If a previous `shll shell-setup --trust-tap` left an `export HOMEBREW_REQUIRE_TAP_TRUST=1` line in your block, the next `shll shell-setup` run cleans it out automatically (the block is rewritten to the eval line only). That export merely re-set Homebrew 6.0's default and was never what unblocked installs — the `brew trust` record is. `--uninstall` removes the whole block as before.
 
 ### `shll shell-init <shell>` — composed shell-init
 
@@ -190,9 +181,9 @@ hop      OK  v0.1.16  wired
 fab-kit  OK  v2.1.1
 ```
 
-`shll` leads with an always-OK row (it's the running binary; version from the build, no wiring check), then for every roster tool `doctor` checks that (1) the binary is on `PATH`, (2) it reports a version (so a half-installed or stale brew link is caught), and (3) — for the tools that ship shell integration (`wt`, `tu`, `hop`) — shll's composed eval block is present in your rc file. Each tool gets one line with an `OK` / `WARN` / `FAIL` marker, and every non-OK line carries an actionable suggestion (e.g. `run 'brew install …'`, or `not wired — run 'shll shell-setup' then 'exec $SHELL'`). The always-OK `shll` row never affects the exit code or the problem count (a single roster failure still reads `1 of 6`, never `1 of 7`).
+`shll` leads with an always-OK row (it's the running binary; version from the build, no wiring or trust check), then for every roster tool `doctor` checks that (1) the binary is on `PATH`, (2) it reports a version (so a half-installed or stale brew link is caught), (3) its Homebrew formula is **trusted** (so a future `brew upgrade` won't be refused on Homebrew 6.0+), and (4) — for the tools that ship shell integration (`wt`, `tu`, `hop`) — shll's composed eval block is present in your rc file. Each tool gets one line with an `OK` / `WARN` / `FAIL` marker, and every non-OK line carries an actionable suggestion (e.g. `run 'brew install …'`; `formula not trusted — run 'shll install' …`; or `not wired — run 'shll shell-setup' then 'exec $SHELL'`). The always-OK `shll` row never affects the exit code or the problem count (a single roster failure still reads `1 of 6`, never `1 of 7`).
 
-A missing or non-running binary is `FAIL`; an installed-but-unwired tool is `WARN` (it still works when invoked directly). `doctor` is strictly **read-only** — it never installs, upgrades, or edits your rc file — and it **exits non-zero if any tool is FAIL**, so it's scriptable in CI. Pass `--json` for a machine-readable array (one object per tool) under the same checks and exit contract.
+A missing or non-running binary is `FAIL`; an installed-but-untrusted or installed-but-unwired tool is `WARN` (it still works when invoked directly — but an untrusted tool's next upgrade will be refused). The trust sub-check queries `brew trust --json=v1` read-only (it never reads `~/.homebrew/trust.json` directly) and is skipped silently when your Homebrew is too old to ship `brew trust`. `doctor` is strictly **read-only** — it never installs, upgrades, trusts, or edits your rc file — and it **exits non-zero if any tool is FAIL**, so it's scriptable in CI. Pass `--json` for a machine-readable array (one object per tool) under the same checks and exit contract.
 
 ## How composition works
 
@@ -200,7 +191,7 @@ shll has no state, no database, and no special knowledge of the tools it wraps. 
 
 | `shll` command | What it actually runs |
 |----------------|------------------------|
-| `shll install` | `brew install sahil87/tap/<formula>` per missing tool |
+| `shll install` | `brew trust --formula sahil87/tap/<formula>` then `brew install sahil87/tap/<formula>` per missing tool (`--no-trust` skips the trust step) |
 | `shll update` | `brew update --quiet` once, self-upgrade, then each installed tool's own `update` (delegated; `brew upgrade` fallback only when a tool has no `update`) |
 | `shll shell-init zsh` | concatenates the stdout of each installed tool's `<tool> shell-init zsh` |
 | `shll version` | invokes `<tool> --version` per tool, formats as a table |
@@ -211,36 +202,31 @@ Per Constitution Principle IV (Composition, Not Replacement): `hop update`, `wt 
 
 ## Troubleshooting
 
-### "Tap sahil87/tap is allowed by default" warning
+### "Tap sahil87/tap must be trusted" before install
 
-Running `shll update` (or any shll command that touches brew) may print something like:
+On **Homebrew 6.0+**, trusting `sahil87/tap` is a **hard install requirement**, not an advisory warning. Homebrew now defaults `HOMEBREW_REQUIRE_TAP_TRUST=1`, so `brew install sahil87/tap/<formula>` is **refused** until a real trust record exists. If you skipped the bootstrap step, you'll see brew refuse the install (often as an opaque sandbox build failure rather than a clear "untrusted tap" message).
 
-```
-Warning: Tap sahil87/tap is allowed by default.
-Homebrew will require explicit trust for non-official taps in a future release.
-Set `HOMEBREW_REQUIRE_TAP_TRUST=1` to require explicit trust now or
-`HOMEBREW_NO_REQUIRE_TAP_TRUST=1` to keep allowing by default.
-Hide these hints with `HOMEBREW_NO_ENV_HINTS=1` (see `man brew`).
-```
+**Why naming the formula on the command line isn't enough.** Trust is checked in two places:
 
-**This is a Homebrew env-hint, not a shll error.** shll surfaces it only because it wraps `brew` — and because `shll update` shells out to brew several times (`brew update`, the shll self-upgrade, per-tool upgrades), the same hint can print **2–3×** per command. It means brew hasn't been told whether you trust the non-official `sahil87/tap`.
+1. At **formula-load** time, *outside* the sandbox — here naming the fully-qualified formula on the CLI (`sahil87/tap/shll`) is explicitly allowed.
+2. Again during the **sandboxed `install`** — and this re-check sees the formula's *path*, not the qualified name you typed, so the CLI-naming does **not** satisfy it. A persisted trust record is genuinely required.
 
-**Recommended fix — record genuine trust:**
+shll's tap formulae download a binary and run a sandboxed `def install` (they are **not** `bottle do` bottles — a true bottle *pour* runs no sandboxed install), so that second, sandboxed re-check always fires. That's why you must `brew trust` first.
+
+**The fix is the bootstrap + `shll install`:**
 
 ```sh
-shll shell-setup --trust-tap
+brew trust --formula sahil87/tap/shll && brew install sahil87/tap/shll   # one-time bootstrap for shll itself
+shll install                                                             # trusts (per-formula) + installs the other 6
 ```
 
-See [`shll shell-setup --trust-tap`](#--trust-tap--resolve-the-homebrew-tap-trust-warning) above for what this does (the `brew trust` ceremony, the `HOMEBREW_REQUIRE_TAP_TRUST=1` export, and how it composes with `--print`/`--uninstall`).
+`shll install` runs `brew trust --formula sahil87/tap/<formula>` before each install, so once you've bootstrapped `shll` it handles trust for the rest of the roster. `brew trust` is idempotent — re-running is safe.
 
-**Lighter alternatives (set these yourself if you prefer):**
+**Already installed everything but `shll update` / `brew upgrade` now gets refused?** A tool installed *outside* `shll install` (manually, or before this feature) may be untrusted, and Homebrew 6.0+ refuses its next upgrade. Run `shll doctor` — it flags any installed-but-untrusted tool with `WARN` — then re-run `shll install` (idempotent; it trusts and skips the already-installed tools) or `brew trust --formula sahil87/tap/<x>` directly.
 
-| Env var | Effect |
-|---------|--------|
-| `export HOMEBREW_NO_REQUIRE_TAP_TRUST=1` | Keep allowing non-official taps by default; stop nagging. Punts the trust decision. |
-| `export HOMEBREW_NO_ENV_HINTS=1` | Silence *all* brew env-hints (blunt — hides future hints too). |
+**Homebrew version floor.** This requires **Homebrew ≥ 6.0.4**. Homebrew 6.0.0–6.0.3 on Linux had a bubblewrap-sandbox bug that broke trusted installs; it's fixed in 6.0.4. If you're on an earlier 6.0.x, run `brew update` first.
 
-shll will **not** set these for you. Trusting a tap — or opting out of the warning — is your decision; `--trust-tap` only persists a choice you made by typing it.
+**`--no-trust`.** If you manage tap trust yourself, `shll install --no-trust` skips the per-formula trust step entirely and just runs the installs.
 
 ## Reference
 
