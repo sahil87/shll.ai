@@ -247,6 +247,7 @@ Run `fab doctor` to check all prerequisites (git, yq, direnv hook, etc.) and dia
 - **A stage fails mid-way** - run `/fab-continue` to resume from the last checkpoint. All stage artifacts are persisted, so no progress is lost.
 - **AI produces bad code** - the review sub-agent catches it. `/fab-ff` and `/fab-fff` auto-loop between apply and review (up to 3 cycles) before escalating to you.
 - **Abandon a change** - delete the change folder, or run `/fab-archive` to move it to the archive.
+- **You built something without Fab and opened a PR** - run `/fab-adopt` on the branch to bring it into the pipeline mid-flight. It reconstructs the intake and plan from the diff, runs review and hydrate (so `docs/memory/` stays the source of truth), and retro-fits the PR's `## Meta` block — only `apply` is marked skipped, since the code already exists.
 
 ## Why Fab Kit
 
@@ -390,6 +391,7 @@ Grades aggregate into a **confidence score** that gates `/fab-ff`. If ambiguity 
 | `/fab-ff` | Fast-forward through hydrate — confidence-gated, auto-rework loop |
 | `/fab-fff` | Fast-forward further through ship + PR review — same gates as ff |
 | `/fab-clarify` | Refine the current artifact — resolve gaps without advancing |
+| `/fab-adopt` | Adopt an off-pipeline change — reconstruct intake + plan from an open PR's branch diff, then run review, hydrate, and PR decoration retroactively |
 | `/fab-archive` | Archive a completed change (or restore an archived one) |
 | `/fab-proceed` | Context-aware orchestrator — detects state, runs setup steps, then delegates to `/fab-fff` |
 
@@ -451,11 +453,13 @@ Which pipeline stages each command covers. Taller bars = more automation. Read l
 | 🟦 Cyan | Explore (read-only) | `/fab-discuss` |
 | 🟧 Amber | Manual (single action) | `/fab-draft`, `/fab-switch`, `/fab-continue` |
 | ⬜ Blue-grey (dashed) | Git utilities | `/git-branch`, `/git-pr`, `/git-pr-review` |
-| 🟩 Green | Automated pipeline (multi-stage) | `/fab-new`, `/fab-ff`, `/fab-fff`, `/fab-proceed` |
+| 🟩 Green | Automated pipeline (multi-stage) | `/fab-new`, `/fab-ff`, `/fab-fff`, `/fab-proceed`, `/fab-adopt` |
 | ◻️ Grey | Fab pipeline stage (row label) | intake, change active, apply, review, hydrate |
 | ▶ | Typical entry point | `/fab-discuss`, `/fab-new` |
 
-![Stage coverage by command: a matrix of pipeline stages (rows) by command (columns), color-coded — cyan Explore, amber Manual, blue-grey dashed Git utilities, green Automated pipeline. fab-discuss covers context; fab-draft intake; fab-switch change active; git-branch branch name; fab-new intake/change active/branch name; fab-continue, fab-ff, fab-fff, fab-proceed each cover apply/review/hydrate; fab-fff and fab-proceed also ship and review-pr; git-pr ship; git-pr-review review-pr](https://raw.githubusercontent.com/sahil87/fab-kit/main/docs/img/stage-coverage.svg)
+![Stage coverage by command: a matrix of pipeline stages (rows) by command (columns), color-coded — cyan Explore, amber Manual, blue-grey dashed Git utilities, green Automated pipeline, hatched grey Stage skipped. fab-discuss covers context; fab-draft intake; fab-switch change active; git-branch branch name; fab-new intake/change active/branch name; fab-continue, fab-ff, fab-fff, fab-proceed each cover apply/review/hydrate; fab-fff and fab-proceed also ship and review-pr; git-pr ship; git-pr-review review-pr; fab-adopt enters mid-flight covering intake/review/hydrate/ship/review-pr with apply skipped](https://raw.githubusercontent.com/sahil87/fab-kit/main/docs/img/stage-coverage.svg)
+
+> `/fab-adopt` (rightmost column) enters the pipeline mid-flight on an existing branch/PR: it reconstructs intake from the diff and skips `apply` since the code already exists.
 
 <details>
 <summary>Mermaid source</summary>
@@ -464,17 +468,19 @@ Which pipeline stages each command covers. Taller bars = more automation. Read l
 
 **Quick reference** — which stages does each command cover?
 
-| Stage | `/fab-discuss` | `/fab-draft` | `/fab-switch` | `/git-branch` | `/fab-new` | `/fab-continue` | `/fab-ff` | `/git-pr` | `/git-pr-review` | `/fab-fff` | `/fab-proceed` |
-|-------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-| context | ✅ | | | | | | | | | | |
-| intake | | ✅ | | | ✅ | | | | | | ✅ |
-| change active | | | ✅ | | ✅ | | | | | | ✅ |
-| branch name | | | | ✅ | ✅ | | | | | | ✅ |
-| apply | | | | | | ✅ | ✅ | | | ✅ | ✅ |
-| review | | | | | | ✅ | ✅ | | | ✅ | ✅ |
-| hydrate | | | | | | ✅ | ✅ | | | ✅ | ✅ |
-| ship | | | | | | | | ✅ | | ✅ | ✅ |
-| review-pr | | | | | | | | | ✅ | ✅ | ✅ |
+| Stage | `/fab-discuss` | `/fab-draft` | `/fab-switch` | `/git-branch` | `/fab-new` | `/fab-continue` | `/fab-ff` | `/git-pr` | `/git-pr-review` | `/fab-fff` | `/fab-proceed` | `/fab-adopt` |
+|-------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| context | ✅ | | | | | | | | | | | |
+| intake | | ✅ | | | ✅ | | | | | | ✅ | ✅ |
+| change active | | | ✅ | | ✅ | | | | | | ✅ | ✅ |
+| branch name | | | | ✅ | ✅ | | | | | | ✅ | |
+| apply | | | | | | ✅ | ✅ | | | ✅ | ✅ | ⏭️ |
+| review | | | | | | ✅ | ✅ | | | ✅ | ✅ | ✅ |
+| hydrate | | | | | | ✅ | ✅ | | | ✅ | ✅ | ✅ |
+| ship | | | | | | | | ✅ | | ✅ | ✅ | ✅ |
+| review-pr | | | | | | | | | ✅ | ✅ | ✅ | ✅ |
+
+`/fab-adopt` enters the pipeline mid-flight on an existing branch/PR: it reconstructs intake from the diff and runs review → hydrate → ship → review-pr, but marks `apply` **skipped** (⏭️) since the code already exists.
 
 ## Companion tools
 
