@@ -1,13 +1,13 @@
 ---
 title: run-kit
-description: Browser dashboard for tmux + Claude Code workspaces. Mobile-friendly via Tailscale.
+description: An agent-agnostic remote console for your tmux — every session and pane as a live terminal, in the browser and on your phone.
 ---
 
 import GithubButton from '../../../../components/GithubButton.astro';
 
 <GithubButton tool="run-kit" />
 
-`run-kit` is a browser dashboard for tmux and Claude Code workspaces — one place to watch every AI coding agent you have running. `rk riff` spawns agents in parallel git worktrees; `rk serve` opens the dashboard that lets you watch them all, from your desk or your phone (mobile-friendly over Tailscale). When you're running many agents at once, `run-kit` is the cross-session view that turns a wall of tmux panes into a single screen.
+`run-kit` is an agent-agnostic remote console for your tmux — every session and pane as a live terminal, in a sidebar, from your desk or your phone (mobile-friendly over Tailscale). It never wraps what's in the pane: a pane is equally an AI coding agent, a dev server, a REPL, or an ssh session. `rk riff` spawns each parallel workspace in its own git worktree; `rk serve` opens the dashboard that watches them all. Because it exposes your tmux rather than any one agent's protocol, it outlives whatever coding agent you're running this month.
 
 ## How it fits
 
