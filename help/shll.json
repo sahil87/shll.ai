@@ -1,15 +1,23 @@
 {
   "tool": "shll",
-  "version": "v0.0.18",
-  "captured_at": "2026-07-02T08:19:03Z",
+  "version": "v0.0.20",
+  "captured_at": "2026-07-04T09:29:59Z",
   "schema_version": 1,
   "root": {
     "name": "shll",
     "path": "shll",
     "short": "meta-CLI for the sahil87 toolkit",
     "usage": "shll [flags]",
-    "text": "shll — meta-CLI for the sahil87 toolkit.\n\nshll composes operations that span every per-tool CLI (hop, wt, fab-kit, rk, tu, idea)\nso you have one entry point for cross-toolkit concerns.\n\nSubcommands:\n  shll doctor                 verify every sahil87 tool is installed, runnable, and wired (read-only)\n  shll install                brew install every sahil87 tool that isn't already installed\n  shll update                 brew update + brew upgrade for shll and every installed sahil87 tool\n  shll shell-init <shell>     emit a single eval-safe shell-init blob for all installed tools\n  shll shell-setup [shell]    append the shell-init eval line to your rc file (idempotent)\n  shll version                print versions of shll and every installed sahil87 tool\n  shll list                   list the managed sahil87 tools with install status and repo links\n\nPer-tool CLIs continue to work standalone — shll wraps them, it does not replace them.\n\nUsage:\n  shll [command]\n\nAvailable Commands:\n  doctor      verify every sahil87 tool is installed, runnable, and wired\n  install     brew install every sahil87 tool that isn't already installed\n  list        list the sahil87 tools shll manages, with install status and repo links\n  shell-init  emit composed shell-init for all installed sahil87 tools\n  shell-setup append the shll shell-init eval line to your rc file\n  update      brew update + per-tool update for shll and every installed sahil87 tool\n  version     print versions of shll and every installed sahil87 tool\n\nFlags:\n  -h, --help      help for shll\n  -v, --version   version for shll\n\nUse \"shll [command] --help\" for more information about a command.\n",
+    "text": "shll — meta-CLI for the sahil87 toolkit.\n\nshll composes operations that span every per-tool CLI (hop, wt, fab-kit, rk, tu, idea)\nso you have one entry point for cross-toolkit concerns.\n\nSubcommands:\n  shll doctor                 verify every sahil87 tool is installed, runnable, and wired (read-only)\n  shll install                brew install every sahil87 tool that isn't already installed\n  shll update                 brew update + brew upgrade for shll and every installed sahil87 tool\n  shll changelog              show release notes for sahil87 tools (what an update would bring)\n  shll shell-init <shell>     emit a single eval-safe shell-init blob for all installed tools\n  shll shell-setup [shell]    append the shell-init eval line to your rc file (idempotent)\n  shll version                print versions of shll and every installed sahil87 tool\n  shll list                   list the managed sahil87 tools with install status and repo links\n\nPer-tool CLIs continue to work standalone — shll wraps them, it does not replace them.\n\nUsage:\n  shll [command]\n\nAvailable Commands:\n  changelog   show release notes for sahil87 tools (what an update would bring)\n  doctor      verify every sahil87 tool is installed, runnable, and wired\n  install     brew install every sahil87 tool that isn't already installed\n  list        list the sahil87 tools shll manages, with install status and repo links\n  shell-init  emit composed shell-init for all installed sahil87 tools\n  shell-setup append the shll shell-init eval line to your rc file\n  update      brew update + per-tool update for shll and every installed sahil87 tool\n  version     print versions of shll and every installed sahil87 tool\n\nFlags:\n  -h, --help      help for shll\n  -v, --version   version for shll\n\nUse \"shll [command] --help\" for more information about a command.\n",
     "commands": [
+      {
+        "name": "changelog",
+        "path": "shll changelog",
+        "short": "show release notes for sahil87 tools (what an update would bring)",
+        "usage": "shll changelog [tool[@old..new]]... [flags]",
+        "text": "Show GitHub release notes for sahil87 tools.\n\nWith no arguments, shll changelog shows the pending releases for every installed\ntool (its installed version → the latest release) — \"what would an update bring?\".\nName one or more tools to scope it; add an explicit range with `tool@old..new`\nto show the releases in `(old, new]` regardless of what is installed.\n\n  shll changelog                          all installed tools: installed → latest\n  shll changelog tu                       one tool: installed → latest\n  shll changelog tu@0.6.2..0.6.4          explicit range (releases in (0.6.2, 0.6.4])\n  shll changelog tu@0.6.2..0.6.4 hop@0.1.16..0.1.18\n\nValid tool names are the roster names plus shll itself. Versions are accepted with\nor without a leading v. Release data is fetched from GitHub, unauthenticated; if a\nfetch fails the entry degrades to a compare URL and the command still exits 0.\n\nUsage:\n  shll changelog [tool[@old..new]]... [flags]\n\nFlags:\n  -h, --help   help for changelog\n",
+        "commands": []
+      },
       {
         "name": "doctor",
         "path": "shll doctor",
