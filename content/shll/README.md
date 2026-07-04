@@ -85,7 +85,20 @@ Runs `brew update --quiet` once, then `brew upgrade sahil87/tap/shll` (when shll
 
 Pass one or more tool names to scope the run to a subset (valid targets: `shll`, `wt`, `idea`, `tu`, `rk`, `hop`, `fab-kit`), processed in roster order regardless of arg order. A named-but-not-installed target is a hard error here (unlike the whole-roster sweep, which silently skips it). `--dry-run` runs the read-only probes, prints the exact commands the real run would execute (`shll (self)` first when brew-installed), then exits without writing anything.
 
-Each tool gets a `[N/M]` progress header, and a timing summary tail (`Done — N of M tools succeeded in <dur>.`) closes the run.
+Each tool gets a `[N/M]` progress header, and a timing summary tail (`Done — N of M tools succeeded in <dur>.`) closes the run. After the tail, a compact **"What changed:"** digest lists the release-note titles for every tool that actually bumped, followed by a copy-pasteable `shll changelog` command for the full notes.
+
+### `shll changelog` — release notes for the toolkit
+
+```sh
+shll changelog                          # all installed tools: installed → latest ("what would an update bring?")
+shll changelog tu                       # one tool: installed → latest
+shll changelog tu@0.6.2..0.6.4          # explicit range: releases in (0.6.2, 0.6.4]
+shll changelog tu@0.6.2..0.6.4 hop@0.1.16..0.1.18   # multiple tools (this is what `shll update` prints)
+```
+
+Fetches each tool's GitHub release notes (unauthenticated, via the public API) and prints them newest-first: a per-tool `{tool} {old} → {new} ({N} releases)` header followed by each release's tag, title, and full "What's Changed" body. With no arguments it previews the pending releases for every installed tool (shll itself first) — its installed version → the latest release. Name one or more tools to scope it, or add an explicit `tool@old..new` range (which works regardless of what's installed). Versions are accepted with or without a leading `v`.
+
+Valid targets are the roster names plus `shll` itself. A no-range form needs Homebrew to read the installed version; an explicit range skips brew entirely. If a fetch fails (rate limit, network), that tool degrades to a `Full Changelog` compare URL and the command still exits 0 (Constitution V — graceful degradation). Output is capped at the 10 most recent releases per tool, with a compare URL for the overflow.
 
 ### `shll shell-setup` — wire the rc file (recommended)
 
@@ -193,6 +206,7 @@ shll has no state, no database, and no special knowledge of the tools it wraps. 
 |----------------|------------------------|
 | `shll install` | `brew trust --formula sahil87/tap/<formula>` then `brew install sahil87/tap/<formula>` per missing tool (`--no-trust` skips the trust step) |
 | `shll update` | `brew update --quiet` once, self-upgrade, then each installed tool's own `update` (delegated; `brew upgrade` fallback only when a tool has no `update`) |
+| `shll changelog` | fetches each tool's GitHub releases (public API), filters to the requested version range, renders the notes |
 | `shll shell-init zsh` | concatenates the stdout of each installed tool's `<tool> shell-init zsh` |
 | `shll version` | invokes `<tool> --version` per tool, formats as a table |
 | `shll list` | probes each tool's install status, renders the roster (name, description, repo) |
