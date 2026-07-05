@@ -44,6 +44,7 @@ import path from 'node:path';
 import { HelpDocSchema, type Node, type HelpDoc } from '../lib/schemas.ts';
 import { parseHelp, commandSlug, type ParsedFlag } from '../lib/parse-help.ts';
 import { repoRootFromModuleUrl } from '../lib/repo-root.ts';
+import { normalizeVersion } from '../lib/version.ts';
 
 interface Props {
   /** Tool slug — names the help file at `<repo-root>/help/<tool>.json`. */
@@ -318,6 +319,15 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
             show-raw toggles the raw -h blocks — independent of each other. Pure DOM
             toggles, no data, no re-render (Constitution I). */}
         <div class="cmd-toolbar-actions">
+          {/* Provenance: which binary version this reference was generated
+              from. `version` is what the captured binary itself reported;
+              `captured_at` is the puller's stamp (hover shows the full
+              timestamp). Sits left of the action buttons via
+              margin-inline-end:auto. */}
+          <span class="cmd-version" title={`help captured ${doc!.captured_at}`}>
+            <code>{doc!.tool}</code>{' '}{normalizeVersion(doc!.version)} · captured{' '}
+            {doc!.captured_at.slice(0, 10)}
+          </span>
           <button type="button" class="cmd-toolbar-btn" data-cmd-expand-all>
             expand all
           </button>
@@ -478,6 +488,20 @@ const hasFlags = visibleFlags.length + visibleGlobalFlags.length > 0;
     /* Right-align the cluster; wrap on narrow widths. */
     justify-content: flex-end;
     flex-wrap: wrap;
+  }
+  /* Provenance line — pushed to the start of the actions row; the buttons stay
+     right-aligned. Wraps above them on narrow widths (flex-wrap above). */
+  .cmd-version {
+    margin-inline-end: auto;
+    align-self: center;
+    color: var(--c-fg-dim);
+    font-size: 0.8rem;
+  }
+  .cmd-version code {
+    color: var(--c-accent);
+    background: var(--c-surface-2);
+    padding: 0.05em 0.3em;
+    border-radius: 2px;
   }
   .cmd-toolbar-btn {
     font: inherit;

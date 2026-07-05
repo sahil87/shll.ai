@@ -21,6 +21,12 @@ name: 'Refresh: Help'
 #     exits 0 AND emits parseable JSON. A failing tool keeps its last-good
 #     committed file. A MISSING help/tu.json is the expected interim state
 #     (tu's help-dump is in progress), not a failure.
+#   - STALENESS GATE (counterweight to the isolation above): a tool that fails
+#     EVERY run silently serves aging last-good help while runs stay green. The
+#     final step fails the run loudly when any committed help/*.json has a
+#     captured_at older than MAX_AGE_DAYS. It runs AFTER commit + deploy, so a
+#     stale tool never blocks fresh captures from landing — the red run is the
+#     alert, not a gate on the data.
 #   - DRIVES THE DEPLOY VIA workflow_dispatch (only on a real commit): a push
 #     made with the default GITHUB_TOKEN does NOT trigger deploy.yml's on:push
 #     (GitHub's recursion guard), so after committing a real change this workflow
@@ -83,6 +89,16 @@ jobs:
           echo "HOMEBREW_PREFIX=$HOMEBREW_PREFIX" >> "$GITHUB_ENV"
           echo "HOMEBREW_CELLAR=$HOMEBREW_CELLAR" >> "$GITHUB_ENV"
           echo "HOMEBREW_REPOSITORY=$HOMEBREW_REPOSITORY" >> "$GITHUB_ENV"
+          # Homebrew's tap-trust gate: `brew install sahil87/tap/<formula>`
+          # auto-trusts the REQUESTED formula, but refuses to load a DEPENDENCY
+          # formula from an untrusted tap. hop and fab-kit both depend on
+          # sahil87/tap/wt, so their installs failed ("Refusing to load formula
+          # sahil87/tap/wt from untrusted tap") from 2026-06-18 until this fix —
+          # silently pinning their last-good help files (see the staleness gate
+          # below). Tap + trust once up front so dependency resolution works
+          # for every tool.
+          brew tap sahil87/tap
+          brew trust sahil87/tap
 
       # Capture each tool independently. THREE distinct names per tool, which are
       # NOT always equal — conflating them is a real bug (run-kit's formula is
@@ -264,3 +280,38 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run deploy.yml --ref main
+
+      # STALENESS GATE. Per-tool failure isolation (above) means a tool whose
+      # install/dump keeps failing quietly pins its last-good file forever —
+      # every run stays green while the site serves aging help (exactly how the
+      # brew tap-trust regression kept hop/fab-kit frozen for 18 days in June
+      # 2026, unnoticed). Fail the run loudly when any committed help/*.json has
+      # a captured_at older than MAX_AGE_DAYS. captured_at is re-stamped on
+      # every SUCCESSFUL capture (even when the help text is unchanged), so its
+      # age is precisely "days since this tool last captured cleanly".
+      #
+      # Deliberately the LAST step — after commit + deploy — so one stale tool
+      # never blocks fresh captures from landing or deploying; the red run is
+      # the alert, not a gate on the data. MISSING files are NOT checked here:
+      # an absent help/<slug>.json is the documented expected interim state,
+      # handled by the capture warnings above.
+      - name: Staleness gate
+        if: always()
+        env:
+          MAX_AGE_DAYS: 7
+        run: |
+          set -euo pipefail
+          now_epoch="$(date -u +%s)"
+          stale=0
+          for f in help/*.json; do
+            captured="$(jq -r '.captured_at' "$f")"
+            captured_epoch="$(date -u -d "$captured" +%s)"
+            age_days=$(( (now_epoch - captured_epoch) / 86400 ))
+            if [ "$age_days" -gt "$MAX_AGE_DAYS" ]; then
+              echo "::error::$f is stale — captured_at $captured is ${age_days}d old (max ${MAX_AGE_DAYS}d). Its tool's capture has been failing every run; see the capture warnings above."
+              stale=1
+            else
+              echo "$f fresh (${age_days}d)"
+            fi
+          done
+          exit "$stale"

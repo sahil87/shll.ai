@@ -22,6 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { HelpDocSchema } from '../lib/schemas.ts';
 import { repoRootFromModuleUrl } from '../lib/repo-root.ts';
+import { normalizeVersion } from '../lib/version.ts';
 
 interface RosterEntry {
   /** help/<slug>.json file slug + docs route segment (e.g. "run-kit"). */
@@ -52,11 +53,6 @@ const ROSTER: RosterEntry[] = [
 /** Column widths reproducing the original hand-written alignment (white-space: pre). */
 const LABEL_COL = 9;
 const VERSION_COL = 10;
-
-/** Prepend `v` if the version string doesn't already start with one. */
-function normalizeVersion(version: string): string {
-  return version.startsWith('v') ? version : `v${version}`;
-}
 
 const repoRoot = repoRootFromModuleUrl(import.meta.url);
 const helpDir = path.join(repoRoot, 'help');
