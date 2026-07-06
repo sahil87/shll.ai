@@ -1,7 +1,7 @@
 {
   "tool": "wt",
-  "version": "v0.0.21",
-  "captured_at": "2026-07-05T17:55:32Z",
+  "version": "v0.0.22",
+  "captured_at": "2026-07-06T11:43:31Z",
   "schema_version": 1,
   "root": {
     "name": "wt",

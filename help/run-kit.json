@@ -1,15 +1,23 @@
 {
   "tool": "rk",
-  "version": "v2.5.5",
-  "captured_at": "2026-07-05T17:55:32Z",
+  "version": "v2.5.8",
+  "captured_at": "2026-07-06T11:43:31Z",
   "schema_version": 1,
   "root": {
     "name": "rk",
     "path": "rk",
     "short": "rk — tmux session manager with web UI",
     "usage": "rk",
-    "text": "Usage:\n  rk\n  rk [command]\n\nAvailable Commands:\n  completion  Generate the autocompletion script for the specified shell\n  context     Show agent-optimized environment info\n  daemon      Manage the background rk daemon (tmux-managed rk serve)\n  doctor      Check runtime dependencies\n  help        Help about any command\n  init-conf   Scaffold default tmux.conf and tmux.d/ drop-in directory to ~/.rk/\n  notify      Send a Web Push notification to subscribed devices\n  reaper      Reap leaked test tmux servers and stale sockets by prefix\n  riff        Create a worktree, tmux window, and Claude Code session\n  serve       Start the HTTP server (foreground)\n  shell-init  emit shell integration (completion) for zsh or bash\n  status      Show tmux session summary\n  update      Update rk to the latest version\n\nUse \"rk [command] --help\" for more information about a command.\n",
+    "text": "Usage:\n  rk\n  rk [command]\n\nAvailable Commands:\n  agent-setup Install agent-harness hooks that report agent state to run-kit\n  completion  Generate the autocompletion script for the specified shell\n  context     Show agent-optimized environment info\n  daemon      Manage the background rk daemon (tmux-managed rk serve)\n  doctor      Check runtime dependencies\n  help        Help about any command\n  init-conf   Scaffold default tmux.conf and tmux.d/ drop-in directory to ~/.rk/\n  notify      Send a Web Push notification to subscribed devices\n  reaper      Reap leaked test tmux servers and stale sockets by prefix\n  riff        Create a worktree, tmux window, and Claude Code session\n  serve       Start the HTTP server (foreground)\n  shell-init  emit shell integration (completion) for zsh or bash\n  status      Show tmux session summary\n  update      Update rk to the latest version\n\nUse \"rk [command] --help\" for more information about a command.\n",
     "commands": [
+      {
+        "name": "agent-setup",
+        "path": "rk agent-setup",
+        "short": "Install agent-harness hooks that report agent state to run-kit",
+        "usage": "rk agent-setup [flags]",
+        "text": "Usage:\n  rk agent-setup [flags]\n\nFlags:\n      --uninstall   Remove the rk-owned hook entries instead of installing them\n",
+        "commands": []
+      },
       {
         "name": "context",
         "path": "rk context",
