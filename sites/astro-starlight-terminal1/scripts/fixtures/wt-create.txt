@@ -1,0 +1,17 @@
+Create a git worktree for parallel development.
+
+When BRANCH is omitted, creates an exploratory worktree with a random name.
+When BRANCH is provided, checks out that branch (fetching from remote if needed)
+or creates a new branch.
+
+Usage:
+  wt create [branch] [flags]
+
+Flags:
+      --base string            Git ref (branch, tag, SHA) to use as start-point for new branch
+  -h, --help                   help for create
+      --non-interactive        No prompts; use defaults and skip menus
+      --reuse                  Reuse existing worktree if name collides (requires --worktree-name)
+      --worktree-init string   Run worktree init script: true (default) or false
+      --worktree-name string   Set worktree name (skips name prompt)
+      --worktree-open string   After creation: prompt (menu), default (auto-detect app), skip, or an app name (e.g. code, cursor)

@@ -9,13 +9,24 @@
  * Unlike validate-help, this needs NO `astro:content` alias hook — `parse-help.ts`
  * is dependency-free pure TypeScript, so Node imports it directly.
  *
- * Asserts:
- *   - ZERO ragged flag lines across ALL committed `help/*.json`.
- *   - The explicit edge cases from the intake: `wt create` (6 flags, `string`
- *     types), `rk riff` (`--cmd cmd[=__rk_riff_pane_bare__]` placeholder with
- *     spaces), multi-word placeholders (`wt update`/`idea update`/`hop update`/
- *     `shll shell-setup`), and the `hop` prose-only root (no Flags section →
- *     empty flags, description preserved).
+ * TWO test natures, deliberately split:
+ *
+ *   - LIVE-CORPUS INVARIANTS run against every committed `help/*.json`:
+ *     properties that must hold for ANY corpus content (zero ragged flag lines,
+ *     sanity floors). These are the canary for a scheduled refresh committing
+ *     help output the parser can't decompose.
+ *
+ *   - BEHAVIOR SPECIMENS run against FROZEN fixtures in `scripts/fixtures/`
+ *     (see its README for provenance + re-freeze procedure). These pin exact
+ *     parser output — specific flags, placeholders, usage, prose boundaries —
+ *     and MUST NOT read the live corpus: the daily refresh-help.yml commits new
+ *     tool releases whose commands/flags legitimately change, which rotted the
+ *     previous live-pinned expectations (idea grew a `--system` global, hop's
+ *     root grew a Flags section, shll dropped `shell-setup --trust-tap`).
+ *     Specimen edge cases: `wt create` (6 flags, `string` types), `rk riff`
+ *     (`--cmd cmd[=__rk_riff_pane_bare__]` placeholder with spaces), multi-word
+ *     placeholders, and the prose-only root (no Flags section → empty flags,
+ *     description preserved — hop v0.1.13, a shape no current tool exhibits).
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -28,6 +39,7 @@ import { parseHelp, raggedFlagLines } from '../src/lib/parse-help.ts';
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 // scripts/ -> site root -> sites/ -> repo root -> help/
 const helpDir = resolvePath(scriptDir, '..', '..', '..', 'help');
+const fixtureDir = join(scriptDir, 'fixtures');
 
 /** Load and JSON-parse every `help/*.json`, keyed by file slug. */
 async function loadHelpDocs() {
@@ -46,11 +58,12 @@ function* walk(node) {
   for (const child of node.commands ?? []) yield* walk(child);
 }
 
-/** Find a node by its `path` across a doc tree. */
-function findNode(doc, path) {
-  for (const n of walk(doc.root)) if (n.path === path) return n;
-  throw new Error(`node not found: ${path}`);
+/** Read a frozen `-h` text specimen from scripts/fixtures/. */
+async function fixture(name) {
+  return readFile(join(fixtureDir, name), 'utf8');
 }
+
+// ── Live-corpus invariants ───────────────────────────────────────────────────
 
 const docs = await loadHelpDocs();
 const docCount = Object.keys(docs).length;
@@ -85,9 +98,10 @@ test('ZERO ragged flag lines across the entire committed corpus', () => {
   assert.ok(nodeCount >= 100, `expected >= 100 nodes, got ${nodeCount}`);
 });
 
-test('wt create: 6 real flags, string argtypes, -h preserved separately', () => {
-  const node = findNode(docs.wt, 'wt create');
-  const { flags } = parseHelp(node.text);
+// ── Behavior specimens (frozen fixtures — never the live corpus) ─────────────
+
+test('wt create: 6 real flags, string argtypes, -h preserved separately', async () => {
+  const { flags } = parseHelp(await fixture('wt-create.txt'));
   const byLong = Object.fromEntries(flags.map((f) => [f.long, f]));
 
   // Includes the -h/--help row at parse time (suppression is a render concern).
@@ -107,11 +121,10 @@ test('wt create: 6 real flags, string argtypes, -h preserved separately', () => 
   assert.equal(byLong['reuse'].placeholder, null);
 });
 
-test('rk riff: --cmd placeholder with spaces, multi-line --layout desc not ragged', () => {
-  // Help file slug is `run-kit` (the binary name is `rk`).
-  const node = findNode(docs['run-kit'], 'rk riff');
-  assert.deepEqual(raggedFlagLines(node.text), []);
-  const { flags } = parseHelp(node.text);
+test('rk riff: --cmd placeholder with spaces, multi-line --layout desc not ragged', async () => {
+  const text = await fixture('rk-riff.txt');
+  assert.deepEqual(raggedFlagLines(text), []);
+  const { flags } = parseHelp(text);
   const cmd = flags.find((f) => f.long === 'cmd');
   assert.ok(cmd, '--cmd flag present');
   assert.equal(cmd.placeholder, 'cmd[=__rk_riff_pane_bare__]');
@@ -152,42 +165,38 @@ test('rk riff: --cmd placeholder with spaces, multi-line --layout desc not ragge
   );
 });
 
-test('multi-word placeholders captured whole, argtype null', () => {
+test('multi-word placeholders captured whole, argtype null', async () => {
+  // A 5th specimen (`shll shell-setup --trust-tap`, placeholder "brew trust
+  // --tap sahil87/tap") was retired when shll v0.0.20 removed the flag (tap
+  // trust moved into `shll install`). These four cover the same grammar.
   const cases = [
-    { doc: 'wt', path: 'wt update', long: 'skip-brew-update', ph: 'brew update' },
-    { doc: 'idea', path: 'idea update', long: 'skip-brew-update', ph: 'brew update' },
-    { doc: 'hop', path: 'hop update', long: 'skip-brew-update', ph: 'brew update' },
-    { doc: 'hop', path: 'hop ls', long: 'trees', ph: 'wt list --json' },
-    {
-      doc: 'shll',
-      path: 'shll shell-setup',
-      long: 'trust-tap',
-      ph: 'brew trust --tap sahil87/tap',
-    },
+    { file: 'wt-update.txt', long: 'skip-brew-update', ph: 'brew update' },
+    { file: 'idea-update.txt', long: 'skip-brew-update', ph: 'brew update' },
+    { file: 'hop-update.txt', long: 'skip-brew-update', ph: 'brew update' },
+    { file: 'hop-ls.txt', long: 'trees', ph: 'wt list --json' },
   ];
   for (const c of cases) {
-    const node = findNode(docs[c.doc], c.path);
-    const { flags } = parseHelp(node.text);
+    const { flags } = parseHelp(await fixture(c.file));
     const flag = flags.find((f) => f.long === c.long);
-    assert.ok(flag, `${c.path} --${c.long} present`);
-    assert.equal(flag.placeholder, c.ph, `${c.path} --${c.long} placeholder`);
-    assert.equal(flag.argtype, null, `${c.path} --${c.long} argtype null`);
+    assert.ok(flag, `${c.file} --${c.long} present`);
+    assert.equal(flag.placeholder, c.ph, `${c.file} --${c.long} placeholder`);
+    assert.equal(flag.argtype, null, `${c.file} --${c.long} argtype null`);
   }
 });
 
-test('hop root: no Flags section → empty flags', () => {
-  const parsed = parseHelp(findNode(docs.hop, 'hop').text);
+test('prose-only root: no Flags section → empty flags', async () => {
+  const parsed = parseHelp(await fixture('hop-root-prose-only.txt'));
   assert.deepEqual(parsed.flags, [], 'prose-only root has no parsed flags');
   assert.deepEqual(parsed.globalFlags, [], 'no global flags either');
 });
 
-test('hop root: ALL hand-written Long prose is preserved verbatim in the description', () => {
-  // `hop`'s Long is large and contains header-LOOKING prose ("Getting started:",
+test('prose-only root: ALL hand-written Long prose is preserved verbatim in the description', async () => {
+  // hop's Long is large and contains header-LOOKING prose ("Getting started:",
   // "Cheat sheet:", "Notes:"). The boundary is the START of Cobra's GENERATED
   // tail (the last contiguous run of known anchors), NOT the first anchor — so
   // ALL of that authored prose, including its bodies, stays in `description`
   // verbatim rather than being dropped or mis-parsed into sections.
-  const d = parseHelp(findNode(docs.hop, 'hop').text).description;
+  const d = parseHelp(await fixture('hop-root-prose-only.txt')).description;
   assert.ok(d.includes('locate, open, and operate on repos'), 'lede kept');
   assert.ok(d.includes('Getting started:'), 'Getting started header kept');
   assert.ok(d.includes('Cheat sheet:'), 'Cheat sheet header kept');
@@ -197,10 +206,10 @@ test('hop root: ALL hand-written Long prose is preserved verbatim in the descrip
   assert.ok(d.length > 1000, 'description is the full Long, not truncated');
 });
 
-test("hop root: usage is Cobra's generated block only, not the prose Cheat sheet", () => {
+test("prose-only root: usage is Cobra's generated block only, not the prose Cheat sheet", async () => {
   // Only the real generated `Usage:` (after the prose) is structured. The Cheat
   // sheet's invocation list must NOT become copyable usage rows.
-  const parsed = parseHelp(findNode(docs.hop, 'hop').text);
+  const parsed = parseHelp(await fixture('hop-root-prose-only.txt'));
   assert.deepEqual(parsed.usage, ['hop', 'hop [command]'], 'short Cobra usage only');
   assert.ok(
     !parsed.usage.some((l) => /cd into the repo|Notes:|Cheat sheet:/i.test(l)),
@@ -208,17 +217,33 @@ test("hop root: usage is Cobra's generated block only, not the prose Cheat sheet
   );
 });
 
-test('idea add: Global Flags parsed under their own section', () => {
-  const node = findNode(docs.idea, 'idea add');
-  const parsed = parseHelp(node.text);
+test('root with flags AFTER authored prose: flags parsed, prose still preserved', async () => {
+  // hop v0.1.16+ grew a root Flags section (`--all`) — the shape that obsoleted
+  // the live-corpus pin above. Both shapes are now pinned: prose-only (fixture
+  // hop-root-prose-only.txt) and prose-then-generated-Flags (this one).
+  const parsed = parseHelp(await fixture('hop-root.txt'));
+  assert.ok(
+    parsed.flags.some((f) => f.long === 'all'),
+    '--all parsed from the generated Flags section',
+  );
+  assert.deepEqual(parsed.usage, ['hop [flags]', 'hop [command]']);
+  assert.ok(parsed.description.includes('Cheat sheet:'), 'authored prose still in description');
+  assert.ok(
+    !parsed.usage.some((l) => /cd into the repo|Notes:|Cheat sheet:/i.test(l)),
+    'no authored prose leaked into usage',
+  );
+});
+
+test('idea add: Global Flags parsed under their own section', async () => {
+  const parsed = parseHelp(await fixture('idea-add.txt'));
   const gnames = parsed.globalFlags.map((f) => f.long).sort();
-  assert.deepEqual(gnames, ['file', 'main']);
+  // idea v0.0.14 added the --system global (three globals; earlier releases had two).
+  assert.deepEqual(gnames, ['file', 'main', 'system']);
   assert.equal(parsed.globalFlags.find((f) => f.long === 'file').argtype, 'string');
 });
 
-test('default suffix is split out of desc into default', () => {
-  const node = findNode(docs.idea, 'idea list');
-  const { flags } = parseHelp(node.text);
+test('default suffix is split out of desc into default', async () => {
+  const { flags } = parseHelp(await fixture('idea-list.txt'));
   const sort = flags.find((f) => f.long === 'sort');
   assert.equal(sort.default, '"date"');
   assert.ok(!/\(default/.test(sort.desc), 'default suffix stripped from desc');
