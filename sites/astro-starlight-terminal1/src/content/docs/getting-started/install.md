@@ -8,6 +8,7 @@ brew trust --formula sahil87/tap/shll   # bootstrap: trust shll's formula
 brew install sahil87/tap/shll           # bootstrap: install shll itself
 shll install                            # trusts + brew-installs every roster tool you're missing
 shll shell-setup                        # wire your shell integration
+rk agent-setup                          # optional, once per machine: agent state in the run-kit dashboard
 exec $SHELL                             # reload so the shell integration takes effect
 ```
 
@@ -33,13 +34,7 @@ shll version
 
 ## Optional: run-kit agent state
 
-One more once-per-machine step lights up live agent state in [run-kit](/tools/run-kit/overview/)'s dashboard — **active** / **waiting** / **idle** for every pane running a coding agent:
-
-```bash
-rk agent-setup    # shows the settings diff, asks before writing
-```
-
-It installs agent-harness hooks into your user-global agent config (v1: Claude Code) that report each pane's lifecycle state; until it's run, agent state shows `—` in the dashboard. Re-running is idempotent, and `rk agent-setup --uninstall` removes exactly the rk-owned entries. Details in the [run-kit install guide](/tools/run-kit/install/).
+The `rk agent-setup` line above is optional and once per machine — it lights up live agent state in [run-kit](/tools/run-kit/overview/)'s dashboard: **active** / **waiting** / **idle** for every pane running a coding agent. It installs agent-harness hooks into your user-global agent config (v1: Claude Code) that report each pane's lifecycle state; until it's run, agent state shows `—` in the dashboard. It shows the settings diff and asks before writing, re-running is idempotent, and `rk agent-setup --uninstall` removes exactly the rk-owned entries. Details in the [run-kit install guide](/tools/run-kit/install/).
 
 ## Per-tool install
 
