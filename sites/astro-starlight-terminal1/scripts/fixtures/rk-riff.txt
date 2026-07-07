@@ -1,0 +1,47 @@
+Usage:
+  rk riff [preset] [--skill <skill>...] [--cmd <cmd>...] [--layout <name>] [--count <N>] [--preset <name>] [--list-presets] [-- <wt-flags>...] [flags]
+
+Flags:
+      --cmd cmd[=__rk_riff_pane_bare__]       Shell command for a pane (repeatable; bare form drops into $SHELL)
+  -N, --count int                             Spawn N worktree/window pairs in parallel (N >= 1) (default 1)
+      --layout string                         Pane layout (default "auto"). layout name (canonical + shortform):
+                                                a, auto             — pane-count-based:
+                                                                      1 pane = no layout
+                                                                      2 panes = even-horizontal
+                                                                      3+ panes = tiled
+                                                t, tiled            — grid
+                                                                      ┌───┬───┐
+                                                                      │ 0 │ 1 │
+                                                                      ├───┼───┤
+                                                                      │ 2 │ 3 │
+                                                                      └───┴───┘
+                                                h, even-horizontal  — side-by-side
+                                                                      ┌───┬───┬───┐
+                                                                      │ 0 │ 1 │ 2 │
+                                                                      └───┴───┴───┘
+                                                v, even-vertical    — stacked
+                                                                      ┌───────────┐
+                                                                      │     0     │
+                                                                      ├───────────┤
+                                                                      │     1     │
+                                                                      ├───────────┤
+                                                                      │     2     │
+                                                                      └───────────┘
+                                                deck-h, main-horizontal — main on top, deck below
+                                                                      ┌───────────┐
+                                                                      │     0     │
+                                                                      ├───┬───┬───┤
+                                                                      │ 1 │ 2 │ 3 │
+                                                                      └───┴───┴───┘
+                                                deck-v, main-vertical   — main on left, deck right
+                                                                      ┌───────┬───┐
+                                                                      │       │ 1 │
+                                                                      │   0   ├───┤
+                                                                      │       │ 2 │
+                                                                      │       ├───┤
+                                                                      │       │ 3 │
+                                                                      └───────┴───┘
+                                               (default "auto")
+      --list-presets                          List defined presets and exit
+      --preset string                         Named preset from fab/project/config.yaml (riff.presets.<name>)
+      --skill skill[=__rk_riff_pane_bare__]   Claude Code skill/slash-command for a pane (repeatable; bare form launches a blank Claude session)

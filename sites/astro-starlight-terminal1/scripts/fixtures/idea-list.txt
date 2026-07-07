@@ -1,0 +1,41 @@
+List ideas from the current worktree's backlog (fab/backlog.md).
+
+Open ideas are shown by default. Use --all/-a to include done ideas, or --done
+to show only completed ones. Pass one or more 4-char IDs to list only those
+ideas. --json emits the structured records (id, date, status, text) for piping
+into other tools. --sort accepts "date" (default) or "id", and --reverse flips
+the order.
+
+On a terminal, long idea text is truncated to fit the width (the [id] date:
+prefix is never clipped) and the prefix is dimmed; --full shows the complete
+text. When the output is piped or redirected, full canonical lines are emitted
+regardless of --full so downstream tools see machine-parseable records. As with
+every backlog command, --main targets the main worktree's backlog, --system
+targets the system-level backlog (~/.config/idea/backlog.md), and
+--file / IDEAS_FILE point elsewhere (see "idea --help"). Outside a git repo the
+system backlog is used automatically.
+
+  idea list
+  idea list --all --sort id
+  idea ls a7k2 b3c9 --full
+  idea list --json
+
+Usage:
+  idea list [id...] [flags]
+
+Aliases:
+  list, ls
+
+Flags:
+  -a, --all           Show all ideas (open + done)
+      --done          Show only done ideas
+      --full          Show full idea text on a terminal (no truncation)
+  -h, --help          help for list
+      --json          Output as JSON
+      --reverse       Reverse sort order
+      --sort string   Sort by field (id or date) (default "date")
+
+Global Flags:
+      --file string   Override backlog file path (relative to the git root, or to ~/.config/idea when outside a repo)
+      --main          Operate on the main worktree's backlog instead of the current worktree
+      --system        Operate on the system-level backlog (~/.config/idea/backlog.md) instead of a repo backlog

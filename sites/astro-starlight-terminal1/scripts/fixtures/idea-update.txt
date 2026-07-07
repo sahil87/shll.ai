@@ -1,0 +1,25 @@
+Self-update the idea binary via Homebrew.
+
+Checks the installed idea formula against the latest published release and runs
+"brew upgrade" only when a newer version exists; if the binary is already
+current it prints "Already up to date" and exits without upgrading. The tap
+metadata is refreshed first (via an internal "brew update") so a just-published
+release is visible. Pass --skip-brew-update to skip only that tap-metadata
+refresh (faster, but may miss a just-published version) — the version check and
+any needed upgrade still run. If idea was not installed via Homebrew, the
+command explains how to update manually instead.
+
+  idea update
+  idea update --skip-brew-update
+
+Usage:
+  idea update [flags]
+
+Flags:
+  -h, --help                           help for update
+      --skip-brew-update brew update   Skip the internal brew update tap-metadata refresh
+
+Global Flags:
+      --file string   Override backlog file path (relative to the git root, or to ~/.config/idea when outside a repo)
+      --main          Operate on the main worktree's backlog instead of the current worktree
+      --system        Operate on the system-level backlog (~/.config/idea/backlog.md) instead of a repo backlog

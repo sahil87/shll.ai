@@ -41,6 +41,7 @@ import {
   findClosureViolations,
   findReadmeLinkViolations,
 } from '../src/lib/extract-readme.ts';
+import { parseHelp } from '../src/lib/parse-help.ts';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 // scripts/ -> site root -> sites/ -> repo root -> help/
@@ -48,6 +49,12 @@ const helpDir = resolvePath(scriptDir, '..', '..', '..', 'help');
 
 async function loadHelp(slug) {
   return JSON.parse(await readFile(join(helpDir, `${slug}.json`), 'utf8'));
+}
+
+/** Depth-first walk of a help Node tree (root + all subcommands). */
+function* walkHelp(node) {
+  yield node;
+  for (const child of node.commands ?? []) yield* walkHelp(child);
 }
 
 // ── §1 head rule ────────────────────────────────────────────────────────────
@@ -283,18 +290,34 @@ test('extractReadme is total: empty + whitespace inputs do not throw', () => {
 
 test('gate: a clean shll slice (real commands/flags) passes', async () => {
   const doc = await loadHelp('shll');
+  // DERIVE the clean slice from the loaded doc itself instead of pinning a
+  // literal command/flag list: the live corpus is refreshed daily, and a pinned
+  // list rots when the tool legitimately changes (`shll shell-setup --trust-tap`
+  // was removed in shll v0.0.20 when tap trust moved into `shll install`, which
+  // broke the previous hardcoded slice). Real subcommand paths come from the
+  // tree; a real flag comes from the same parseHelp decomposition helpFacts
+  // uses — clean by construction, for any corpus content.
+  const commands = doc.root.commands.slice(0, 3).map((c) => c.path);
+  assert.ok(commands.length >= 2, 'shll doc has at least two subcommands');
+  let flagLine = null;
+  for (const node of walkHelp(doc.root)) {
+    const f = parseHelp(node.text).flags.find((fl) => fl.long !== 'help');
+    if (f) {
+      flagLine = `${node.path} --${f.long}`;
+      break;
+    }
+  }
+  assert.ok(flagLine, 'shll doc has at least one real non-help flag');
   const slice = [
     'Install just shll:',
     '',
     '```bash',
     'brew install sahil87/tap/shll',
-    'shll install',
-    'shll shell-setup --trust-tap',
-    'shll update',
-    'shll version',
+    ...commands,
+    flagLine,
     '```',
     '',
-    'Use `shll install` to bootstrap.',
+    `Use \`${commands[0]}\` to bootstrap.`,
   ].join('\n');
   assert.deepEqual(findUnknownTokens(slice, doc), [], 'clean slice has no unknown tokens');
 });

@@ -1,0 +1,79 @@
+hop — locate, open, and operate on repos from hop.yaml.
+
+Getting started:
+  1. Run `hop config init` to create a starter hop.yaml.
+  2. Edit it to list your repos (each entry: name + git URL + parent dir).
+  3. For interactive use, install the shim: eval "$(hop shell-init zsh)"
+
+Cheat sheet:
+  hop                       fzf picker, print selection
+  hop <name>                cd into the repo (shell function — needs `eval "$(hop shell-init zsh)"`)
+  hop <name>/<wt>           same, but rooted at <wt> (a worktree of <name> per `wt list --json`)
+  hop <name> cd             same — explicit verb form
+  hop <name> where          echo abs path of matching repo (or worktree, with /<wt> suffix)
+  hop <name> open           open the repo in an app (delegates to wt's menu; "Open here" cds the parent shell)
+  hop <name> -R <cmd>...    shim-only — run <cmd>... with cwd = <name>'s repo dir (or worktree)
+  hop -R <name> <cmd>...    binary-direct exec form (also reached via the shim)
+  hop <name> <tool>...      shim-only sugar for `hop -R <name> <tool> ...` (e.g., `hop dotfiles cursor`)
+  hop clone <name>          git clone the repo if it isn't already on disk
+  hop clone <url>           ad-hoc clone: clone the URL, register it in hop.yaml, print landed path
+  hop clone --all           clone every repo from hop.yaml that isn't already on disk
+  hop clone                 fzf picker, then clone if missing
+  hop pull <name>           Run 'git pull' in the named repo
+  hop pull <group>          Run 'git pull' in every cloned repo of <group>
+  hop pull --all            Run 'git pull' in every cloned repo
+  hop push <name>           Run 'git push' in the named repo
+  hop push <group>          Run 'git push' in every cloned repo of <group>
+  hop push --all            Run 'git push' in every cloned repo
+  hop sync <name>           Run 'git pull --rebase' then 'git push' in <name>
+  hop sync <group>          Run sync in every cloned repo of <group>
+  hop sync --all            Run sync in every cloned repo
+  hop ls                    list all repos
+  hop ls --trees            list all repos with worktree summaries (fans out `wt list --json`)
+  hop add <dir>             register an existing on-disk repo into hop.yaml
+  hop rm [<name>]           remove a repo from hop.yaml (fzf picker if no name)
+  hop shell-init <shell>    emit shell integration (zsh or bash). Use: eval "$(hop shell-init zsh)"
+  hop config init           bootstrap a starter hop.yaml
+  hop config where          print the resolved hop.yaml path
+  hop config print          print the resolved hop.yaml contents to stdout
+  hop config scan <dir>     scan a directory for git repos and populate hop.yaml
+  hop update                self-update the hop binary via Homebrew
+  hop -h | --help           show this help
+  hop -v | --version        print version
+
+Notes:
+  - `hop <name>` and `hop <name> cd` require shell integration (a binary can't change
+    its parent shell's cwd). Without it, use:  cd "$(hop <name> where)"
+  - `hop <name> open`'s "Open here" choice also requires the shell shim to cd. Other
+    menu choices (editors, terminals, file managers) launch their app directly.
+  - The repo-first `hop <name> -R <cmd>...` and `hop <name> <tool>...` forms are shim-only
+    rewrites — the binary's `-R` parser expects `hop -R <name> <cmd>...`. Scripts and CI
+    that bypass the shim must use the binary-direct form `hop -R <name> <cmd>...` (and
+    `hop <name> where` for path resolution, which the binary handles directly).
+  - `pull`, `push`, and `sync` accept a repo name OR a group name (exact match) as the
+    positional, plus `--all` for the full registry. `sync` is `pull --rebase` + `push` —
+    linear history, no auto-resolve on conflict.
+  - On ambiguous or no-match queries, fzf opens prefilled with your query.
+  - Grammar: first positional is a repo OR a subcommand (mutually exclusive). When it's
+    a repo, second positional is a verb (`cd`, `where`, `open`), `-R`, or a tool name.
+  - Config lives at ~/.config/hop/hop.yaml.
+
+Usage:
+  hop
+  hop [command]
+
+Available Commands:
+  add         register a single on-disk repo into hop.yaml
+  clone       git clone the resolved repo, an ad-hoc URL, or all missing repos with --all
+  completion  Generate the autocompletion script for the specified shell
+  config      config helpers (init, where, scan, print)
+  help        Help about any command
+  ls          list all repos as aligned name/path columns
+  pull        Run 'git pull' in a repo, group, or every cloned repo with --all
+  push        Run 'git push' in a repo, group, or every cloned repo with --all
+  rm          remove a registered repo from hop.yaml
+  shell-init  emit shell integration (zsh or bash)
+  sync        Auto-commit dirty trees, then 'git pull --rebase' and 'git push' in a repo, group, or every cloned repo with --all
+  update      self-update the hop binary via Homebrew
+
+Use "hop [command] --help" for more information about a command.

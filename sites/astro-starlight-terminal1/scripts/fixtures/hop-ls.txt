@@ -1,0 +1,6 @@
+Usage:
+  hop ls [flags]
+
+Flags:
+      --json                   emit machine-readable JSON (composes with --trees)
+      --trees wt list --json   list worktrees per repo via wt list --json

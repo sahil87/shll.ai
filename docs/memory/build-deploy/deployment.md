@@ -1,6 +1,6 @@
 ---
 type: memory
-description: "GitHub Pages workflow, pnpm/Node versions, custom-domain CNAME, permissions, the build step's step-scoped GITHUB_TOKEN + tolerant build-time GitHub star-count fetch (7 repo calls, fail-soft to count-omission, never fails the build — d9qb), the two inbound scheduled pull paths (help refresh — gated commit; README refresh — divergence-ungated / report-only, fetch-failure-only isolation), the refresh→deploy cascade fix (each refresh explicitly dispatches deploy.yml via workflow_dispatch after a real commit, since a default-GITHUB_TOKEN push is suppressed from on:push by GitHub's recursion guard — xs1j), the corrected daily-deploy freshness model (neither pull literally always-commits; the help refresh's captured_at churn commits daily and now drives the daily deploy via that dispatch), and the site-wide Cloudflare Web Analytics beacon (cookieless, public token, Head-override injection, deliberate Constitution I exception)"
+description: "GitHub Pages workflow, pnpm/Node versions, custom-domain CNAME, permissions, the build step's step-scoped GITHUB_TOKEN + tolerant build-time GitHub star-count fetch (7 repo calls, fail-soft to count-omission, never fails the build — d9qb), the PR+main CI validation workflow (ci.yml — validate-help + full node --test unit suite + astro build; runs on scheduled-puller commits to main too), the two inbound scheduled pull paths (help refresh — gated commit; README refresh — divergence-ungated / report-only, fetch-failure-only isolation), the refresh→deploy cascade fix (each refresh explicitly dispatches deploy.yml via workflow_dispatch after a real commit, since a default-GITHUB_TOKEN push is suppressed from on:push by GitHub's recursion guard — xs1j), the corrected daily-deploy freshness model (neither pull literally always-commits; the help refresh's captured_at churn commits daily and now drives the daily deploy via that dispatch), and the site-wide Cloudflare Web Analytics beacon (cookieless, public token, Head-override injection, deliberate Constitution I exception)"
 ---
 # Deployment
 
@@ -48,6 +48,18 @@ The Astro build now makes **7 tolerant GitHub API calls** — one `GET https://a
 - **pnpm, not npm/yarn.** Matches the rest of the toolkit's tooling. Frozen lockfile in CI catches dependency drift early.
 - **No PR previews configured.** [INFERRED] Adding deploy-preview infrastructure would contradict [Constitution Principle IV](../../../fab/project/constitution.md) (minimal dependencies) for a site that rarely changes. Reviewers can `pnpm dev` locally.
 - **`workflow_dispatch` enabled.** Allows manual re-runs from the GitHub UI when needed (e.g., re-deploying without a code change to clear a Pages cache issue).
+
+## CI validation (`ci.yml`, added 2026-07-06)
+
+`.github/workflows/ci.yml` runs on **`pull_request` and push to `main`** — the validation gate the deploy path never provided (`deploy.yml` builds only on push to `main`, so a broken PR used to surface *after* merge as a failed deploy build; and nothing at all ran the site's unit suite, letting live-corpus-pinned test expectations rot silently for weeks). Mirrors the `ci.yml` convention of the sibling tool repos (`wt`, `run-kit`).
+
+Three steps, all inside the **live** site directory (pinned pnpm 10 + Node 22, the same toolchain as `deploy.yml` and the refresh workflows):
+
+1. `node scripts/validate-help.mjs` — every repo-root `help/*.json` against the Zod contract (the same gate the help refresh uses pre-commit).
+2. `node --test scripts/*.test.mjs` — the full unit suite. As of 2026-07-06 the suite is split into **live-corpus invariants** (zero ragged flag lines — properties that must hold for any corpus content) and **frozen-fixture behavior specimens** (`scripts/fixtures/` — exact parser output pins that the daily corpus refresh cannot rot; see [help-collection → the fixture split](/conventions/help-collection.md)).
+3. `pnpm build` — the full Astro build, so a PR that would break the post-merge deploy build fails pre-merge. The star-count fetch's `GITHUB_TOKEN` is step-scoped exactly as in `deploy.yml`.
+
+Because it also runs on push to `main`, the scheduled pullers' **direct commits** (which bypass PRs) get the same validation: a corpus refresh that breaks a live invariant or the build turns `main` red instead of passing silently. Concurrency cancels superseded PR runs but never `main` runs (run-kit's rule). This is validation only — **no PR previews** (the Design Decision above stands; reviewers still `pnpm dev` locally).
 
 ## Inbound scheduled pulls
 

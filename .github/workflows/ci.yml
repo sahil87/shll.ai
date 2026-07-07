@@ -1,0 +1,85 @@
+name: CI
+
+# PR + main validation — the check the deploy path never gave us. deploy.yml
+# builds only on push to main, so before this workflow a broken PR was
+# discovered AFTER merge, when the deploy build failed; and the site's real
+# test suite (scripts/*.test.mjs, native `node --test`) was run by nothing at
+# all, so corpus-pinned expectations rotted silently (fixed 2026-07-06 by
+# freezing behavior specimens into scripts/fixtures/). Mirrors the ci.yml
+# convention of the sibling tool repos (wt, run-kit): on pull_request + push
+# to main.
+#
+# WHAT RUNS (all inside the LIVE site per deploy.yml's SITE_DIR — this
+# workflow validates the deployable site, not every experiment under sites/):
+#   1. validate-help.mjs — every repo-root help/*.json against the Zod contract
+#      (the same gate the scheduled help refresh uses pre-commit).
+#   2. node --test scripts/*.test.mjs — the full unit suite: live-corpus
+#      invariants (zero ragged flag lines) + frozen-fixture behavior specimens,
+#      extract-readme contract pins, terminal island units.
+#   3. astro build — the full static build, so a PR that would break the
+#      post-merge deploy build fails HERE instead.
+#
+# Running on push to main also covers the scheduled pullers' direct commits
+# (refresh-help.yml / refresh-readme.yml bypass PRs): a corpus refresh that
+# breaks a live-corpus invariant or the build turns main red instead of
+# passing silently. Frozen-fixture tests are immune to those refreshes by
+# design — only genuine code regressions or invariant violations can fail.
+#
+# The build's star-count fetch (github-stars.ts) is fail-soft and the token
+# only raises the API rate limit — GITHUB_TOKEN with default read permissions
+# suffices; no secrets beyond it.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Cancel superseded runs on the same ref (rapid PR pushes), but never cancel
+# main — every merged/refreshed commit gets a full run (same rule as run-kit).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Same pinned toolchain as deploy.yml and the refresh workflows: pnpm 10,
+      # Node 22, pnpm cache keyed on the live site's lockfile.
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: sites/astro-starlight-terminal1/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: sites/astro-starlight-terminal1
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate help contracts
+        working-directory: sites/astro-starlight-terminal1
+        run: node scripts/validate-help.mjs
+
+      - name: Run unit tests
+        working-directory: sites/astro-starlight-terminal1
+        run: node --test scripts/*.test.mjs
+
+      - name: Build site
+        working-directory: sites/astro-starlight-terminal1
+        env:
+          # Raises the GitHub API rate limit for the fail-soft star-count fetch
+          # (github-stars.ts) — same step-scoped plumbing as deploy.yml.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm build

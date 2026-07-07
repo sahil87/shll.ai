@@ -1,0 +1,8 @@
+Self-update the wt binary via Homebrew
+
+Usage:
+  wt update [flags]
+
+Flags:
+  -h, --help                           help for update
+      --skip-brew-update brew update   skip the internal brew update tap-metadata refresh (version check and upgrade still run)
