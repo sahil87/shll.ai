@@ -31,6 +31,16 @@ shll version
 
 `version` prints a paste-friendly dump of every installed tool and its version — handy for confirming the install worked and for bug reports.
 
+## Optional: run-kit agent state
+
+One more once-per-machine step lights up live agent state in [run-kit](/tools/run-kit/overview/)'s dashboard — **active** / **waiting** / **idle** for every pane running a coding agent:
+
+```bash
+rk agent-setup    # shows the settings diff, asks before writing
+```
+
+It installs agent-harness hooks into your user-global agent config (v1: Claude Code) that report each pane's lifecycle state; until it's run, agent state shows `—` in the dashboard. Re-running is idempotent, and `rk agent-setup --uninstall` removes exactly the rk-owned entries. Details in the [run-kit install guide](/tools/run-kit/install/).
+
 ## Per-tool install
 
 If you only want one tool, every tool has its own brew formula:
