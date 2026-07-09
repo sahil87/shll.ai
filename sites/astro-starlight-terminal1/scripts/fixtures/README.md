@@ -31,7 +31,7 @@ against the new specimen content before committing.
 | `hop-root.txt` | `help/hop.json` node `hop` | v0.1.18 | 2026-06-17T08:53:53Z |
 | `hop-ls.txt` | `help/hop.json` node `hop ls` | v0.1.18 | 2026-06-17T08:53:53Z |
 | `hop-update.txt` | `help/hop.json` node `hop update` | v0.1.18 | 2026-06-17T08:53:53Z |
-| `run-kit-riff.txt` | `help/run-kit.json` node `run-kit riff` | v2.5.3 | 2026-07-05T09:46:18Z |
+| `run-kit-riff.txt` | `help/run-kit.json` node `rk riff` | v2.5.3 | 2026-07-05T09:46:18Z |
 
 > **`run-kit-riff.txt` predates the v3.0.0 rename.** run-kit renamed its CLI/formula
 > from `rk` to `run-kit` in v3.0.0 (`rk` kept as a brew-installed symlink alias). This
