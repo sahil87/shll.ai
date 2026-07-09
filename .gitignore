@@ -46,3 +46,5 @@ pnpm-debug.log*
 .uploads/
 
 .status.yaml.lock
+
+!fab/.fab-version
