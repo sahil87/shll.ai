@@ -38,7 +38,11 @@ const FIXTURES = [
   { file: 'hop-root.txt', doc: 'hop', path: 'hop' },
   { file: 'hop-ls.txt', doc: 'hop', path: 'hop ls' },
   { file: 'hop-update.txt', doc: 'hop', path: 'hop update' },
-  { file: 'run-kit-riff.txt', doc: 'run-kit', path: 'rk riff' },
+  // Forward-pointing: run-kit v3.0.0 renamed its root command `rk` → `run-kit`,
+  // so the NEXT corpus pull emits node `run-kit riff` (the committed pre-rename
+  // corpus still says `rk riff` — re-freezing before that pull lands will throw
+  // `node not found`, which is the deliberate signal to refresh the corpus first).
+  { file: 'run-kit-riff.txt', doc: 'run-kit', path: 'run-kit riff' },
 ];
 
 function* walk(node) {
