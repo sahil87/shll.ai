@@ -605,7 +605,7 @@ if deferred. There is no ordering dependency between tools.
 | `hop` | `hop` | `content/hop/` | `/tools/hop/` | `overview`, `readme`, `commands` |
 | `fab-kit` | `fab` | `content/fab-kit/` | `/tools/fab-kit/` | `overview`, `readme`, `commands` |
 | `wt` | `wt` | `content/wt/` | `/tools/wt/` | `overview`, `readme`, `commands` |
-| `run-kit` | `rk` | `content/run-kit/` | `/tools/run-kit/` | `overview`, `readme`, `commands` |
+| `run-kit` | `run-kit` | `content/run-kit/` | `/tools/run-kit/` | `overview`, `readme`, `commands` |
 | `tu` | `tu` | `content/tu/` | `/tools/tu/` | `overview`, `readme`, `commands` |
 | `shll` | `shll` | `content/shll/` | `/tools/shll/` | `overview`, `readme`, `commands` |
 

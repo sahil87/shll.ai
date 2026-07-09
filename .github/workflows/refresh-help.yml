@@ -101,8 +101,8 @@ jobs:
           brew trust sahil87/tap
 
       # Capture each tool independently. THREE distinct names per tool, which are
-      # NOT always equal — conflating them is a real bug (run-kit's formula is
-      # `rk`, not `run-kit`):
+      # NOT always equal — conflating them is a real bug (fab-kit's formula/slug
+      # is `fab-kit` but its binary is `fab`):
       #   - file slug     → names the output file help/<slug>.json
       #   - formula name  → the Homebrew formula to `brew install sahil87/tap/<formula>`
       #   - binary name   → the executable to invoke `<binary> help-dump`
@@ -112,9 +112,10 @@ jobs:
       #   slug       formula   binary
       #   idea    -> idea   -> idea
       #   hop     -> hop    -> hop
-      #   fab-kit -> fab-kit-> fab
+      #   fab-kit -> fab-kit-> fab     (binary is `fab`, NOT `fab-kit`)
       #   wt      -> wt     -> wt
-      #   run-kit -> rk     -> rk     (formula is `rk`, NOT `run-kit`)
+      #   run-kit -> run-kit-> run-kit (v3.0.0 renamed rk -> run-kit; `rk` is now
+      #                                 only a brew-installed symlink alias)
       #   tu      -> tu     -> tu     (help-dump in progress; may be absent — not a failure)
       #   shll    -> shll   -> shll
       #
@@ -135,7 +136,7 @@ jobs:
             "hop:hop:hop"
             "fab-kit:fab-kit:fab"
             "wt:wt:wt"
-            "run-kit:rk:rk"
+            "run-kit:run-kit:run-kit"
             "tu:tu:tu"
             "shll:shll:shll"
           )

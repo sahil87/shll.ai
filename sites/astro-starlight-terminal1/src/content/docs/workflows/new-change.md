@@ -19,7 +19,7 @@ wt create csv-export
 
 cd ../<repo>.worktrees/csv-export
 fab change new --slug csv-export   # create the fab change folder for this work
-rk riff --skill /fab-fff
+run-kit riff --skill /fab-fff
 ```
 
 That's it. The agent is now driving the pipeline; you watch in the dashboard.
@@ -32,7 +32,7 @@ That's it. The agent is now driving the pipeline; you watch in the dashboard.
    - Creates a git branch `csv-export`
    - Runs the per-worktree init script you've configured (e.g. to sync `.claude/` skills into the new worktree)
 3. `fab change new --slug csv-export` creates the change folder `fab/changes/<YYMMDD>-<XXXX>-csv-export/` and its `.status.yaml`, starting the intake stage. The `/fab-new` skill (or the pipeline's first prompt) then generates `intake.md` from the `[k3m1]` backlog item.
-4. `rk riff --skill /fab-fff`:
+4. `run-kit riff --skill /fab-fff`:
    - Opens a new tmux window in the worktree from step 2 (the Claude Code agent runs as pane 0 of that window)
    - Sends `/fab-fff` as the first input
    - Agent runs the full pipeline autonomously
@@ -48,7 +48,7 @@ git checkout -b $(fab resolve --folder)
 
 Workable, but you lose the parallelism. The toolkit assumes worktrees as the default unit of work.
 
-## Without `rk` (no dashboard)
+## Without `run-kit` (no dashboard)
 
 ```bash
 # in the worktree:
@@ -56,7 +56,7 @@ claude                  # or codex, cursor — any agent
 # in the agent: /fab-fff
 ```
 
-You lose the cross-session view, but the pipeline runs identically. `rk` is convenience, not contract.
+You lose the cross-session view, but the pipeline runs identically. `run-kit` is convenience, not contract.
 
 ## Without `idea` (one-off change)
 

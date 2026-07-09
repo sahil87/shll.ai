@@ -42,7 +42,8 @@ interface SlimToolHelp {
 
 const helpDir = path.join(repoRootFromModuleUrl(import.meta.url), 'help');
 
-// Keyed by tool slug (the file name — help/run-kit.json holds binary `rk`).
+// Keyed by tool slug (the file name — help/run-kit.json held binary `rk`
+// pre-v3.0.0; it holds `run-kit` after the corpus refresh).
 // Enumerating the directory rather than a roster const: the island's TOOLS
 // list is unreachable from this frontmatter, and the help/ collection IS the
 // roster (a stray extra file would add an unreferenced entry, harmless).
@@ -412,9 +413,10 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
     ),
     // The tool-name cards (change 37ng) — appended after all existing
     // entries (the o33t/cdbr convention), matching their COMMANDS position:
-    // six tools in canonical TOOLS order, then the two binary aliases
-    // pointing at their primaries. `man rk`/`man fab` answer from these via
-    // the o33t bridge (not in TOOLS, so they fall through to HELP_DETAIL).
+    // six tools in canonical TOOLS order, then the two alias keys pointing at
+    // their primaries (rk → run-kit short alias; fab → fab-kit binary).
+    // `man rk`/`man fab` answer from these via the o33t bridge (not in TOOLS,
+    // so they fall through to HELP_DETAIL).
     idea: toolCardHelp('idea'),
     hop: toolCardHelp('hop'),
     'fab-kit': toolCardHelp('fab-kit'),
@@ -422,8 +424,8 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
     'run-kit': toolCardHelp('run-kit'),
     tu: toolCardHelp('tu'),
     rk: helpDetail(
-      "rk — run-kit's card, by its binary name  (alias of run-kit)",
-      "the same card — rk is what you actually type. 'cd run-kit' navigates.",
+      "rk — run-kit's card, by its short alias  (alias of run-kit)",
+      "the same card — rk is a short alias; run-kit is canonical. 'cd run-kit' navigates.",
     ),
     fab: helpDetail(
       "fab — fab-kit's card, by its binary name  (alias of fab-kit)",
@@ -743,9 +745,9 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
     },
   ];
   // Alias-of declarations: these COMMANDS keys render with their primary's
-  // entry (vim, less, exit — and, since change 37ng, the rk/fab binary
-  // names with their tools) and are not listed on their own — but they still
-  // count as covered, so the runtime check never flags them uncategorized.
+  // entry (vim, less, exit — and, since change 37ng, the rk short alias /
+  // fab binary with their tools) and are not listed on their own — but they
+  // still count as covered, so the runtime check never flags them uncategorized.
   const CHEATSHEET_ALIASES: Record<string, string> = {
     vi: 'vim',
     more: 'less',
@@ -806,8 +808,9 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
   // The tour script — one const beside the other rosters (SYNOPSIS /
   // FAKE_ENV / CHEATSHEET_GROUPS). Five steps: the bare tool-name cards
   // (change 37ng) give each one real, mechanically-synced content to show;
-  // `fab` and `rk` are the binary-alias keys — shorter to watch being
-  // typed, same card as their primaries. `hop` is omitted to keep the tour
+  // `fab` (fab-kit's binary) and `rk` (run-kit's short alias) are the alias
+  // keys — shorter to watch being typed, same card as their primaries.
+  // `hop` is omitted to keep the tour
   // tight at five steps; the closing line names the WORKFLOW, not all seven
   // binaries. The opening line self-announces interruptibility (the o33t
   // honest-machinery ethos — self-identifying streams). The closing block
@@ -1038,7 +1041,7 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
         { text: 'five agents, five panes. babysit five terminals? no. one view:', classes: 'shell-out' },
         { text: '  (the old way: alt-tab, alt-tab, alt-tab, "wait, which one broke?")', classes: 'shell-out shell-dim' },
         { text: '', classes: 'shell-out' },
-        { text: 'rk dashboard — 5 panes attached:', classes: 'shell-out' },
+        { text: 'run-kit dashboard — 5 panes attached:', classes: 'shell-out' },
         { text: '  pane 1  idea-fanout   ● busy', classes: 'shell-out' },
         { text: '  pane 2  spec-review   ● busy', classes: 'shell-out' },
         { text: '  pane 3  dark-mode     ● busy', classes: 'shell-out' },
@@ -1062,7 +1065,7 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
         { text: '  all panes green — and you watched it from one place.', classes: 'shell-out shell-dim' },
       ],
       endFrame: [
-        { text: 'rk dashboard: idea-fanout ✓  spec-review ✓  dark-mode ✓', classes: 'shell-ok' },
+        { text: 'run-kit dashboard: idea-fanout ✓  spec-review ✓  dark-mode ✓', classes: 'shell-ok' },
         { text: '              test-suite ✓  docs-pass ✓', classes: 'shell-ok' },
         { text: '  all panes green — one place to watch.', classes: 'shell-out' },
       ],
@@ -1872,8 +1875,9 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
         // Re-print the rows captured from the static <VersionTable/> output — the
         // single source of truth (build-time, self-updating from help/*.json). No
         // hardcoded list here, so the terminal and the page can never drift, and a
-        // version bump or roster/label change (e.g. run-kit → "rk") flows through
-        // automatically. The captured innerHTML already carries the tool/version/
+        // version bump or roster/label change (e.g. a display label edit in
+        // VersionTable's ROSTER) flows through automatically. The captured
+        // innerHTML already carries the tool/version/
         // [git] markup; `print()` adds the base `shell-line` class.
         if (versionRowsHtml.length === 0) {
           return [{ text: 'version: no data', classes: 'shell-out shell-dim' }];
@@ -2482,8 +2486,8 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
       // command-not-found for six of the seven. A bare tool name now prints
       // that tool's card, mechanically sourced from the build-time help
       // payload (TOOL_HELP). Six tools in canonical TOOLS order, then the two
-      // binary aliases (rk/fab) dispatching identically to their primaries —
-      // one factory, no drift. shll is NOT here: its splash above stays the
+      // alias keys (rk short alias / fab binary) dispatching identically to
+      // their primaries — one factory, no drift. shll is NOT here: its splash above stays the
       // brand moment (it gains only the nav line). Appended after all
       // existing keys, per the o33t suggester tie-break convention;
       // Tab-completion, the did-you-mean suggester, and the cheatsheet
@@ -2785,9 +2789,10 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
       more: 'shell-out shell-dim',
     };
 
-    // Shared handler factory for the six tool keys + the rk/fab binary
-    // aliases — aliases dispatch with their primary's slug, so eight keys
-    // share one body (the editorHandler/denyNetwork precedent, no drift).
+    // Shared handler factory for the six tool keys + the rk/fab alias keys
+    // (rk = run-kit's short alias, fab = fab-kit's binary) — aliases dispatch
+    // with their primary's slug, so eight keys share one body (the
+    // editorHandler/denyNetwork precedent, no drift).
     // The card INFORMS in place: nothing navigates, no timer, no nav beat —
     // navigation stays cd's job (the cuur beat) and `man <tool>` keeps the
     // hand-written SYNOPSIS voice. With a first argument matching one of the

@@ -31,7 +31,17 @@ against the new specimen content before committing.
 | `hop-root.txt` | `help/hop.json` node `hop` | v0.1.18 | 2026-06-17T08:53:53Z |
 | `hop-ls.txt` | `help/hop.json` node `hop ls` | v0.1.18 | 2026-06-17T08:53:53Z |
 | `hop-update.txt` | `help/hop.json` node `hop update` | v0.1.18 | 2026-06-17T08:53:53Z |
-| `rk-riff.txt` | `help/run-kit.json` node `rk riff` | v2.5.3 | 2026-07-05T09:46:18Z |
+| `run-kit-riff.txt` | `help/run-kit.json` node `run-kit riff` | v2.5.3 | 2026-07-05T09:46:18Z |
+
+> **`run-kit-riff.txt` predates the v3.0.0 rename.** run-kit renamed its CLI/formula
+> from `rk` to `run-kit` in v3.0.0 (`rk` kept as a brew-installed symlink alias). This
+> frozen specimen was captured at **v2.5.3** — before the rename — so its text still
+> shows `rk riff` (usage lines, `__rk_riff_pane_bare__` placeholders). That is correct
+> for a frozen specimen: the parser-behavior assertions pin its bytes, not the current
+> name. The file was renamed `rk-riff.txt` → `run-kit-riff.txt` (byte-identical content)
+> to match the post-rename node path; its content switches to `run-kit riff` only on the
+> next deliberate re-freeze (meaningful only after the corpus refreshes to the renamed
+> node).
 
 ## Historical specimens (not regenerated)
 

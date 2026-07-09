@@ -14,7 +14,7 @@
  *     `(+N more — see commands)` tail; zero-subcommand (tu) and
  *     missing-fields tolerance (empty doc → [] — the island's fallback cue);
  *   - the §2 normalizations: stripUsagePrefix (tu's `Usage:` carry-over) and
- *     stripToolPrefix (run-kit's `rk — ` doubling), both idempotent;
+ *     stripToolPrefix (run-kit's `run-kit — ` doubling), both idempotent;
  *   - findSubcommand: hit / miss / case-insensitive lookup over commands[].
  */
 import test from 'node:test';
@@ -201,13 +201,13 @@ test('buildToolCard re-applies the usage strip — no `usage: Usage:` doubling',
   ]);
 });
 
-test("stripToolPrefix removes run-kit's redundant `rk — ` (exact prefix only)", () => {
+test("stripToolPrefix removes run-kit's redundant `run-kit — ` (exact prefix only)", () => {
   assert.equal(
-    stripToolPrefix('rk — tmux session manager with web UI', 'rk'),
+    stripToolPrefix('run-kit — tmux session manager with web UI', 'run-kit'),
     'tmux session manager with web UI',
   );
   // Idempotent re-apply / non-matching shorts untouched.
-  assert.equal(stripToolPrefix('tmux session manager with web UI', 'rk'), 'tmux session manager with web UI');
+  assert.equal(stripToolPrefix('tmux session manager with web UI', 'run-kit'), 'tmux session manager with web UI');
   assert.equal(stripToolPrefix('locate, open, and operate on repos', 'hop'), 'locate, open, and operate on repos');
   // A short merely STARTING with the letters is not a prefix match.
   assert.equal(stripToolPrefix('rkward stuff', 'rk'), 'rkward stuff');

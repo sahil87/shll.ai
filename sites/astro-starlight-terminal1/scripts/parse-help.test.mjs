@@ -23,8 +23,10 @@
  *     tool releases whose commands/flags legitimately change, which rotted the
  *     previous live-pinned expectations (idea grew a `--system` global, hop's
  *     root grew a Flags section, shll dropped `shell-setup --trust-tap`).
- *     Specimen edge cases: `wt create` (6 flags, `string` types), `rk riff`
- *     (`--cmd cmd[=__rk_riff_pane_bare__]` placeholder with spaces), multi-word
+ *     Specimen edge cases: `wt create` (6 flags, `string` types), `run-kit riff`
+ *     (`--cmd cmd[=__rk_riff_pane_bare__]` placeholder with spaces; the frozen
+ *     v2.5.3 specimen predates the v3.0.0 rk→run-kit rename, so its text still
+ *     shows `rk riff`), multi-word
  *     placeholders, and the prose-only root (no Flags section → empty flags,
  *     description preserved — hop v0.1.13, a shape no current tool exhibits).
  */
@@ -121,8 +123,8 @@ test('wt create: 6 real flags, string argtypes, -h preserved separately', async 
   assert.equal(byLong['reuse'].placeholder, null);
 });
 
-test('rk riff: --cmd placeholder with spaces, multi-line --layout desc not ragged', async () => {
-  const text = await fixture('rk-riff.txt');
+test('run-kit riff: --cmd placeholder with spaces, multi-line --layout desc not ragged', async () => {
+  const text = await fixture('run-kit-riff.txt');
   assert.deepEqual(raggedFlagLines(text), []);
   const { flags } = parseHelp(text);
   const cmd = flags.find((f) => f.long === 'cmd');

@@ -1,0 +1,10 @@
+{"action":"enter","driver":"fab-new","event":"stage-transition","stage":"intake","ts":"2026-07-09T14:56:30Z"}
+{"args":"the run-kit formula/binary was renamed from rk to run-kit (homebrew-tap: formula_renames.json maps rk-\u003erun-kit, Formula/rk.rb deleted, Formula/run-kit.rb 3.0.0 with rk kept as a symlink alias; run-kit repo v3.0.0 already made this switch). Find and update any references to the old rk formula/binary name, install instructions, docs, or fixtures in shll.ai.","cmd":"fab-new","event":"command","ts":"2026-07-09T14:56:30Z"}
+{"delta":"+4.4","event":"confidence","score":4.4,"trigger":"calc-score","ts":"2026-07-09T14:59:32Z"}
+{"cmd":"fab-fff","event":"command","ts":"2026-07-09T15:00:39Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"apply","ts":"2026-07-09T15:00:48Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-07-09T15:02:04Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"review","ts":"2026-07-09T15:14:59Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"hydrate","ts":"2026-07-09T15:22:35Z"}
+{"event":"review","result":"passed","ts":"2026-07-09T15:22:35Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"ship","ts":"2026-07-09T15:30:41Z"}

@@ -38,7 +38,7 @@ const FIXTURES = [
   { file: 'hop-root.txt', doc: 'hop', path: 'hop' },
   { file: 'hop-ls.txt', doc: 'hop', path: 'hop ls' },
   { file: 'hop-update.txt', doc: 'hop', path: 'hop update' },
-  { file: 'rk-riff.txt', doc: 'run-kit', path: 'rk riff' },
+  { file: 'run-kit-riff.txt', doc: 'run-kit', path: 'run-kit riff' },
 ];
 
 function* walk(node) {

@@ -67,9 +67,9 @@ export function stripUsagePrefix(usage: string): string {
 
 /**
  * Strip a redundant leading `{tool} — ` (the binary's own name) from a short
- * description — run-kit's root.short is `"rk — tmux session manager with web
- * UI"`, and the card prefixes the typed tool name, so without this the header
- * would read `run-kit — rk — tmux …`. Applied at BUILD TIME only (change
+ * description — run-kit's root.short is `"run-kit — tmux session manager with
+ * web UI"`, and the card prefixes the typed tool name, so without this the header
+ * would read `run-kit — run-kit — tmux …`. Applied at BUILD TIME only (change
  * 37ng): the binary name lives in the help doc's `tool` field, which the slim
  * payload deliberately omits. Idempotent; a non-matching short is untouched.
  */

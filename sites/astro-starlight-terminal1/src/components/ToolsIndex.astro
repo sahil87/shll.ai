@@ -17,8 +17,8 @@
  * its repo-root resolution (ascend from import.meta.url to the dir holding
  * `help/`, robust across `astro dev` and the Vite-bundled `astro build` chunk).
  *
- * Use the FILE SLUG for the label + route (`run-kit`, not the binary `rk`) — a
- * directory/section reference per the `rk` vs `run-kit` rule.
+ * Use the FILE SLUG for the label + route (`run-kit`). Since run-kit v3.0.0 its
+ * slug and binary coincide (`run-kit`); `rk` survives only as a short alias.
  *
  * A rostered `help/<slug>.json` that is MISSING or fails schema validation is a
  * build-stopping condition (a committed directory page must list every tool;
@@ -34,7 +34,7 @@ import { repoRootFromModuleUrl } from '../lib/repo-root.ts';
 interface RosterEntry {
   /** help/<slug>.json file slug + docs route segment (e.g. "run-kit"). */
   slug: string;
-  /** Site-authored display label (the file slug — "run-kit", not "rk"). */
+  /** Site-authored display label (the file slug — e.g. "run-kit"). */
   label: string;
   /** Overview route on this site (the tool's canonical entry page). */
   route: string;
@@ -43,8 +43,8 @@ interface RosterEntry {
 /**
  * Site-authored roster (order, labels, routes live HERE, not in JSON).
  * Order mirrors the homepage `ls tools/` listing so the two directory views
- * stay consistent. The label/route use the file slug per the `rk` vs `run-kit`
- * rule — `run-kit`, never the binary `rk`.
+ * stay consistent. The label/route use the file slug (`run-kit`); since v3.0.0
+ * the slug and binary coincide, with `rk` kept only as a short alias.
  */
 const ROSTER: RosterEntry[] = [
   { slug: 'idea', label: 'idea', route: '/tools/idea/overview/' },

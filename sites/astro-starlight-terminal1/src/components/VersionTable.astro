@@ -27,7 +27,7 @@ import { normalizeVersion } from '../lib/version.ts';
 interface RosterEntry {
   /** help/<slug>.json file slug + docs route segment (e.g. "run-kit"). */
   slug: string;
-  /** Site-authored display label (e.g. "rk" for the run-kit binary). */
+  /** Site-authored display label (usually the slug, e.g. "run-kit"). */
   label: string;
   /** Docs route on this site. */
   route: string;
@@ -37,8 +37,9 @@ interface RosterEntry {
 
 /**
  * Site-authored roster (order, labels, routes, repos live HERE, not in JSON).
- * `run-kit` is the repo/route/section name; its CLI + brew identity is `rk`, so the
- * displayed label is `rk` while the route + repo URL stay `run-kit`.
+ * Since run-kit v3.0.0 its CLI / brew-formula / slug identities all read
+ * `run-kit`, so the displayed label is `run-kit` (matching the route + repo);
+ * `rk` survives only as a typed short alias (a brew-installed symlink).
  */
 const ROSTER: RosterEntry[] = [
   { slug: 'shll', label: 'shll', route: '/shll', repo: 'https://github.com/sahil87/shll' },
@@ -46,7 +47,7 @@ const ROSTER: RosterEntry[] = [
   { slug: 'hop', label: 'hop', route: '/hop', repo: 'https://github.com/sahil87/hop' },
   { slug: 'fab-kit', label: 'fab-kit', route: '/fab-kit', repo: 'https://github.com/sahil87/fab-kit' },
   { slug: 'wt', label: 'wt', route: '/wt', repo: 'https://github.com/sahil87/wt' },
-  { slug: 'run-kit', label: 'rk', route: '/run-kit', repo: 'https://github.com/sahil87/run-kit' },
+  { slug: 'run-kit', label: 'run-kit', route: '/run-kit', repo: 'https://github.com/sahil87/run-kit' },
   { slug: 'tu', label: 'tu', route: '/tu', repo: 'https://github.com/sahil87/tu' },
 ];
 

@@ -108,7 +108,7 @@ const SIMPLE_TYPE_RE = /^[A-Za-z][A-Za-z0-9_-]*$/;
  * Trailing "(default …)" suffix at the very end of a description. The content
  * is `[^)]*` (not `.+?`) so the match is anchored to the LAST balanced
  * `(default …)` group at end-of-string — not an earlier inline mention of the
- * word "default" (e.g. `rk riff --layout`'s desc opens with `(default "auto").`
+ * word "default" (e.g. `run-kit riff --layout`'s desc opens with `(default "auto").`
  * mid-sentence AND closes with a trailing `(default "auto")`; only the latter is
  * the real default). Requires a space after "default" so Cobra's
  * `(default: auto — …)` colon form is NOT treated as a default token.
@@ -148,7 +148,7 @@ function parseFlagLine(line: string): ParsedFlag | null {
  *
  * Cobra emits the real `(default …)` at the very END of a flag's description —
  * but it wraps with the rest of the desc, so for a multi-line desc the default
- * lands on the LAST continuation line, not the first (e.g. `rk riff --layout`,
+ * lands on the LAST continuation line, not the first (e.g. `run-kit riff --layout`,
  * whose `(default "auto")` trails its ASCII diagram). With continuation
  * newlines+indentation now preserved, `DEFAULT_RE`'s `$` anchor no longer
  * reaches the end of the blob, so default-extraction runs on the LAST line and
@@ -176,7 +176,7 @@ function finalizeFlag(flag: ParsedFlag): void {
 /**
  * A line under a flags section is "ragged" only when it is non-blank, not the
  * footer, does NOT start a new flag, AND no flag precedes it in the section to
- * continue. Cobra wraps long flag descriptions (e.g. `rk riff --layout`'s ASCII
+ * continue. Cobra wraps long flag descriptions (e.g. `run-kit riff --layout`'s ASCII
  * layout diagrams) onto deeply-indented continuation lines — those continue the
  * previous flag's description and are NOT ragged.
  */
@@ -343,7 +343,7 @@ export function parseHelp(text: string): ParsedHelp {
           lastFlag = flag;
         } else if (line.trim() !== '' && lastFlag) {
           // A wrapped continuation of the open flag's description (e.g. the
-          // ASCII layout diagrams under `rk riff --layout`). Fold it in on its
+          // ASCII layout diagrams under `run-kit riff --layout`). Fold it in on its
           // own line, KEEPING the raw line (with its original leading
           // whitespace) so multi-line content — diagrams, indented sub-points —
           // survives intact rather than being collapsed to a single space. The
