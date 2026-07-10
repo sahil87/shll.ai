@@ -1,4 +1,4 @@
-One command to install, update, and shell-wire every tool in the [@sahil87 toolkit](https://shll.ai) (`wt`, `idea`, `tu`, `rk`, `hop`, `fab-kit`). `shll` doesn't replace the per-tool CLIs — it composes them.
+One command to install, update, and shell-wire every tool in the [@sahil87 toolkit](https://shll.ai) (`wt`, `idea`, `tu`, `run-kit`, `hop`, `fab-kit`). `shll` doesn't replace the per-tool CLIs — it composes them.
 
 ## Why shll?
 
@@ -64,7 +64,7 @@ shll install --no-trust      # skip the per-formula trust step
 shll install --dry-run       # preview the brew install plan, change nothing
 ```
 
-Iterates the roster in leaves-first order (`wt`, `idea`, `tu`, `rk`, `hop`, `fab-kit`) and, for each one that's missing, records per-formula Homebrew trust (`brew trust --formula sahil87/tap/<formula>`) **before** running `brew install sahil87/tap/<formula>`. Homebrew 6.0 makes tap-trust a hard install requirement, so this is what lets the install proceed; `brew trust` is idempotent, so re-runs stay clean. Already-installed tools are skipped silently. Does NOT upgrade — use `shll update` for that.
+Iterates the roster in leaves-first order (`wt`, `idea`, `tu`, `run-kit`, `hop`, `fab-kit`) and, for each one that's missing, records per-formula Homebrew trust (`brew trust --formula sahil87/tap/<formula>`) **before** running `brew install sahil87/tap/<formula>`. Homebrew 6.0 makes tap-trust a hard install requirement, so this is what lets the install proceed; `brew trust` is idempotent, so re-runs stay clean. Already-installed tools are skipped silently. Does NOT upgrade — use `shll update` for that.
 
 Pass `--no-trust` to skip the trust step entirely (for users who manage trust themselves). If your Homebrew is too old to ship `brew trust` (pre-6.0, where trust isn't required anyway), the trust step is skipped gracefully and the install proceeds.
 
@@ -81,9 +81,11 @@ shll update hop wt           # upgrade only a named subset
 shll update --dry-run        # preview the upgrade plan, change nothing
 ```
 
-Runs `brew update --quiet` once, then `brew upgrade sahil87/tap/shll` (when shll itself was installed via brew), then delegates to each installed roster tool's **own `update` subcommand** (passing `--skip-brew-update` when the tool advertises it) so each tool's post-upgrade side effects — e.g. `rk`'s daemon restart — are preserved. A roster tool that exposes no `update` subcommand falls back to `brew upgrade sahil87/tap/<formula>`. Uninstalled tools are skipped silently, and the loop is best-effort — one tool's failure doesn't abort the rest. Brew and per-tool progress stream directly to your terminal.
+Runs `brew update --quiet` once, then `brew upgrade sahil87/tap/shll` (when shll itself was installed via brew), then delegates to each installed roster tool's **own `update` subcommand** (passing `--skip-brew-update` when the tool advertises it) so each tool's post-upgrade side effects — e.g. `run-kit`'s daemon restart — are preserved. A roster tool that exposes no `update` subcommand falls back to `brew upgrade sahil87/tap/<formula>`. Uninstalled tools are skipped silently, and the loop is best-effort — one tool's failure doesn't abort the rest. Brew and per-tool progress stream directly to your terminal.
 
-Pass one or more tool names to scope the run to a subset (valid targets: `shll`, `wt`, `idea`, `tu`, `rk`, `hop`, `fab-kit`), processed in roster order regardless of arg order. A named-but-not-installed target is a hard error here (unlike the whole-roster sweep, which silently skips it). `--dry-run` runs the read-only probes, prints the exact commands the real run would execute (`shll (self)` first when brew-installed), then exits without writing anything.
+> **Legacy `rk` keg exception.** On a pre-rename machine still holding the old `rk` keg, `shll update` migrates `run-kit` **brew-direct** (`brew upgrade sahil87/tap/rk`, which resolves the rename) rather than delegating to `run-kit update`. Because that path skips `run-kit update`'s post-upgrade side effect, the daemon is **not** restarted automatically — shll prints a note suggesting `run-kit serve --restart` instead (Constitution III — shll never reimplements a tool's own logic). This is transitional; once legacy kegs are gone, updates always take the normal delegated path above.
+
+Pass one or more tool names to scope the run to a subset (valid targets: `shll`, `wt`, `idea`, `tu`, `run-kit`, `hop`, `fab-kit`; the legacy alias `rk` still resolves to `run-kit`), processed in roster order regardless of arg order. A named-but-not-installed target is a hard error here (unlike the whole-roster sweep, which silently skips it). `--dry-run` runs the read-only probes, prints the exact commands the real run would execute (`shll (self)` first when brew-installed), then exits without writing anything.
 
 Each tool gets a `[N/M]` progress header, and a timing summary tail (`Done — N of M tools succeeded in <dur>.`) closes the run. After the tail, a compact **"What changed:"** digest lists the release-note titles for every tool that actually bumped, followed by a copy-pasteable `shll changelog` command for the full notes.
 
@@ -132,14 +134,14 @@ eval "$(shll shell-init zsh)"   # in ~/.zshrc
 eval "$(shll shell-init bash)"  # in ~/.bashrc
 ```
 
-The output is the concatenation (in roster order — leaves-first: `wt`, `idea`, `tu`, `rk`, `hop`, `fab-kit`) of every installed sahil87 tool's own shell-init, with a `# ── <tool> ──` comment separator before each block. What each roster tool is for, and what it adds to your shell:
+The output is the concatenation (in roster order — leaves-first: `wt`, `idea`, `tu`, `run-kit`, `hop`, `fab-kit`) of every installed sahil87 tool's own shell-init, with a `# ── <tool> ──` comment separator before each block. What each roster tool is for, and what it adds to your shell:
 
 | Tool | What it's for | What it adds to your shell |
 |------|---------------|----------------------------|
 | `wt`  | git worktree manager — create, switch, and clean up worktrees | `wt` shell function wrapper (so the "Open here" menu option can `cd` your shell), completion |
 | `idea` | worktree-aware idea / backlog capture from the terminal (markdown-first) | completion |
 | `tu`  | AI coding-assistant cost/usage tracker (Claude Code, Codex, OpenCode) | completion |
-| `rk`  | run-kit — web-based tmux orchestration for parallel agent workspaces | completion |
+| `run-kit`  | web-based tmux orchestration for parallel agent workspaces (formerly `rk`, which stays as an alias) | completion |
 | `hop` | fast directory navigation / bookmarks (`cd` on steroids) | `hop` shell function (bare-name `cd`, verb dispatch, tool-form), `h` / `hi` aliases, completion |
 | `fab-kit` | `fab` — spec-driven change workflow (this repo's own pipeline) | completion |
 
@@ -153,7 +155,7 @@ shll     v0.0.5
 wt       v0.0.5
 idea     v0.0.2
 tu       v0.4.13
-rk       v1.5.3
+run-kit  v1.5.3
 hop      v0.1.5
 fab-kit  v1.9.4
 ```
@@ -168,7 +170,7 @@ ok  shll     the manager for the shll toolkit                                   
 ok  wt       Git worktree management — create, list, open, delete worktrees          https://github.com/sahil87/wt
 ok  idea     Backlog idea management from the terminal                               https://github.com/sahil87/idea
 ok  tu       Token-usage tracker for AI coding tools (Claude Code, Codex, OpenCode)  https://github.com/sahil87/tu
-ok  rk       Run-kit — tmux session manager with a web UI                            https://github.com/sahil87/run-kit
+ok  run-kit  Run-kit — tmux session manager with a web UI                            https://github.com/sahil87/run-kit
 ok  hop      Fast directory/project jumping across worktrees                         https://github.com/sahil87/hop
 ok  fab-kit  Spec-driven workspace & workflow toolkit (the `fab` CLI)                https://github.com/sahil87/fab-kit
 ```
@@ -189,7 +191,7 @@ shll     OK  v0.0.16
 wt       OK  v0.0.16  wired
 idea     OK  v0.0.7
 tu       OK  v0.4.17  wired
-rk       OK  v2.2.3
+run-kit  OK  v2.2.3
 hop      OK  v0.1.16  wired
 fab-kit  OK  v2.1.1
 ```
