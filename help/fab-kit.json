@@ -1,14 +1,14 @@
 {
   "tool": "fab",
-  "version": "2.13.5",
-  "captured_at": "2026-07-09T10:31:48Z",
+  "version": "2.15.3",
+  "captured_at": "2026-07-10T10:29:37Z",
   "schema_version": 1,
   "root": {
     "name": "fab",
     "path": "fab",
     "short": "Fab workflow engine — single binary replacement for kit shell scripts",
     "usage": "fab",
-    "text": "Usage:\n  fab [command]\n\nAvailable Commands:\n  agent         Launch (or --print) the resolved agent session command in the current shell\n  batch         Multi-target batch operations\n  change        Change lifecycle management\n  completion    Generate the autocompletion script for the specified shell\n  config        Inspect fab project configuration\n  dispatch      Headless process manager for CLI-dispatched pipeline stages\n  fab-help      Show fab workflow overview and available commands\n  help          Help about any command\n  hook          Claude Code hook subcommands\n  impact        Compute git diff line counts (added/deleted/net) between two refs\n  kit-path      Print the resolved kit directory path\n  log           Append-only JSON logging to .history.jsonl\n  memory-index  Deterministically (re)generate docs/memory index files\n  operator      Launch operator in a dedicated tmux tab (singleton)\n  pane          Tmux pane operations\n  pr-meta       Render the `## Meta` block of a fab-generated PR as final markdown\n  preflight     Validate project state and output structured YAML\n  resolve       Resolve a change reference to a canonical output\n  resolve-agent Resolve a pipeline stage (or role tier) to its {provider, model, effort} agent profile\n  score         Compute confidence score from Assumptions table\n  shell-init    Emit shell completion script for sourcing (alias for 'completion <shell>')\n  status        Manage workflow stages, states, and .status.yaml\n\nUse \"fab [command] --help\" for more information about a command.\n",
+    "text": "Usage:\n  fab [command]\n\nAvailable Commands:\n  agent         Launch (or --print) the resolved agent session command in the current shell\n  batch         Multi-target batch operations\n  change        Change lifecycle management\n  completion    Generate the autocompletion script for the specified shell\n  config        Inspect fab project configuration\n  dispatch      Headless process manager for CLI-dispatched pipeline stages\n  fab-help      Show fab workflow overview and available commands\n  help          Help about any command\n  impact        Compute git diff line counts (added/deleted/net) between two refs\n  kit-path      Print the resolved kit directory path\n  log           Append-only JSON logging to .history.jsonl\n  memory-index  Deterministically (re)generate docs/memory index files\n  operator      Launch operator in a dedicated tmux tab (singleton)\n  pane          Tmux pane operations\n  pr-meta       Render the `## Meta` block of a fab-generated PR as final markdown\n  preflight     Validate project state and output structured YAML\n  resolve       Resolve a change reference to a canonical output\n  resolve-agent Resolve a pipeline stage (or role tier) to its {provider, model, effort} agent profile\n  score         Compute confidence score from Assumptions table\n  shell-init    Emit shell completion script for sourcing (alias for 'completion <shell>')\n  status        Manage workflow stages, states, and .status.yaml\n\nUse \"fab [command] --help\" for more information about a command.\n",
     "commands": [
       {
         "name": "agent",
@@ -129,14 +129,38 @@
         "path": "fab config",
         "short": "Inspect fab project configuration",
         "usage": "fab config",
-        "text": "Usage:\n  fab config [command]\n\nAvailable Commands:\n  reference   Print the fully-commented reference config.yaml (all available options)\n\nUse \"fab config [command] --help\" for more information about a command.\n",
+        "text": "Usage:\n  fab config [command]\n\nAvailable Commands:\n  init        Write a system scaffold (--system) or generate a project config from the registry (--project)\n  reference   Print the fully-commented reference config.yaml (all available options)\n  show        Print the effective (post-cascade) config, optionally with per-field provenance\n  upgrade     Reconcile fab/project/config.yaml against the current field registry\n\nUse \"fab config [command] --help\" for more information about a command.\n",
         "commands": [
+          {
+            "name": "init",
+            "path": "fab config init",
+            "short": "Write a system scaffold (--system) or generate a project config from the registry (--project)",
+            "usage": "fab config init (--system | --project) [flags]",
+            "text": "Usage:\n  fab config init (--system | --project) [flags]\n\nFlags:\n      --description string        Project description (--project seed)\n      --name string               Project name (--project seed)\n      --project                   Generate fab/project/config.yaml from the registry (identity fields + fence)\n      --source-path stringArray   Source path (--project seed; repeatable)\n      --system                    Write the ~/.fab-kit/config.yaml system-layer scaffold\n      --test-path stringArray     Test path pattern (--project seed; repeatable)\n",
+            "commands": []
+          },
           {
             "name": "reference",
             "path": "fab config reference",
             "short": "Print the fully-commented reference config.yaml (all available options)",
-            "usage": "fab config reference",
-            "text": "Usage:\n  fab config reference\n",
+            "usage": "fab config reference [flags]",
+            "text": "Usage:\n  fab config reference [flags]\n\nFlags:\n      --json   Emit the field metadata table as a JSON array (instead of commented YAML)\n",
+            "commands": []
+          },
+          {
+            "name": "show",
+            "path": "fab config show",
+            "short": "Print the effective (post-cascade) config, optionally with per-field provenance",
+            "usage": "fab config show [flags]",
+            "text": "Usage:\n  fab config show [flags]\n\nFlags:\n      --origin   Annotate each field with its provenance (project path / system path / default)\n",
+            "commands": []
+          },
+          {
+            "name": "upgrade",
+            "path": "fab config upgrade",
+            "short": "Reconcile fab/project/config.yaml against the current field registry",
+            "usage": "fab config upgrade",
+            "text": "Usage:\n  fab config upgrade\n",
             "commands": []
           }
         ]
@@ -197,47 +221,6 @@
         "usage": "fab fab-help",
         "text": "Usage:\n  fab fab-help\n",
         "commands": []
-      },
-      {
-        "name": "hook",
-        "path": "fab hook",
-        "short": "Claude Code hook subcommands",
-        "usage": "fab hook",
-        "text": "Usage:\n  fab hook [command]\n\nAvailable Commands:\n  session-start  Delete agent entry on session start\n  stop           Record agent idle entry on stop\n  sync           Register hook commands into .claude/settings.local.json\n  user-prompt    Clear idle_since on user prompt, preserving other entry fields\n\nUse \"fab hook [command] --help\" for more information about a command.\n",
-        "commands": [
-          {
-            "name": "session-start",
-            "path": "fab hook session-start",
-            "short": "Delete agent entry on session start",
-            "usage": "fab hook session-start",
-            "text": "Usage:\n  fab hook session-start\n",
-            "commands": []
-          },
-          {
-            "name": "stop",
-            "path": "fab hook stop",
-            "short": "Record agent idle entry on stop",
-            "usage": "fab hook stop",
-            "text": "Usage:\n  fab hook stop\n",
-            "commands": []
-          },
-          {
-            "name": "sync",
-            "path": "fab hook sync",
-            "short": "Register hook commands into .claude/settings.local.json",
-            "usage": "fab hook sync",
-            "text": "Usage:\n  fab hook sync\n",
-            "commands": []
-          },
-          {
-            "name": "user-prompt",
-            "path": "fab hook user-prompt",
-            "short": "Clear idle_since on user prompt, preserving other entry fields",
-            "usage": "fab hook user-prompt",
-            "text": "Usage:\n  fab hook user-prompt\n",
-            "commands": []
-          }
-        ]
       },
       {
         "name": "impact",
