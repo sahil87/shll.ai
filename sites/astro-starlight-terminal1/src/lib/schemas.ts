@@ -61,7 +61,7 @@ export interface Node {
  * `help/<slug>.json` at the repo root.
  */
 export const HelpDocSchema = z.object({
-  /** Invoked binary name (e.g. "wt", "rk", "fab") — not necessarily the file slug. */
+  /** Invoked binary name (e.g. "wt", "run-kit", "fab") — not necessarily the file slug. */
   tool: z.string(),
   /** Version reported by the built binary; never hardcoded by the producer. */
   version: z.string(),

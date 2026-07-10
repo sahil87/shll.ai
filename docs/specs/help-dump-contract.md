@@ -56,7 +56,7 @@ The post-capture envelope below matches `HelpDocSchema` in `sites/astro-starligh
 
 ```jsonc
 {
-  "tool": "wt",                          // invoked binary name (wt, rk, fab) — NOT the file slug
+  "tool": "wt",                          // invoked binary name (wt, run-kit, fab) — NOT the file slug
   "version": "1.4.2",                    // from the built binary (ldflags / rootCmd.Version)
   "captured_at": "2026-06-02T00:00:00Z", // ISO-8601 UTC — STAMPED BY THE PULLER, not emitted by the tool
   "schema_version": 1,                   // integer; current = 1
@@ -69,7 +69,7 @@ The post-capture envelope below matches `HelpDocSchema` in `sites/astro-starligh
 ```jsonc
 {
   "name": "wt",            // command name at this level (e.g. "create")
-  "path": "wt",            // full invocation path (e.g. "wt create" / "rk riff") — drives the tree label
+  "path": "wt",            // full invocation path (e.g. "wt create" / "run-kit riff") — drives the tree label
   "short": "…",            // one-line description (Cobra Short)
   "usage": "wt [command]", // usage line
   "text": "…",             // raw -h/--help output for this command, byte-for-byte, newlines preserved
@@ -99,11 +99,11 @@ When walking the command tree, `help-dump` MUST drop:
 
 ## §5 Discovery & recursion
 
-`help-dump` MUST discover the command tree **programmatically** by walking `rootCmd.Commands()`, recursing to **full depth** (any number of levels — matches the `rk riff` nested-subcommand case). It MUST **NEVER** regex-parse `-h` text to discover structure. The `-h` text is captured verbatim into each node's `text` field, but it is never the source of tree structure.
+`help-dump` MUST discover the command tree **programmatically** by walking `rootCmd.Commands()`, recursing to **full depth** (any number of levels — matches the `run-kit riff` nested-subcommand case). It MUST **NEVER** regex-parse `-h` text to discover structure. The `-h` text is captured verbatim into each node's `text` field, but it is never the source of tree structure.
 
 ### GIVEN/WHEN/THEN
 
-- **Tree discovered by walking, recursively** — GIVEN a tool with nested subcommands (e.g. `rk riff`); WHEN `help-dump` discovers the tree; THEN it walks `rootCmd.Commands()` recursively to full depth, never parsing `-h` text for structure.
+- **Tree discovered by walking, recursively** — GIVEN a tool with nested subcommands (e.g. `run-kit riff`); WHEN `help-dump` discovers the tree; THEN it walks `rootCmd.Commands()` recursively to full depth, never parsing `-h` text for structure.
 
 ## §6 Version from the built binary
 
@@ -163,11 +163,11 @@ There are **three** distinct names per tool, which are not always equal:
 - **formula name** — the Homebrew formula shll.ai installs (`brew install sahil87/tap/<formula>`).
 - **binary name** — the executable shll.ai invokes (`<binary> help-dump`), also carried in the JSON's `tool` field.
 
-For most tools all three match; for some they diverge — e.g. `run-kit` → file slug `run-kit`, **formula `rk`**, binary `rk` (the formula is `rk`, **not** `run-kit`); `fab-kit` → slug `fab-kit`, formula `fab-kit`, binary `fab`. **This mapping lives entirely in shll.ai's scheduled job** (the `slug:formula:binary` table in `.github/workflows/refresh-help.yml`) — conflating the three is a real bug (using the slug as the formula name makes `brew install` fail for `run-kit`). **A tool author therefore never reasons about any of these** — not to find their old producer (they grep for their push *wiring* / `SHLLAI_TOKEN`), and not for anything in `help-dump` (it just emits to stdout). The teardown directive below is written without any `<slug>`/`<formula>` reference for this reason.
+For most tools all three match; for some they diverge — e.g. `fab-kit` → file slug `fab-kit`, formula `fab-kit`, **binary `fab`** (the binary is `fab`, **not** `fab-kit`). (`run-kit` was the divergence example before its v3.0.0 rename: as of v3.0.0 its slug/formula/binary all read `run-kit`, so it no longer diverges — `rk` survives only as a brew-installed symlink alias.) **This mapping lives entirely in shll.ai's scheduled job** (the `slug:formula:binary` table in `.github/workflows/refresh-help.yml`) — conflating the three is a real bug (using the slug as the binary name makes `<binary> help-dump` fail for `fab-kit`). **A tool author therefore never reasons about any of these** — not to find their old producer (they grep for their push *wiring* / `SHLLAI_TOKEN`), and not for anything in `help-dump` (it just emits to stdout). The teardown directive below is written without any `<slug>`/`<formula>` reference for this reason.
 
 ### Teardown directive (paste to a tool-repo agent)
 
-The block below is a ready-to-hand-to-an-agent task that performs the teardown as a **single change**. Replace `<tool>` with the binary name (e.g. `wt`, `rk`, `fab`). It assumes the precondition above is satisfied (puller live and proven); if the puller is not yet live, do **not** dispatch it.
+The block below is a ready-to-hand-to-an-agent task that performs the teardown as a **single change**. Replace `<tool>` with the binary name (e.g. `wt`, `run-kit`, `fab`). It assumes the precondition above is satisfied (puller live and proven); if the puller is not yet live, do **not** dispatch it.
 
 ---
 

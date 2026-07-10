@@ -20,7 +20,7 @@ export default defineConfig({
   server: { host: '0.0.0.0' },
   vite: {
     server: {
-      // Allow rk-proxy + Tailscale hostnames. `true` skips the host check entirely;
+      // Allow run-kit's proxy + Tailscale hostnames. `true` skips the host check entirely;
       // safe here because the dev server is for an experiment under _playground.
       allowedHosts: true,
     },

@@ -44,7 +44,7 @@ function* walk(node: Node): Generator<Node> {
 interface CommandRow {
   kind: 'command';
   tool: string; // file slug, e.g. "run-kit" — also the docs route segment
-  path: string; // e.g. "rk riff"
+  path: string; // e.g. "run-kit riff"
   short: string;
 }
 interface FlagRow {

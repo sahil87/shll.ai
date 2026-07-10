@@ -33,7 +33,7 @@ test('TOOLS lists the canonical seven tools', () => {
 
 test('stripToolPrefix drops a leading `<bin> — ` prefix', () => {
   assert.equal(
-    stripToolPrefix('rk — tmux session manager with web UI', 'rk'),
+    stripToolPrefix('run-kit — tmux session manager with web UI', 'run-kit'),
     'tmux session manager with web UI',
   );
 });
@@ -45,14 +45,14 @@ test('stripToolPrefix leaves a short without the prefix untouched', () => {
   );
   // Wrong bin name → no strip.
   assert.equal(
-    stripToolPrefix('rk — tmux session manager', 'wt'),
-    'rk — tmux session manager',
+    stripToolPrefix('run-kit — tmux session manager', 'wt'),
+    'run-kit — tmux session manager',
   );
 });
 
 test('stripToolPrefix is idempotent', () => {
-  const once = stripToolPrefix('rk — tmux session manager', 'rk');
-  assert.equal(stripToolPrefix(once, 'rk'), once);
+  const once = stripToolPrefix('run-kit — tmux session manager', 'run-kit');
+  assert.equal(stripToolPrefix(once, 'run-kit'), once);
 });
 
 test('renderCommandTree renders the root even with zero subcommands', () => {

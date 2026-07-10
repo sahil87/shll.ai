@@ -1,0 +1,53 @@
+id: co63
+name: 260709-co63-run-kit-formula-rename
+created: 2026-07-09T14:56:30Z
+created_by: Sahil Ahuja
+change_type: chore
+issues: []
+progress:
+    intake: done
+    apply: done
+    review: done
+    hydrate: done
+    ship: done
+    review-pr: done
+plan:
+    generated: true
+    task_count: 27
+    acceptance_count: 19
+    acceptance_completed: 19
+confidence:
+    certain: 5
+    confident: 6
+    tentative: 0
+    unresolved: 0
+    score: 4.4
+    fuzzy: true
+    dimensions:
+        signal: 67.7
+        reversibility: 87.3
+        competence: 83.2
+        disambiguation: 71.8
+stage_metrics:
+    intake: {started_at: "2026-07-09T14:56:30Z", driver: fab-new, iterations: 1, completed_at: "2026-07-09T15:00:48Z"}
+    apply: {started_at: "2026-07-09T15:00:48Z", driver: fab-fff, iterations: 1, completed_at: "2026-07-09T15:14:59Z"}
+    review: {started_at: "2026-07-09T15:14:59Z", driver: fab-fff, iterations: 1, completed_at: "2026-07-09T15:22:35Z"}
+    hydrate: {started_at: "2026-07-09T15:22:35Z", driver: fab-fff, iterations: 1, completed_at: "2026-07-09T15:30:41Z"}
+    ship: {started_at: "2026-07-09T15:30:41Z", driver: fab-fff, iterations: 1, completed_at: "2026-07-09T15:33:21Z"}
+    review-pr: {started_at: "2026-07-09T15:33:21Z", driver: git-pr, iterations: 1, completed_at: "2026-07-09T15:43:01Z"}
+prs:
+    - https://github.com/sahil87/shll.ai/pull/81
+change_type_source: explicit
+true_impact:
+    added: 560
+    deleted: 109
+    net: 451
+    excluding:
+        added: 104
+        deleted: 84
+        net: 20
+    computed_at: "2026-07-09T15:33:21Z"
+    computed_at_stage: ship
+summary: 'run-kit v3.0.0 rename sweep: rk → run-kit as canonical CLI/formula/binary (rk kept as brew symlink short alias); updated the jf3q naming rule (now slug=binary=run-kit, terminal rk affordances the deliberate exception), the producer-quirk + slug≠binary examples (fab-kit is now the lone divergence), and the verbatim root.short references — puller-owned corpus untouched (transient ≤1-day pre-rename window).'
+# true_impact: lazily created on first stage-finish that computes it (no placeholder here).
+last_updated: 2026-07-09T15:43:01Z

@@ -105,8 +105,9 @@ jobs:
       #   - repo      → the GitHub repo whose README.md is fetched
       #                 (all tools live at github.com/sahil87/<repo>)
       # (Unlike the help job there is no formula/binary mapping here — we fetch a
-      # file from the repo, we don't install + run a binary. run-kit's repo is
-      # `run-kit` even though its binary/formula is `rk`.)
+      # file from the repo, we don't install + run a binary. Since run-kit v3.0.0
+      # its slug/formula/binary all align on `run-kit`; fab-kit remains the
+      # slug≠binary case — repo/formula `fab-kit`, binary `fab`.)
       #
       # Per-tool flow: fetch the raw README to a TEMP file, run the extract CLI
       # (deduction + NON-FATAL vn39 divergence reporter) writing to a TEMP slice,
