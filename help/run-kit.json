@@ -1,7 +1,7 @@
 {
   "tool": "run-kit",
-  "version": "v3.0.1",
-  "captured_at": "2026-07-13T10:34:54Z",
+  "version": "v3.3.0",
+  "captured_at": "2026-07-14T09:16:14Z",
   "schema_version": 1,
   "root": {
     "name": "run-kit",
