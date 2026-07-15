@@ -739,7 +739,13 @@ starlight-readme-toc .readme-toc-sublist {
   padding: 0.2rem 0;
 }
 .tools-listing li > a {
-  justify-self: start; /* underline hugs the tool name, not the column */
+  /* Hug the tool name on BOTH axes. Grid children default to stretch, so
+     without align-self the anchor's box grows to the full row height whenever
+     the description wraps — and the dotted border-bottom "underline" floats
+     at the row's bottom, detached from the one-line tool name (visible on
+     /tools/, whose JSON-sourced descriptions wrap to two lines). */
+  justify-self: start;
+  align-self: start;
 }
 /* .tool-desc color joins the .shell-session .shell-dim group above — one
    source for the dim-text treatment, same as the shared link styling. */
