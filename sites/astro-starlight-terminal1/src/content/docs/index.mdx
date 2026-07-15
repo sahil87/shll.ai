@@ -25,6 +25,10 @@ hero:
       link: /getting-started/install/
       icon: right-arrow
       variant: primary
+    - text: Explore the tools
+      link: /tools/
+      icon: open-book
+      variant: secondary
     - text: GitHub
       link: https://github.com/sahil87
       icon: external
@@ -34,6 +38,47 @@ hero:
 import Diagram from '../../components/Diagram.astro';
 import TerminalPrompt from '../../components/TerminalPrompt.astro';
 import VersionTable from '../../components/VersionTable.astro';
+
+{/* Above-the-fold quick nav — the tool links and install commands used to live
+    only below the terminal, where first-time visitors (who don't yet know the
+    terminal is typeable) never saw them. A chip row of the seven tools plus the
+    verbatim install block sit directly under the hero so both are reachable
+    without scrolling. The full annotated directory (`ls -l tools/`) stays
+    below; this row is bare names only. */}
+<section class="not-content" aria-label="Jump to a tool">
+<pre class="shell-session shell-caption not-content">
+<span class="shell-line"><span class="shell-prompt">$</span> ls tools/</span>
+</pre>
+<nav class="tools-chips">
+<a href="/tools/idea/overview/">idea</a>
+<a href="/tools/hop/overview/">hop</a>
+<a href="/tools/fab-kit/overview/">fab-kit</a>
+<a href="/tools/wt/overview/">wt</a>
+<a href="/tools/run-kit/overview/">run-kit</a>
+<a href="/tools/tu/overview/">tu</a>
+<a href="/tools/shll/overview/">shll</a>
+<a class="tools-chips-all" href="/tools/">all tools →</a>
+</nav>
+</section>
+
+{/* Install block (moved above the fold from its former spot below the diagram —
+    still change ld0j's block, one copy only). Commands are verbatim from
+    getting-started/install.md — do not edit them here without updating there.
+    The $ prompt is user-select:none, so selection copies commands only.
+    `--formula` rides a JSX expression: MDX runs remark-smartypants over JSX
+    *text* (even inside <pre>), silently turning `--` into an em-dash — an
+    expression node is exempt, keeping the copied command runnable. */}
+<section class="not-content" aria-label="Install">
+<pre class="shell-session shell-caption not-content">
+<span class="shell-line shell-comment"># one brew tap, one install command, the whole toolkit</span>
+</pre>
+<pre class="shell-session not-content">
+<span class="shell-line"><span class="shell-prompt">$</span> brew trust {'--formula'} sahil87/tap/shll</span>
+<span class="shell-line"><span class="shell-prompt">$</span> brew install sahil87/tap/shll</span>
+<span class="shell-line"><span class="shell-prompt">$</span> shll install</span>
+<span class="shell-line shell-comment"># full steps → <a href="/getting-started/install/">getting-started/install</a></span>
+</pre>
+</section>
 
 <div class="terminal-window not-content">
 <div class="terminal-titlebar" aria-hidden="true"><span class="terminal-dot terminal-dot-1"></span><span class="terminal-dot terminal-dot-2"></span><span class="terminal-dot terminal-dot-3"></span></div>
@@ -72,11 +117,13 @@ import VersionTable from '../../components/VersionTable.astro';
 </section>
 
 {/* Tools directory — seven real links styled as an `ls` listing (change ld0j).
-    One-liners stay at the "what it's for" level and name no commands or flags
-    (the vn39 hard rule for hand-written prose). */}
+    `ls -l` (long format) because this is the annotated copy — the bare-names
+    chip row above the fold is the plain `ls`. One-liners stay at the "what
+    it's for" level and name no commands or flags (the vn39 hard rule for
+    hand-written prose). */}
 <section class="not-content" aria-label="The seven tools">
 <pre class="shell-session shell-caption not-content">
-<span class="shell-line"><span class="shell-prompt">$</span> ls tools/</span>
+<span class="shell-line"><span class="shell-prompt">$</span> ls -l tools/</span>
 </pre>
 <ul class="tools-listing">
 <li><a href="/tools/idea/overview/">idea</a><span class="tool-desc">capture ideas and feed a backlog without breaking flow</span></li>
@@ -105,21 +152,6 @@ import VersionTable from '../../components/VersionTable.astro';
 <div class="home-prose not-content">
 <p>One idea fans out into parallel agents — each in its own isolated working copy — and converges back into a single dashboard. Inside the loop, <a href="/tools/idea/overview/">idea</a> captures the backlog, <a href="/tools/fab-kit/overview/">fab-kit</a> turns an item into a plan, <a href="/tools/wt/overview/">wt</a> gives each change a disposable worktree, and <a href="/tools/run-kit/overview/">run-kit</a> watches every session. Around the loop, <a href="/tools/hop/overview/">hop</a> jumps between repos, <a href="/tools/tu/overview/">tu</a> tracks what it all costs, and <a href="/tools/shll/overview/">shll</a> keeps the toolkit installed.</p>
 </div>
-
-{/* Install one-liner for people who scroll (change ld0j). Commands are verbatim
-    from getting-started/install.md — do not edit them here without updating
-    there. The $ prompt is user-select:none, so selection copies commands only. */}
-<section class="not-content" aria-label="Install">
-<pre class="shell-session shell-caption not-content">
-<span class="shell-line shell-comment"># one brew tap, one install command, the whole toolkit</span>
-</pre>
-<pre class="shell-session not-content">
-<span class="shell-line"><span class="shell-prompt">$</span> brew trust --formula sahil87/tap/shll</span>
-<span class="shell-line"><span class="shell-prompt">$</span> brew install sahil87/tap/shll</span>
-<span class="shell-line"><span class="shell-prompt">$</span> shll install</span>
-<span class="shell-line shell-comment"># full steps → <a href="/getting-started/install/">getting-started/install</a></span>
-</pre>
-</section>
 
 {/* Author section under a `whoami` motif (change d9qb) — deliberately rhymes
     with the terminal's whoami easter egg ("a developer who plans before they
