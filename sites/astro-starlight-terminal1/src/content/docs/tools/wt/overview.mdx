@@ -5,10 +5,15 @@ description: Opinionated git worktree wrapper — one worktree per change, one A
 ---
 
 import GithubButton from '../../../../components/GithubButton.astro';
+import InstallOneLiner from '../../../../components/InstallOneLiner.astro';
 
 <GithubButton tool="wt" />
 
 `wt` is an opinionated git worktree wrapper built for parallel AI coding — one worktree per change, one agent session per worktree, zero merge conflicts between them. It wraps `git worktree` with defaults that make the pattern effortless: worktrees are sibling directories (`<repo>.worktrees/<name>/`), names are memorable adjective-noun pairs, and a shell wrapper makes `cd`-into-worktree from a menu work. If you're running several coding agents at once, `wt` is what keeps each one in its own isolated working copy.
+
+## Install
+
+<InstallOneLiner tool="wt" />
 
 ## How it fits
 

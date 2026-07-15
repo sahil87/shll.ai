@@ -5,10 +5,15 @@ description: Meta-CLI to install, update, and shell-wire the whole toolkit in on
 ---
 
 import GithubButton from '../../../../components/GithubButton.astro';
+import InstallOneLiner from '../../../../components/InstallOneLiner.astro';
 
 <GithubButton tool="shll" />
 
 `shll` is the meta-CLI that bootstraps the whole AI coding toolkit — one command to install, update, and shell-wire every tool at once. It composes the per-tool CLIs rather than replacing them: `shll install` brings down each binary, and `shll update` keeps them current. It's the first thing you run and the one command you keep around to keep everything in sync.
+
+## Install
+
+<InstallOneLiner tool="shll" />
 
 ## How it fits
 
