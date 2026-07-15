@@ -7,11 +7,7 @@ description: One line, the whole toolkit.
 curl -fsSL https://shll.ai/install | sh
 ```
 
-The script bootstraps `shll` (trusts + brew-installs its formula), then hands off to `shll install`, which trusts and installs every roster tool you're missing. Requires [Homebrew](https://brew.sh) — the script exits with a pointer if it's absent. Pass tool names to install a subset:
-
-```bash
-curl -fsSL https://shll.ai/install | sh -s -- hop wt
-```
+The script bootstraps `shll` (trusts + brew-installs its formula), then hands off to `shll install`, which trusts and installs every roster tool you're missing. Requires [Homebrew](https://brew.sh) — the script exits with a pointer if it's absent. (Only want some of the tools? See [Per-tool install](#per-tool-install).)
 
 Then wire your shell:
 
@@ -57,10 +53,10 @@ The `run-kit agent-setup` line above is optional and once per machine — it lig
 
 ## Per-tool install
 
-If you only want specific tools, pass their names to the one-liner (this also installs `shll`, which handles the trust ceremony for you):
+If you only want a subset of the tools, pass their names to the one-liner (this also installs `shll`, which handles the trust ceremony for you):
 
 ```bash
-curl -fsSL https://shll.ai/install | sh -s -- idea fab-kit
+curl -fsSL https://shll.ai/install | sh -s -- hop wt
 ```
 
 Or skip the meta-installer entirely — every tool has its own brew formula and you opt in piece by piece:
