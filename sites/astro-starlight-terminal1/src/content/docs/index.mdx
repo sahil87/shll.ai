@@ -65,17 +65,16 @@ import VersionTable from '../../components/VersionTable.astro';
     still change ld0j's block, one copy only). Commands are verbatim from
     getting-started/install.md — do not edit them here without updating there.
     The $ prompt is user-select:none, so selection copies commands only.
-    `--formula` rides a JSX expression: MDX runs remark-smartypants over JSX
-    *text* (even inside <pre>), silently turning `--` into an em-dash — an
-    expression node is exempt, keeping the copied command runnable. */}
+    Remark hazard: MDX runs remark plugins over JSX *text* (even inside
+    <pre>) — smartypants turns `--` into an em-dash, and bare URLs get
+    auto-linked into anchors. Any command containing `--` or a URL must ride
+    a JSX expression (e.g. {'--formula'}) to keep the copied text runnable. */}
 <section class="not-content" aria-label="Install">
 <pre class="shell-session shell-caption not-content">
-<span class="shell-line shell-comment"># one brew tap, one install command, the whole toolkit</span>
+<span class="shell-line shell-comment"># one line, the whole toolkit</span>
 </pre>
 <pre class="shell-session not-content">
-<span class="shell-line"><span class="shell-prompt">$</span> brew trust {'--formula'} sahil87/tap/shll</span>
-<span class="shell-line"><span class="shell-prompt">$</span> brew install sahil87/tap/shll</span>
-<span class="shell-line"><span class="shell-prompt">$</span> shll install</span>
+<span class="shell-line"><span class="shell-prompt">$</span> curl -fsSL {'https://shll.ai/install'} | sh</span>
 <span class="shell-line shell-comment"># full steps → <a href="/getting-started/install/">getting-started/install</a></span>
 </pre>
 </section>

@@ -2,6 +2,8 @@
 dist/
 # generated types
 .astro/
+# fetched at deploy time from sahil87/shll scripts/install.sh (served at shll.ai/install)
+sites/*/public/install
 
 # dependencies
 node_modules/
