@@ -42,6 +42,14 @@ jobs:
         working-directory: ${{ env.SITE_DIR }}
         run: pnpm install --frozen-lockfile
 
+      # The canonical script lives in sahil87/shll (versioned next to the CLI
+      # it bootstraps); the site serves a deploy-time copy at shll.ai/install.
+      # -f is deliberate: if the script is missing upstream, fail the deploy
+      # rather than ship a site whose documented one-liner 404s.
+      - name: Fetch install script (served at shll.ai/install)
+        working-directory: ${{ env.SITE_DIR }}
+        run: curl -fsSL https://raw.githubusercontent.com/sahil87/shll/main/scripts/install.sh -o public/install
+
       - name: Build with Astro
         working-directory: ${{ env.SITE_DIR }}
         run: pnpm build

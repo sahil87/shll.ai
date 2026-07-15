@@ -1,15 +1,34 @@
 ---
 title: Install everything
-description: One brew tap, one install command, the whole toolkit.
+description: One line, the whole toolkit.
 ---
+
+```bash
+curl -fsSL https://shll.ai/install | sh
+```
+
+The script bootstraps `shll` (trusts + brew-installs its formula), then hands off to `shll install`, which trusts and installs every roster tool you're missing. Requires [Homebrew](https://brew.sh) — the script exits with a pointer if it's absent. Pass tool names to install a subset:
+
+```bash
+curl -fsSL https://shll.ai/install | sh -s -- hop wt
+```
+
+Then wire your shell:
+
+```bash
+shll shell-setup                        # wire your shell integration
+run-kit agent-setup                     # optional, once per machine: agent state in the run-kit dashboard
+exec $SHELL                             # reload so the shell integration takes effect
+```
+
+## What the one-liner runs
+
+The script is [a few dozen auditable lines](https://github.com/sahil87/shll/blob/main/scripts/install.sh) equivalent to:
 
 ```bash
 brew trust --formula sahil87/tap/shll   # bootstrap: trust shll's formula
 brew install sahil87/tap/shll           # bootstrap: install shll itself
 shll install                            # trusts + brew-installs every roster tool you're missing
-shll shell-setup                        # wire your shell integration
-run-kit agent-setup                     # optional, once per machine: agent state in the run-kit dashboard
-exec $SHELL                             # reload so the shell integration takes effect
 ```
 
 The first two lines are a one-time **bootstrap**: shll can't trust its own formula before it exists, so you trust-and-install `shll` directly with brew. From there, `shll install` owns trust for the other six tools — it runs `brew trust --formula sahil87/tap/<formula>` before each install (drop it with `--no-trust` if you manage trust yourself).
@@ -38,7 +57,13 @@ The `run-kit agent-setup` line above is optional and once per machine — it lig
 
 ## Per-tool install
 
-If you only want one tool, every tool has its own brew formula:
+If you only want specific tools, pass their names to the one-liner (this also installs `shll`, which handles the trust ceremony for you):
+
+```bash
+curl -fsSL https://shll.ai/install | sh -s -- idea fab-kit
+```
+
+Or skip the meta-installer entirely — every tool has its own brew formula and you opt in piece by piece:
 
 ```bash
 brew trust --formula sahil87/tap/idea && brew install sahil87/tap/idea
@@ -46,7 +71,7 @@ brew trust --formula sahil87/tap/fab-kit && brew install sahil87/tap/fab-kit
 # etc.
 ```
 
-Skip the meta-installer; you opt in piece by piece. (Each formula needs its own `brew trust` on Homebrew 6.0+ — the same trust `shll install` records for you automatically.)
+(Each formula needs its own `brew trust` on Homebrew 6.0+ — the same trust `shll install` records for you automatically.)
 
 ## Update
 
