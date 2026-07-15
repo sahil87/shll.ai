@@ -689,7 +689,40 @@ starlight-readme-toc .readme-toc-sublist {
   border-radius: 2px;
 }
 
-/* Tools listing — `ls tools/` output as real HTML rows: name link column +
+/* Tools quick-nav chips — the above-the-fold `ls tools/` row under the hero:
+   seven bare tool names plus an "all tools" trailer, each a bordered chip.
+   Skinned exclusively with the shared --c-* variables (both themes for free,
+   Constitution V); focus treatment copies .terminal-cmdbar .terminal-chip so
+   every chip-shaped control shares one visible focus state. */
+.tools-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0.25rem 0 1.5rem;
+  font-size: 0.95rem;
+}
+.tools-chips a {
+  color: var(--c-accent);
+  text-decoration: none;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  padding: 0.35rem 0.85rem; /* comfortable tap target */
+}
+.tools-chips a:hover {
+  border-color: var(--c-accent);
+  background: var(--c-surface-2);
+}
+.tools-chips a:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 1px;
+}
+.tools-chips .tools-chips-all {
+  color: var(--c-fg-dim);
+  border-style: dashed;
+}
+
+/* Tools listing — `ls -l tools/` output as real HTML rows: name link column +
    dim one-liner. Grid keeps the description ragged-left like aligned ls -l
    output; on narrow screens rows stack with the description indented. */
 .tools-listing {

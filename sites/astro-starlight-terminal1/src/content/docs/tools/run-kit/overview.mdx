@@ -9,6 +9,12 @@ import GithubButton from '../../../../components/GithubButton.astro';
 
 `run-kit` is an agent-agnostic remote console for your tmux — every session and pane as a live terminal, in a sidebar, from your desk or your phone (mobile-friendly over Tailscale). It never wraps what's in the pane: a pane is equally an AI coding agent, a dev server, a REPL, or an ssh session. `run-kit riff` spawns each parallel workspace in its own git worktree; `run-kit serve` opens the dashboard that watches them all. Because it exposes your tmux rather than any one agent's protocol, it outlives whatever coding agent you're running this month.
 
+## Screenshots
+
+![The dashboard driving an AI coding agent — boards and sessions in the sidebar, a live agent pane mid-task, host stats in the corner](/screenshots/run-kit-agent-session.webp)
+
+![A plain terminal session in the browser — the sidebar lists servers, sessions, and panes alongside live host stats](/screenshots/run-kit-console.webp)
+
 ## How it fits
 
 `run-kit` is the window onto everything else: it watches the agent sessions running in your **[wt](../../wt/overview/)** worktrees, so a whole fan-out of parallel changes lives on one screen. Pair it with **[tu](../../tu/overview/)** to keep the running cost of those sessions in view.
