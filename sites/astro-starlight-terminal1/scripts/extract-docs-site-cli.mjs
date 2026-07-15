@@ -77,7 +77,7 @@ if (!/^[A-Za-z0-9._-]+$/.test(slug) || slug === '.' || slug === '..') {
 }
 
 // Static per-tool page slugs OWNED BY THE SITE under src/content/docs/tools/<slug>/.
-// A docs/site page that mounts at /tools/<slug>/<reserved> collides with one of
+// A docs/site page that mounts at /<slug>/<reserved> collides with one of
 // these: the dynamic route is higher-priority than Starlight's catch-all, so the
 // docs/site page SILENTLY SHADOWS the static page (build emits only a buried
 // [WARN]). Contract §9.2 makes "don't use a reserved slug" a producer rule; this
@@ -89,7 +89,7 @@ if (!/^[A-Za-z0-9._-]+$/.test(slug) || slug === '.' || slug === '..') {
 // the hand-authored overview directory entry + the generated readme/commands pages.
 // `install` and `workflows` are NOT reserved — they belong to the tool repo via
 // docs/site/install.md / docs/site/workflows.md (the prior hand-authored stubs were
-// removed). So a tool's docs/site/install.md mounts cleanly at /tools/<slug>/install.
+// removed). So a tool's docs/site/install.md mounts cleanly at /<slug>/install.
 const RESERVED_SLUGS = new Set(['overview', 'readme', 'commands']);
 
 /** Recursively collect every `*.md` file under `dir`, returned as paths relative
@@ -121,7 +121,7 @@ const files = await collectMarkdown(docsSiteDir);
 // the workflow's `git add -A content/` stage the deletion). Without this the mount
 // was purely additive — mkdir+writeFile per pulled page, never removing a stale one
 // — so an upstream delete stranded a ghost page forever (e.g. fab-kit/site/README.md
-// at /tools/fab-kit/README). `force: true` makes a first-ever pull (no dir yet) a
+// at /fab-kit/README). `force: true` makes a first-ever pull (no dir yet) a
 // no-op. This targets ONLY content/<slug>/site/ — never the README slice or any
 // other path. Clearing on an EMPTY pull is correct AND safe: the workflow invokes
 // this CLI only when the tarball fetch SUCCEEDED (a fetch failure `continue`s before
@@ -145,12 +145,12 @@ for (const rel of files) {
   const markdown = await readFile(srcPath, 'utf8');
 
   // Reserved-slug lint (report-only, §9.2) — the page's first mount segment is
-  // its top-level path under /tools/<slug>/; if it equals a static tool-page slug,
+  // its top-level path under /<slug>/; if it equals a static tool-page slug,
   // the page silently shadows the hand-authored one. Warn, but still commit.
   const mountTop = relPosix.replace(/\.md$/i, '').split('/')[0];
   if (RESERVED_SLUGS.has(mountTop.toLowerCase())) {
     console.error(
-      `::warning::${slug} docs/site/${relPosix} mounts at /tools/${slug}/${mountTop}, shadowing the static "${mountTop}" tool page (§9.2 reserved slug). Committing anyway; rename the docs/site page in the tool repo.`,
+      `::warning::${slug} docs/site/${relPosix} mounts at /${slug}/${mountTop}, shadowing the static "${mountTop}" tool page (§9.2 reserved slug). Committing anyway; rename the docs/site page in the tool repo.`,
     );
   }
 

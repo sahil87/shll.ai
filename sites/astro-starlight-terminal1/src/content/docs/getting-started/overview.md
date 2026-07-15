@@ -16,7 +16,7 @@ idea  →  fab-kit  →  wt        →  run-kit
  └── backlog feeds /fab-new
 ```
 
-The chain runs **[idea](/tools/idea/overview/)** → **[fab-kit](/tools/fab-kit/overview/)** → **[wt](/tools/wt/overview/)** → **[run-kit](/tools/run-kit/overview/)**: a backlog item becomes a planned change, the change runs in its own worktree, and the dashboard watches every agent. Around the chain, **[tu](/tools/tu/overview/)** watches the cost of all of it, **[hop](/tools/hop/overview/)** is a personal directory of your git repos — jump between them and batch-update them from anywhere — and **[shll](/tools/shll/overview/)** is the bootstrap that installs and updates the whole set.
+The chain runs **[idea](/idea/)** → **[fab-kit](/fab-kit/)** → **[wt](/wt/)** → **[run-kit](/run-kit/)**: a backlog item becomes a planned change, the change runs in its own worktree, and the dashboard watches every agent. Around the chain, **[tu](/tu/)** watches the cost of all of it, **[hop](/hop/)** is a personal directory of your git repos — jump between them and batch-update them from anywhere — and **[shll](/shll/)** is the bootstrap that installs and updates the whole set.
 
 ## What's on this site
 

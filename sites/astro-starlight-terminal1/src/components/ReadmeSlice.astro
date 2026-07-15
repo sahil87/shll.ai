@@ -5,9 +5,9 @@
  * Reads `<repo-root>/content/<tool>/README.md` (the deduced, curated slice the
  * scheduled readme-refresh job commits — see docs/specs/readme-extraction-contract.md),
  * renders the markdown to static HTML, and emits it on the tool's parallel
- * `readme` page (src/content/docs/tools/<tool>/readme.mdx, slug
- * /tools/<tool>/readme — a sibling of the generated `commands` page; NOT the
- * overview page). All work happens in this frontmatter, which runs during
+ * `readme` page (src/content/docs/tools/<tool>/readme.mdx, canonical URL
+ * /<tool>/readme since change 3ke3 — a sibling of the generated `commands` page;
+ * NOT the overview page). All work happens in this frontmatter, which runs during
  * `astro build` — no client-side fetch and no client JS for the primary content
  * (Constitution I).
  *
@@ -135,11 +135,11 @@ if (!missing) {
     // Astro's own markdown processor rather than a hand-rolled slugger.
     const processor = await createMarkdownProcessor({});
     // Resolve README links INTO docs/site/ pages to a SITE-ABSOLUTE path:
-    // `[x](docs/site/install.md)` → `[x](/tools/<tool>/install)` — the mounted
+    // `[x](docs/site/install.md)` → `[x](/<tool>/install)` — the mounted
     // dynamic-route page. Site-absolute (not relative `./install`) because pages
     // are served as trailing-slash directories: this README page lives at
-    // `/tools/<tool>/readme/`, so a relative `./install` would resolve to
-    // `/tools/<tool>/readme/install` (one segment too deep). The slice on disk stays
+    // `/<tool>/readme/`, so a relative `./install` would resolve to
+    // `/<tool>/readme/install` (one segment too deep). The slice on disk stays
     // a verbatim copy of the canonical README; the rewrite is render-side, mirroring
     // the docs/site route's rewriteDocsSiteLinks call ([...path].astro). The guard
     // ensures only relative link/image targets are touched (absolute URLs / prose /

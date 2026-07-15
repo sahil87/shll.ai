@@ -487,12 +487,14 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
     'The best diff is the one you predicted.',
   ];
 
-  const ROUTE_OVERVIEW = (tool: string) => `/tools/${tool}/overview/`;
+  // Change 3ke3: the per-tool namespace moved to the site root, so the overview
+  // is `/<tool>/` and its siblings are `/<tool>/readme/` / `/<tool>/commands/`.
+  const ROUTE_OVERVIEW = (tool: string) => `/${tool}/`;
   const ROUTE_INSTALL = '/getting-started/install/';
   // Per-tool sibling pages (change 37ng): every tool has all three (verified
   // at intake) — the tool cards' nav line links them all.
-  const ROUTE_README = (tool: string) => `/tools/${tool}/readme/`;
-  const ROUTE_COMMANDS = (tool: string) => `/tools/${tool}/commands/`;
+  const ROUTE_README = (tool: string) => `/${tool}/readme/`;
+  const ROUTE_COMMANDS = (tool: string) => `/${tool}/commands/`;
 
   // Activation-time greeting (change 23xc): one dim line stating what shll is
   // plus the invitation, printed by the island BEFORE the first live prompt so
@@ -2770,7 +2772,7 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
     // by name.
     function toolNavLine(slug: string): Line {
       return {
-        text: `docs: <a href="${ROUTE_OVERVIEW(slug)}">/tools/${slug}/overview</a> · <a href="${ROUTE_README(slug)}">readme</a> · <a href="${ROUTE_COMMANDS(slug)}">commands</a>     get it: <a href="${ROUTE_INSTALL}">install</a>`,
+        text: `docs: <a href="${ROUTE_OVERVIEW(slug)}">/${slug}</a> · <a href="${ROUTE_README(slug)}">readme</a> · <a href="${ROUTE_COMMANDS(slug)}">commands</a>     get it: <a href="${ROUTE_INSTALL}">install</a>`,
         classes: 'shell-out shell-dim',
         html: true,
       };
@@ -2853,7 +2855,7 @@ const toolHelpJson = JSON.stringify(toolHelp).replace(/</g, '\\u003c');
       const kidding: Line = { text: 'just kidding. the site is static — nothing was harmed.', classes: 'shell-out' };
       startStream(
         [
-          ...TOOLS.map((t) => ({ text: `removing /tools/${t}`, classes: 'shell-out' })),
+          ...TOOLS.map((t) => ({ text: `removing /${t}`, classes: 'shell-out' })),
           { text: 'removing /home/visitor', classes: 'shell-out' },
         ],
         {

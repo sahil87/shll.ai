@@ -110,9 +110,9 @@ for (const slug of slugs) {
   }
 }
 
-/** Link to the owning tool's generated commands page. */
+/** Link to the owning tool's generated commands page (root namespace, change 3ke3). */
 function commandsHref(slug: string): string {
-  return `/tools/${slug}/commands/`;
+  return `/${slug}/commands/`;
 }
 
 const commandCount = rows.filter((r) => r.kind === 'command').length;

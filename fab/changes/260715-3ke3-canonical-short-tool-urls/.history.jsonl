@@ -1,0 +1,10 @@
+{"action":"enter","driver":"fab-new","event":"stage-transition","stage":"intake","ts":"2026-07-15T20:13:23Z"}
+{"args":"Promote per-tool short URLs to canonical pages: /\u003ctool\u003e serves the overview directly, /\u003ctool\u003e/readme + /\u003ctool\u003e/commands + docs-site tree move to root, reverse /tools/\u003ctool\u003e/* into redirects, update all route-aware surfaces, keep /tools/ as directory landing","cmd":"fab-new","event":"command","ts":"2026-07-15T20:13:23Z"}
+{"delta":"+4.7","event":"confidence","score":4.7,"trigger":"calc-score","ts":"2026-07-15T20:15:15Z"}
+{"cmd":"fab-fff","event":"command","ts":"2026-07-15T20:16:14Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"apply","ts":"2026-07-15T20:16:27Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"review","ts":"2026-07-15T20:33:46Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-07-15T20:34:54Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"hydrate","ts":"2026-07-15T20:50:03Z"}
+{"event":"review","result":"passed","ts":"2026-07-15T20:50:03Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"ship","ts":"2026-07-15T21:06:20Z"}

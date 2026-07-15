@@ -9,9 +9,13 @@ import path from 'node:path';
 import { HelpDocSchema, type Node } from './schemas.ts';
 import { commandSlug } from './parse-help.ts';
 import { repoRootFromModuleUrl } from './repo-root.ts';
+import { isToolSlug } from './tool-slugs.ts';
 
-/** Per-tool commands pages have route id `tools/<tool>/commands`. */
-const COMMANDS_ROUTE_RE = /^tools\/([^/]+)\/commands$/;
+/** Per-tool commands pages have route id `<tool>/commands` (change 3ke3: the
+ *  `tools/` prefix was dropped when the namespace moved to the site root, so the
+ *  captured first segment is gated on the tool-slug roster rather than the prefix
+ *  — a bare `([^/]+)/commands` would otherwise false-positive on a root route). */
+const COMMANDS_ROUTE_RE = /^([^/]+)\/commands$/;
 
 export interface TocCommand {
   /** Full command path, e.g. "hop clone". */
@@ -20,10 +24,11 @@ export interface TocCommand {
   slug: string;
 }
 
-/** Tool slug if `id` is a per-tool commands route, else null. */
+/** Tool slug if `id` is a per-tool commands route (`<tool>/commands`, `<tool>` in
+ *  the roster), else null. */
 export function toolFromRouteId(id: string): string | null {
   const m = id.match(COMMANDS_ROUTE_RE);
-  return m ? m[1] : null;
+  return m && isToolSlug(m[1]) ? m[1] : null;
 }
 
 /**

@@ -316,22 +316,22 @@ verifier (§7 command/flag cross-check, a report-only reporter — not Zod-schem
   in the site `package.json` (pinned to the version astro core uses) so the bare import resolves under
   strict pnpm; this makes an existing dep importable, adding no new runtime dependency and no new
   transitive weight (Constitution VI). The component renders on a **parallel per-tool `readme` page**
-  (`src/content/docs/tools/<slug>/readme.mdx`, slug `/tools/<slug>/readme`, sidebar label "Readme") —
+  (`src/content/docs/tools/<slug>/readme.mdx`, slug `/<slug>/readme`, sidebar label "Readme") —
   a sibling of the generated `commands` page — **NOT** injected into `overview.mdx`. Each tool's
   `overview.mdx` is a thin directory entry (GithubButton + 1–2 sentence framing + nav links to the
   readme / commands pages and any `docs/site/` pages the tool publishes, e.g. install / workflows); the
   canonical depth lives on the readme page and the tool's `docs/site/` tree.
   Missing slice → neutral placeholder (build succeeds); present-but-unreadable slice → build fails (a
   committed defect must not deploy).
-- **`docs/site/` render side** (change `x0br`): a single Astro **dynamic route**
-  ([`src/pages/tools/[slug]/[...path].astro`](../../sites/astro-starlight-terminal1/src/pages/tools/%5Bslug%5D/%5B...path%5D.astro))
+- **`docs/site/` render side** (change `x0br`; namespace moved to root by change `3ke3`): a single Astro **dynamic route**
+  ([`src/pages/[slug]/[...path].astro`](../../sites/astro-starlight-terminal1/src/pages/%5Bslug%5D/%5B...path%5D.astro))
   walks the committed `content/<slug>/site/**` tree at build time via `getStaticPaths` and renders
-  **one page per file** at URL `/tools/<slug>/<path>` (the `docs/site/`/`site/` prefix stripped, the
-  subtree shape preserved) — e.g. `content/idea/site/advanced/hooks.md` → `/tools/idea/advanced/hooks`.
+  **one page per file** at URL `/<slug>/<path>` (the `docs/site/`/`site/` prefix stripped, the
+  subtree shape preserved) — e.g. `content/idea/site/advanced/hooks.md` → `/idea/advanced/hooks`.
   Each page is its **own page**, a sibling of `overview`/`readme`/`commands`. It reuses the SAME
   build-time `@astrojs/markdown-remark` `createMarkdownProcessor` + repo-root cross-boundary read as
   `ReadmeSlice.astro`, applies the §link-resolution site-absolute transform (passing the page's slug +
-  mount path so relative targets resolve to `/tools/<slug>/<resolved>`), and is wrapped in
+  mount path so relative targets resolve to `/<slug>/<resolved>`), and is wrapped in
   Starlight's `<StarlightPage>` so it inherits the sidebar, prose styles, and dark-mode parity
   (Constitution I/V/VI: build-time, no client JS, no new dependency). This is the FIRST dynamic route
   in the codebase (all other pages are static MDX stubs) — accepted, as it is the only approach that
@@ -348,7 +348,7 @@ verifier (§7 command/flag cross-check, a report-only reporter — not Zod-schem
   `items:` arrays, NOT `autogenerate`). A build-time helper
   ([`src/lib/docs-site-sidebar.mjs`](../../sites/astro-starlight-terminal1/src/lib/docs-site-sidebar.mjs))
   walks `content/<slug>/site/**` at config-evaluation time and produces a flat list of `{ label, link }`
-  entries (label = the page's first H1, link = `/tools/<slug>/<path>`), which `astro.config.mjs`
+  entries (label = the page's first H1, link = `/<slug>/<path>`), which `astro.config.mjs`
   **appends** to each tool's hand-authored `items:` array. So the variable docs/site pages appear in
   the sidebar automatically with zero per-page maintenance, beneath the hand-authored
   Overview/Readme/Commands entries; a tool with no tree gets no extra entries.
@@ -357,7 +357,7 @@ verifier (§7 command/flag cross-check, a report-only reporter — not Zod-schem
 
 - **`docs/site/` tree rendered as separate pages** — GIVEN committed `content/idea/site/install.md`
   and `content/idea/site/advanced/hooks.md`; WHEN the site builds; THEN pages exist at
-  `/tools/idea/install` and `/tools/idea/advanced/hooks`, each rendered build-time as static HTML
+  `/idea/install` and `/idea/advanced/hooks`, each rendered build-time as static HTML
   inside the Starlight layout, and both appear in the `idea` sidebar group.
 - **Missing `docs/site/` tree degrades cleanly** — GIVEN a tool with no committed
   `content/<slug>/site/` tree; WHEN the site builds; THEN no docs/site pages are emitted for it, no
@@ -371,7 +371,7 @@ verifier (§7 command/flag cross-check, a report-only reporter — not Zod-schem
   `content/<slug>/README.md` and the others still refresh. A tool whose README merely *diverges* is
   NOT isolated — its canonical slice is committed with a `::warning::`.
 - **Rendered on the parallel readme page** — GIVEN a committed `content/<slug>/README.md`; WHEN the
-  site builds; THEN `ReadmeSlice` renders it on `/tools/<slug>/readme`, while the tool's `overview`
+  site builds; THEN `ReadmeSlice` renders it on `/<slug>/readme`, while the tool's `overview`
   page stays a thin directory entry that links to it.
 
 ## §9 The `docs/site/` documentation tree — ACTIVE (closed-set model, change `x0br`)
@@ -395,13 +395,14 @@ post-implementation memory) and are **not** pulled. The organizing axis is there
 **published vs. not**: `README.md` slice + `docs/site/**` are published to the site; all other paths
 are not.
 
-**Mount.** `content/<slug>/site/<path>.md` → URL `/tools/<slug>/<path>` (the `docs/site/` prefix
+**Mount.** `content/<slug>/site/<path>.md` → URL `/<slug>/<path>` (the `docs/site/` prefix
 collapses to the `site/` collector, and `site/` is stripped from the URL; the subtree shape is
-preserved). Each file is its own page:
+preserved). Each file is its own page (the per-tool namespace lives at the site root since change
+`3ke3` — formerly `/tools/<slug>/<path>`):
 
 ```
-docs/site/install.md          → /tools/<slug>/install
-docs/site/advanced/hooks.md   → /tools/<slug>/advanced/hooks
+docs/site/install.md          → /<slug>/install
+docs/site/advanced/hooks.md   → /<slug>/advanced/hooks
 ```
 
 ### §9.1 Closed-set producer contract — the four rules
@@ -421,7 +422,7 @@ per-repo change — out of scope for the change that publishes this contract):
    absolute; shll.ai vendors zero binaries; a relative image is a closure violation (§closure lint).
 4. **README → `docs/site/` links written naturally.** A README link *into* a `docs/site/` page is
    written as the natural repo-relative path `docs/site/<path>.md`; shll.ai rewrites it on render to
-   the **site-absolute** path `/tools/<slug>/<path>` (§link resolution).
+   the **site-absolute** path `/<slug>/<path>` (§link resolution).
 
 **Why a closed set (not a machine link-classifier).** An earlier design classified every link at copy
 time (rewrite to a GitHub `blob` URL vs. a site slug) using a copied-set manifest. The closed-set rule
@@ -442,7 +443,7 @@ a conforming repo does not trip it.
 
 **`install` and `workflows` are deliberately NOT reserved.** They are owned by the **tool repo**, not the
 site: a tool publishes `docs/site/install.md` / `docs/site/workflows.md` and shll.ai renders them at
-`/tools/<slug>/install` and `/tools/<slug>/workflows`. There is no site-authored page to shadow — the
+`/<slug>/install` and `/<slug>/workflows`. There is no site-authored page to shadow — the
 tool's own `docs/site/` content is the single source for that depth. (The site previously carried
 hand-authored `install`/`workflows` stubs for `idea` and `fab-kit`; those were site-authored prose with
 no canonical source — exactly the hand-copied drift the constitution's *Tool-Page Depth* principle
@@ -475,15 +476,16 @@ mentions the literal text, and never to absolute URLs. Both live as pure, export
 in [`extract-readme.ts`](../../sites/astro-starlight-terminal1/src/lib/extract-readme.ts) (same
 single-machine-anchor discipline as `extractReadme`/`findUnknownTokens`).
 
-**The target is rewritten to a SITE-ABSOLUTE path `/tools/<slug>/<resolved-path>`** (reworked by the
-`x0br` review). The earlier design rewrote to RELATIVE forms (README `docs/site/<p>.md` → `./<p>`;
+**The target is rewritten to a SITE-ABSOLUTE path `/<slug>/<resolved-path>`** (reworked by the
+`x0br` review; namespace moved to root by change `3ke3` — formerly `/tools/<slug>/<resolved-path>`).
+The earlier design rewrote to RELATIVE forms (README `docs/site/<p>.md` → `./<p>`;
 docs/site pages → a bare `.md`-strip). That is **wrong** under the site's serving model: each page is
-served as a **trailing-slash directory** (`/tools/<slug>/<path>/`, i.e. `<path>/index.html`), and
-Starlight's own sibling links are absolute *with* a trailing slash (e.g. `/tools/idea/install/`). A
+served as a **trailing-slash directory** (`/<slug>/<path>/`, i.e. `<path>/index.html`), and
+Starlight's own sibling links are absolute *with* a trailing slash (e.g. `/idea/install/`). A
 relative target therefore resolves **one segment too deep** — the README page is served at
-`/tools/idea/readme/`, so `./install` resolves to `/tools/idea/readme/install` while the target page
-lives at `/tools/idea/install/` (broken); a docs/site page at `/tools/idea/advanced/hooks/` linking a
-sibling `./other` resolves to `/tools/idea/advanced/hooks/other` (broken). A site-absolute target is
+`/idea/readme/`, so `./install` resolves to `/idea/readme/install` while the target page
+lives at `/idea/install/` (broken); a docs/site page at `/idea/advanced/hooks/` linking a
+sibling `./other` resolves to `/idea/advanced/hooks/other` (broken). A site-absolute target is
 **serving-model-proof** (immune to `trailingSlash`) and matches Starlight's own absolute links.
 Because the resolved URL embeds the slug — and, for docs/site pages, resolves `.`/`..` against the
 page's own mount path — both transforms are **slug-aware** (and the docs/site transform is
@@ -492,20 +494,20 @@ mount-path-aware). They are no longer slug-agnostic string transforms; that is a
 1. **`docs/site/` pages (intra-set links)** — `rewriteDocsSiteLinks(markdown, slug, mountPath)`:
    resolve each **relative** link/image target against the page's OWN directory within the docs/site
    tree (`mountPath` is the page's path under `site/`, no `.md`, e.g. `advanced/hooks`), normalize
-   `.`/`..`, strip `.md`, and emit the site-absolute mount URL `/tools/<slug>/<resolved>`. Closure
+   `.`/`..`, strip `.md`, and emit the site-absolute mount URL `/<slug>/<resolved>`. Closure
    (§9.1.1) guarantees relative targets are intra-set. Examples: page `advanced/hooks` linking
-   `../install.md` → `/tools/<slug>/install`; linking `./sibling.md` → `/tools/<slug>/advanced/sibling`.
+   `../install.md` → `/<slug>/install`; linking `./sibling.md` → `/<slug>/advanced/sibling`.
    A target that **escapes** the tree (a `..` climbing above the root — a closure violation, §closure
    lint) is NOT clamped to a real page; it is rewritten under a reserved `__unresolved__` segment
-   (`/tools/<slug>/__unresolved__/<…>`) so the broken link is visibly dead rather than misrouted to a
+   (`/<slug>/__unresolved__/<…>`) so the broken link is visibly dead rather than misrouted to a
    plausible-but-wrong page. The escape predicate is **shared** with `findClosureViolations`, so the
    rewrite and the warning agree on what "escape" means. Applied at render time by the dynamic route
    (the committed slice stays a verbatim copy of canonical).
 2. **README slice (links into `docs/site/`)** — `rewriteReadmeDocsSiteLinks(markdown, slug)`: a relative
-   target of the form `docs/site/<p>.md` → the site-absolute mount URL `/tools/<slug>/<p>` (the
-   `docs/site/` prefix maps to the tool root `/tools/<slug>/`, `.md` stripped, nested `<p>` subtree
-   preserved). Examples: `[guide](docs/site/install.md)` → `[guide](/tools/<slug>/install)`;
-   `docs/site/advanced/hooks.md` → `/tools/<slug>/advanced/hooks`. Relative targets NOT under
+   target of the form `docs/site/<p>.md` → the site-absolute mount URL `/<slug>/<p>` (the
+   `docs/site/` prefix maps to the tool root `/<slug>/`, `.md` stripped, nested `<p>` subtree
+   preserved). Examples: `[guide](docs/site/install.md)` → `[guide](/<slug>/install)`;
+   `docs/site/advanced/hooks.md` → `/<slug>/advanced/hooks`. Relative targets NOT under
    `docs/site/` are left untouched (the README's own relative links into non-docs/site files are out of
    scope and self-heal via the absolute-by-author producer rule, §9.1.2).
 
@@ -541,10 +543,10 @@ parsing that risks the guard's precision, so it is deferred, not scoped here):
 
 - **docs/site intra-set link site-absolute** — GIVEN a `docs/site/` page `advanced/hooks` with
   `[i](../install.md)`; WHEN `rewriteDocsSiteLinks(md, 'idea', 'advanced/hooks')` runs; THEN the target
-  becomes `/tools/idea/install` while absolute URLs, prose, and code are untouched.
+  becomes `/idea/install` while absolute URLs, prose, and code are untouched.
 - **README `docs/site/` link site-absolute** — GIVEN a README slice with `[guide](docs/site/install.md)`;
-  WHEN `rewriteReadmeDocsSiteLinks(md, 'idea')` runs; THEN the target becomes `/tools/idea/install`, and a
-  nested `docs/site/advanced/hooks.md` becomes `/tools/idea/advanced/hooks`.
+  WHEN `rewriteReadmeDocsSiteLinks(md, 'idea')` runs; THEN the target becomes `/idea/install`, and a
+  nested `docs/site/advanced/hooks.md` becomes `/idea/advanced/hooks`.
 - **Rewrite guard holds** — GIVEN a page with an absolute URL containing `docs/site`, prose mentioning
   `docs/site`, and a relative `[x](docs/site/x.md)`; WHEN either transform runs; THEN only the relative
   link target is rewritten; the absolute URL, prose, and any code mention stay verbatim.
@@ -601,13 +603,13 @@ if deferred. There is no ordering dependency between tools.
 
 | Repo (file slug) | Binary | `content/<slug>/` collector | URL space | Reserved static slugs already used (do NOT name a `docs/site/` page these) |
 |---|---|---|---|---|
-| `idea` | `idea` | `content/idea/` | `/tools/idea/` | `overview`, `readme`, `commands` |
-| `hop` | `hop` | `content/hop/` | `/tools/hop/` | `overview`, `readme`, `commands` |
-| `fab-kit` | `fab` | `content/fab-kit/` | `/tools/fab-kit/` | `overview`, `readme`, `commands` |
-| `wt` | `wt` | `content/wt/` | `/tools/wt/` | `overview`, `readme`, `commands` |
-| `run-kit` | `run-kit` | `content/run-kit/` | `/tools/run-kit/` | `overview`, `readme`, `commands` |
-| `tu` | `tu` | `content/tu/` | `/tools/tu/` | `overview`, `readme`, `commands` |
-| `shll` | `shll` | `content/shll/` | `/tools/shll/` | `overview`, `readme`, `commands` |
+| `idea` | `idea` | `content/idea/` | `/idea/` | `overview`, `readme`, `commands` |
+| `hop` | `hop` | `content/hop/` | `/hop/` | `overview`, `readme`, `commands` |
+| `fab-kit` | `fab` | `content/fab-kit/` | `/fab-kit/` | `overview`, `readme`, `commands` |
+| `wt` | `wt` | `content/wt/` | `/wt/` | `overview`, `readme`, `commands` |
+| `run-kit` | `run-kit` | `content/run-kit/` | `/run-kit/` | `overview`, `readme`, `commands` |
+| `tu` | `tu` | `content/tu/` | `/tu/` | `overview`, `readme`, `commands` |
+| `shll` | `shll` | `content/shll/` | `/shll/` | `overview`, `readme`, `commands` |
 
 > The reserved set is exactly **`overview`, `readme`, `commands`** (§9.2) — the three site-owned pages
 > every tool has (a hand-authored `overview` directory entry, plus the generated `readme` and `commands`
@@ -616,7 +618,7 @@ if deferred. There is no ordering dependency between tools.
 >
 > **`install` and `workflows` are NOT reserved — they belong to the tool repo.** A tool that wants an
 > install guide or a workflows page publishes it as `docs/site/install.md` / `docs/site/workflows.md`,
-> and shll.ai renders it at `/tools/<slug>/install` and `/tools/<slug>/workflows`. There is no
+> and shll.ai renders it at `/<slug>/install` and `/<slug>/workflows`. There is no
 > site-authored install/workflows page to collide with — the tool's own `docs/site/` content is the
 > single source. (Earlier hand-authored `install`/`workflows` stubs on the site were removed precisely so
 > the tool repo controls this depth — see the changelog.)
@@ -626,8 +628,8 @@ if deferred. There is no ordering dependency between tools.
 **Task: Conform this repo's `README.md` (+ optional `docs/site/` tree) to the shll.ai README-extraction contract**
 
 shll.ai (the toolkit landing page) renders a **deduced, curated slice** of this repo's `README.md` on
-your tool's `readme` page (`/tools/<slug>/readme`), and renders each file in an optional
-`docs/site/**/*.md` tree as its own page under `/tools/<slug>/<path>`. It **pulls** both on a daily
+your tool's `readme` page (`/<slug>/readme`), and renders each file in an optional
+`docs/site/**/*.md` tree as its own page under `/<slug>/<path>`. It **pulls** both on a daily
 schedule and renders them at build time — **nothing is hand-copied, and you push nothing**. Your only
 job is to keep your `README.md` (and any `docs/site/` tree) structured so the pull produces a clean,
 unbroken result. Do this as a single change.
@@ -687,7 +689,7 @@ unbroken result. Do this as a single change.
    or relative image, so the drift is visible in the run log; the canonical slice is still committed, and
    the fix is to make the link absolute in your README. Only two relative forms are auto-handled: a
    link **into** your `docs/site/` tree written as `docs/site/<path>.md` (rewritten to
-   `/tools/<slug>/<path>`), and intra-`docs/site/` links (Part 2). Everything else relative → make it
+   `/<slug>/<path>`), and intra-`docs/site/` links (Part 2). Everything else relative → make it
    absolute. Avoid putting a `docs/site/` link **behind a badge/thumbnail** (`[![alt](img)](docs/site/x.md)`)
    or as a **reference-style definition** (`[id]: docs/site/x.md`) — those two shapes are not rewritten
    (a known consumer limitation) and would 404; write them as plain inline links.
@@ -706,15 +708,15 @@ unbroken result. Do this as a single change.
    them. Two specific links every conforming tool SHOULD add:
    - **Installation → `docs/site/install.md`.** When you publish an install guide as `docs/site/install.md`
      (Part 2), link to it from the README's install section as the natural repo-relative path
-     `[full install guide](docs/site/install.md)`. shll.ai rewrites that to `/tools/<slug>/install`
+     `[full install guide](docs/site/install.md)`. shll.ai rewrites that to `/<slug>/install`
      automatically (Part 2 rule 4); on GitHub it resolves to the file in your repo. (The README's own
      short install section still ships in the slice — this is an *additional cross-link to the deeper
      page*, not a replacement.) Apply the same pattern for any other `docs/site/<p>.md` page the README
      references (deep-dives, format contracts): write the natural `docs/site/<p>.md` path.
-   - **Command reference → `https://shll.ai/tools/<tool>/commands/`.** Point readers at the site's
+   - **Command reference → `https://shll.ai/<tool>/commands/`.** Point readers at the site's
      generated, always-fresh command reference with the **absolute** URL
-     `[command reference](https://shll.ai/tools/<tool>/commands/)` (substitute your tool slug, e.g.
-     `https://shll.ai/tools/run-kit/commands/`). It MUST be absolute — it leaves your repo's content set
+     `[command reference](https://shll.ai/<tool>/commands/)` (substitute your tool slug, e.g.
+     `https://shll.ai/run-kit/commands/`). It MUST be absolute — it leaves your repo's content set
      (the absolute-by-author rule, §9.1.2), so the puller renders it verbatim (it is not a relative link
      to rewrite). This is the canonical home for the full `-h` tree; the README need not reproduce it.
 
@@ -722,8 +724,8 @@ unbroken result. Do this as a single change.
 
 A tool's real documentation is often "a small README plus a few referenced markdowns" (install guides,
 deep-dives, format contracts). Put those in a `docs/site/**/*.md` tree and the site renders each file as
-its own page: `docs/site/install.md` → `/tools/<slug>/install`, `docs/site/advanced/hooks.md` →
-`/tools/<slug>/advanced/hooks` (subtree shape preserved, `docs/site/` prefix dropped). The tree is a
+its own page: `docs/site/install.md` → `/<slug>/install`, `docs/site/advanced/hooks.md` →
+`/<slug>/advanced/hooks` (subtree shape preserved, `docs/site/` prefix dropped). The tree is a
 **closed set** — follow these four rules (§9.1):
 
 1. **Closure.** Every *relative* link/image inside `docs/site/**` MUST resolve to a path **inside**
@@ -733,12 +735,12 @@ its own page: `docs/site/install.md` → `/tools/<slug>/install`, `docs/site/adv
    written as an absolute `https://…` URL by you.
 3. **All images absolute** — same as Part 1 rule 3, everywhere.
 4. **README → `docs/site/` links written naturally** — write `[guide](docs/site/install.md)` in your
-   README; the site rewrites it to `/tools/<slug>/install` automatically.
+   README; the site rewrites it to `/<slug>/install` automatically.
 
 Also: a `docs/site/` page MUST NOT be named `overview`, `readme`, or `commands` (the three site-owned
 slugs — see the table) — it would shadow a site page. Every other name is yours, **including `install`
 and `workflows`** (publish `docs/site/install.md` / `docs/site/workflows.md` and they render at
-`/tools/<slug>/install` / `/tools/<slug>/workflows`). **Only `README.md` and `docs/site/**` are pulled
+`/<slug>/install` / `/<slug>/workflows`). **Only `README.md` and `docs/site/**` are pulled
 to the site** — everything else in your repo (source, tests, design notes, any other `docs/` subtree) is
 invisible to the site by default, so maintainer-only / design notes need no special folder; just keep
 them out of `docs/site/`. Note `docs/specs/` and `docs/memory/` already mean something specific in a fab
@@ -755,10 +757,10 @@ repo and are **not** pulled.
 - No `#gh-dark-mode-only` / `#gh-light-mode-only` fragments; any required diagram is a committed rendered
   image referenced absolutely.
 - No `docs/site/` page is named `overview` / `readme` / `commands` (the only three reserved slugs).
-  `install` and `workflows` ARE allowed — they render at `/tools/<slug>/install` and
-  `/tools/<slug>/workflows`.
+  `install` and `workflows` ARE allowed — they render at `/<slug>/install` and
+  `/<slug>/workflows`.
 - The README cross-links to its deeper pages (rule 8): the install section links to
-  `docs/site/install.md` (if you publish one), and a `[command reference](https://shll.ai/tools/<tool>/commands/)`
+  `docs/site/install.md` (if you publish one), and a `[command reference](https://shll.ai/<tool>/commands/)`
   link points at the generated reference with the **absolute** site URL (your slug).
 - (Optional self-check) Run shll.ai's extractor against your README locally if you have the site repo:
   `node sites/astro-starlight-terminal1/scripts/extract-readme-cli.mjs` — it prints the deduced slice and
@@ -779,7 +781,7 @@ deferring leaves a neutral placeholder and breaks nothing.
   except the per-tool slug/reserved-slug row, so no seven-way duplication exists to drift.
 - **Per-tool variance is exactly the slug + reserved slugs** — GIVEN two different tools conforming;
   WHEN each follows the directive; THEN the only differences are the `content/<slug>/` path, the
-  `/tools/<slug>/` URL space, and which reserved static-page names to avoid — everything else (the four
+  `/<slug>/` URL space, and which reserved static-page names to avoid — everything else (the four
   producer rules, the README head/tail/image/mermaid rules) is shared verbatim.
 - **Conformance is additive and order-free** — GIVEN the puller is live for all 7 slugs; WHEN any single
   tool conforms (or defers); THEN its `readme`/`docs/site` pages light up (or stay neutral placeholders),
@@ -794,8 +796,8 @@ The single **machine-anchored** definition of the deduction + strip + verify beh
 > (§7 divergence reporter — detection logic; consumed as a non-fatal `::warning::` by
 > `extract-readme-cli.mjs`), and the §9 `docs/site/` consumer functions (SITE-ABSOLUTE,
 > slug-aware): `rewriteDocsSiteLinks(markdown, slug, mountPath)` (resolves a docs/site page's relative
-> targets against its mount path → `/tools/<slug>/<resolved>`) / `rewriteReadmeDocsSiteLinks(markdown, slug)`
-> (a README's `docs/site/<p>.md` → `/tools/<slug>/<p>`) — the two transforms + the shared rewrite guard
+> targets against its mount path → `/<slug>/<resolved>`) / `rewriteReadmeDocsSiteLinks(markdown, slug)`
+> (a README's `docs/site/<p>.md` → `/<slug>/<p>`) — the two transforms + the shared rewrite guard
 > — and `findClosureViolations(relPath, markdown)` (§closure lint — detection logic; consumed as a
 > non-fatal `::warning::` by `extract-docs-site-cli.mjs`), plus `findReadmeLinkViolations(slice)`
 > (the README-slice link lint — relative links not under `docs/site/`, and relative images; consumed as a
