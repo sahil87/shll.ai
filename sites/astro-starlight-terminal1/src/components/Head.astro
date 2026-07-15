@@ -129,7 +129,7 @@ if (rootSegments.length === 1 && isToolSlug(rootSegments[0])) {
 } else if (
   rootSegments.length === 2 &&
   isToolSlug(rootSegments[0]) &&
-  rootSegments[1] in PAGE_LABELS
+  Object.hasOwn(PAGE_LABELS, rootSegments[1])
 ) {
   toolPage = { tool: rootSegments[0], page: rootSegments[1] };
 }
