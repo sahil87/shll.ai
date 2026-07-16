@@ -7,13 +7,12 @@ Task-oriented walkthroughs for `shll`, the meta-CLI for the [@sahil87 toolkit](h
 From a fresh machine to a fully wired toolkit:
 
 ```sh
-brew trust --formula sahil87/tap/shll && brew install sahil87/tap/shll   # bootstrap: trust + install shll itself
-shll install                                                             # trusts (per-formula) + installs the other 6
+curl -fsSL https://shll.ai/install | sh                                  # bootstrap: trust + install shll, then install the roster
 shll shell-setup                                                         # pure rc wiring — no trust flag
 exec $SHELL                                                              # reload so the shell integration takes effect
 ```
 
-Step by step:
+The one-liner expands to the first two steps below — `brew trust` + `brew install` of shll itself, then `shll install` (pass a subset with `| sh -s -- hop wt`). Step by step:
 
 1. **`brew trust --formula sahil87/tap/shll && brew install sahil87/tap/shll`** puts the `shll` binary on `PATH`. The `brew trust` is required on Homebrew 6.0+ (which makes tap-trust a hard install requirement) — shll's formula runs a sandboxed install that needs a real trust record. shll can't trust its own formula before it exists, so this one-time bootstrap uses `brew trust` directly. (Requires Homebrew ≥ 6.0.4; on 6.0.0–6.0.3, `brew update` first. Or `brew trust --formula sahil87/tap/all && brew install sahil87/tap/all` to pull the whole toolkit at once, in which case the next step is a no-op.)
 2. **`shll install`** walks the roster (leaves-first: `wt`, `idea`, `tu`, `rk`, `hop`, `fab-kit`) and, for each tool you don't already have, runs `brew trust --formula sahil87/tap/<formula>` then `brew install` — so it owns trust for the other six. Idempotent — re-running installs only what's still missing. Pass `--no-trust` to skip the trust step if you manage trust yourself; see the [tap-trust troubleshooting](install.md#tap-trust-troubleshooting).
