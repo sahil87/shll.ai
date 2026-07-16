@@ -2,14 +2,26 @@
 /**
  * InstallOneLiner — the per-tool one-step install one-liner for tool overviews.
  *
- * Renders a build-time terminal block (no client-side JS — Constitution I)
- * carrying the toolkit's real one-step installer scoped to a single tool:
+ * Renders the toolkit's real one-step installer scoped to a single tool as an
+ * Expressive Code terminal block:
  *
- *     $ curl -fsSL https://shll.ai/install | sh -s -- <tool>
+ *     curl -fsSL https://shll.ai/install | sh -s -- <tool>
  *
  * plus one short site-authored sentence pointing at the whole-toolkit story.
  * The `shll.ai/install` script (PR #84) accepts a tool subset via `sh -s --`,
  * so this line is accurate and copy-pasteable per tool.
+ *
+ * COPY BUTTON PARITY: the block is rendered via Starlight's re-exported
+ * Expressive Code `<Code>` component — the same engine behind every fenced
+ * code block on the site (getting-started/install, the commands/readme pages)
+ * — so it carries the identical terminal frame styling (astro.config.mjs
+ * expressiveCode styleOverrides) AND the one-click copy button. This replaced
+ * the original hand-rolled `.shell-session` markup, whose only copy affordance
+ * was text selection. The copy button's tiny script is EC's own, already
+ * shipped by every page with a fenced block — no new dependency (the import
+ * is a Starlight re-export, Constitution VI) and no new JS mechanism
+ * (Constitution I's build-time discipline: the block is fully rendered at
+ * build; EC's copy script is progressive enhancement the site already carries).
  *
  * SHLL IS SPECIAL: `shll` is the bootstrap meta-CLI, not a roster install
  * target — the script execs `shll install "$@"`, and `shll install shll` hard-
@@ -25,20 +37,21 @@
  * whole-toolkit quick-start and are untouched by this component.
  *
  * WHY AN .astro COMPONENT (not inline MDX): the command contains both `--` and
- * a bare URL. MDX runs remark plugins over JSX text even inside <pre> —
- * smartypants turns `--` into an em-dash and bare URLs get auto-linked — so an
- * inline MDX block would mangle the copied command (see the remark-hazard note
- * in index.mdx). An .astro template is plain HTML: the literal `sh -s -- <tool>`
- * and the URL survive verbatim, with no per-file JSX-expression escaping.
+ * a bare URL. MDX runs remark plugins over JSX text — smartypants turns `--`
+ * into an em-dash and bare URLs get auto-linked — so an inline MDX block would
+ * mangle the copied command (see the remark-hazard note in index.mdx). Here the
+ * command is built as a plain JS string and handed to `<Code>` as a prop, so
+ * the literal `sh -s -- <tool>` and the URL survive verbatim — in the render
+ * AND in what the copy button copies.
  *
- * Colors come from the site's --c-* tokens (src/styles/terminal.css) via the
- * shared .shell-session idiom, so dark-mode parity is automatic (Constitution
- * V). The `$` prompt is user-select:none, so selection copies the command
- * only. No new dependency (Constitution VI).
+ * The note's colors come from the site's --c-* tokens (src/styles/terminal.css),
+ * and the EC frame colors are token-driven via astro.config.mjs, so dark-mode
+ * parity is automatic (Constitution V).
  *
  * Placement convention: an `## Install` section between the overview's lead and
  * `## How it fits`. See docs/memory/conventions/tool-page-rubric.
  */
+import { Code } from '@astrojs/starlight/components';
 import { isToolSlug } from '../lib/tool-slugs.ts';
 
 interface Props {
@@ -68,7 +81,7 @@ if (!isToolSlug(tool)) {
 // `sh -s -- shll` would hard-error. Render the whole-toolkit bootstrap instead.
 const isShll = tool === 'shll';
 
-// The one-liner is built here (not in the template) so the `--` and the URL
+// The one-liner is built here (not in markdown) so the `--` and the URL
 // never pass through any markdown/remark transform.
 const oneLiner = isShll
   ? `curl -fsSL https://shll.ai/install | sh`
@@ -76,7 +89,7 @@ const oneLiner = isShll
 ---
 
 <div class="install-one-liner not-content">
-  <pre class="shell-session not-content"><span class="shell-line"><span class="shell-prompt">$</span> {oneLiner}</span></pre>
+  <Code code={oneLiner} lang="bash" />
   {isShll ? (
     <p class="install-one-liner-note">
       Installs <code>shll</code> and the whole toolkit via Homebrew — see the <a
@@ -91,20 +104,19 @@ const oneLiner = isShll
 </div>
 
 <style>
-  /* The block reuses the shared .shell-session idiom (terminal.css) for the
-     command line — dark-mode parity via --c-* tokens for free (Constitution V).
-     The note's link styling also lives in terminal.css: change ld0j keeps every
-     terminal-styled link in ONE selector group (.shell-session a, .home-prose a,
-     .tools-listing a, .install-one-liner-note a) — one source, no per-class
-     copies — so no link rules are duplicated here. */
+  /* The command block is Expressive Code (frame styling + copy button from the
+     site-wide EC config in astro.config.mjs) — no terminal styling is
+     duplicated here. The note's link styling also lives in terminal.css:
+     change ld0j keeps every terminal-styled link in ONE selector group
+     (.shell-session a, .home-prose a, .tools-listing a,
+     .install-one-liner-note a) — one source, no per-class copies — so no link
+     rules are duplicated here either. This scoped block is layout/typography
+     only. */
   .install-one-liner {
     margin: 0.75rem 0 1.25rem;
   }
-  .install-one-liner .shell-session {
-    margin: 0 0 0.5rem;
-  }
   .install-one-liner-note {
-    margin: 0;
+    margin: 0.65rem 0 0;
     font-family: var(--sl-font-mono);
     font-size: 0.85rem;
     color: var(--c-fg-dim);
