@@ -432,10 +432,12 @@ starlight-readme-toc .readme-toc-sublist {
    hover/focus. Tries to keep the terminal feel without hiding links.
    Change ld0j extends the same treatment (one source, no per-class copies)
    to the homepage prose + tools-listing links, so every terminal-styled
-   link shares the identical visible focus state. */
+   link shares the identical visible focus state. Change moju joins the
+   install-one-liner note link to the same group (same one-source convention). */
 .shell-session a,
 .home-prose a,
-.tools-listing a {
+.tools-listing a,
+.install-one-liner-note a {
   color: var(--c-accent);
   text-decoration: none;
   border-bottom: 1px dotted var(--c-accent);
@@ -445,7 +447,9 @@ starlight-readme-toc .readme-toc-sublist {
 .home-prose a:hover,
 .home-prose a:focus-visible,
 .tools-listing a:hover,
-.tools-listing a:focus-visible {
+.tools-listing a:focus-visible,
+.install-one-liner-note a:hover,
+.install-one-liner-note a:focus-visible {
   border-bottom: 1px solid var(--c-accent);
   background: var(--c-surface-2);
   outline: none;

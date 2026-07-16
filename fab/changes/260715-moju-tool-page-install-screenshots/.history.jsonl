@@ -1,0 +1,17 @@
+{"action":"enter","driver":"fab-new","event":"stage-transition","stage":"intake","ts":"2026-07-15T21:21:39Z"}
+{"args":"Tool overview pages get a one-step install one-liner (shared InstallOneLiner component rendering curl -fsSL https://shll.ai/install | sh -s -- \u003ctool\u003e) on all 7 overviews, plus screenshots where available: codify site-owned overview screenshots as a blessed curated-asset class (constitution Tool-Page Depth PATCH + rubric convention), making the run-kit precedent compliant","cmd":"fab-new","event":"command","ts":"2026-07-15T21:21:39Z"}
+{"delta":"+4.7","event":"confidence","score":4.7,"trigger":"calc-score","ts":"2026-07-15T21:23:02Z"}
+{"cmd":"fab-fff","event":"command","ts":"2026-07-15T21:23:40Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"apply","ts":"2026-07-15T21:23:40Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-07-15T21:24:29Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"review","ts":"2026-07-15T21:31:45Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-07-15T21:32:43Z"}
+{"event":"review","result":"failed","ts":"2026-07-15T21:42:08Z"}
+{"action":"re-entry","driver":"fab-fff","event":"stage-transition","stage":"apply","ts":"2026-07-15T21:42:08Z"}
+{"action":"re-entry","driver":"fab-fff","event":"stage-transition","stage":"review","ts":"2026-07-15T21:46:11Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-07-15T21:47:10Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"hydrate","ts":"2026-07-15T21:57:41Z"}
+{"event":"review","result":"passed","ts":"2026-07-15T21:57:41Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"ship","ts":"2026-07-15T22:00:33Z"}
+{"action":"enter","driver":"git-pr","event":"stage-transition","stage":"review-pr","ts":"2026-07-15T22:03:36Z"}
+{"event":"review","result":"passed","ts":"2026-07-15T22:20:03Z"}
