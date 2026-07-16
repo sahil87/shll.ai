@@ -36,6 +36,7 @@ hero:
 ---
 
 import Diagram from '../../components/Diagram.astro';
+import InstallOneLiner from '../../components/InstallOneLiner.astro';
 import TerminalPrompt from '../../components/TerminalPrompt.astro';
 import VersionTable from '../../components/VersionTable.astro';
 
@@ -61,22 +62,25 @@ import VersionTable from '../../components/VersionTable.astro';
 </nav>
 </section>
 
-{/* Install block (moved above the fold from its former spot below the diagram —
-    still change ld0j's block, one copy only). Commands are verbatim from
-    getting-started/install.md — do not edit them here without updating there.
-    The $ prompt is user-select:none, so selection copies commands only.
-    Remark hazard: MDX runs remark plugins over JSX *text* (even inside
-    <pre>) — smartypants turns `--` into an em-dash, and bare URLs get
-    auto-linked into anchors. Any command containing `--` or a URL must ride
-    a JSX expression (e.g. {'--formula'}) to keep the copied text runnable. */}
+{/* Install block (above the fold). Single-sourced: the same InstallOneLiner
+    component the tool overviews use — tool="shll" renders the whole-toolkit
+    bootstrap as an Expressive Code block with a one-click copy button, plus
+    the note linking to getting-started/install for the full steps. This
+    replaced ld0j's hand-copied verbatim command line (and its keep-in-sync
+    contract with install.md) — the homepage no longer hand-carries install
+    commands at all; getting-started/install.md is the sole hand-written
+    carrier. The component builds the command as a JS string, so the remark
+    hazard below does not apply to it.
+    Remark hazard (still binding for the other hand-rolled blocks in this
+    file): MDX runs remark plugins over JSX *text* (even inside <pre>) —
+    smartypants turns `--` into an em-dash, and bare URLs get auto-linked
+    into anchors. Any command containing `--` or a URL must ride a JSX
+    expression (e.g. {'--formula'}) to keep the copied text runnable. */}
 <section class="not-content" aria-label="Install">
 <pre class="shell-session shell-caption not-content">
 <span class="shell-line shell-comment"># one line, the whole toolkit</span>
 </pre>
-<pre class="shell-session not-content">
-<span class="shell-line"><span class="shell-prompt">$</span> curl -fsSL {'https://shll.ai/install'} | sh</span>
-<span class="shell-line shell-comment"># full steps → <a href="/getting-started/install/">getting-started/install</a></span>
-</pre>
+<InstallOneLiner tool="shll" />
 </section>
 
 <div class="terminal-window not-content">
