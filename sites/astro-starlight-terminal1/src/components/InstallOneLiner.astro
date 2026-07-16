@@ -86,15 +86,29 @@ const isShll = tool === 'shll';
 const oneLiner = isShll
   ? `curl -fsSL https://shll.ai/install | sh`
   : `curl -fsSL https://shll.ai/install | sh -s -- ${tool}`;
+
+// Whole-toolkit follow-on steps (isShll only). Most visitors copy the homepage
+// one-liner and assume they're done — surfacing the post-install steps right
+// under it keeps them from being missed. Wording mirrors the canonical block in
+// getting-started/install.md (the sole hand-written carrier of the full steps).
+const followOn = [
+  'shll shell-setup      # wire your shell integration',
+  'run-kit agent-setup   # optional, once per machine',
+  'exec $SHELL           # reload your shell',
+].join('\n');
 ---
 
 <div class="install-one-liner not-content">
   <Code code={oneLiner} lang="bash" />
   {isShll ? (
-    <p class="install-one-liner-note">
-      Installs <code>shll</code> and the whole toolkit via Homebrew — see the <a
-        href="/getting-started/install/">full install guide</a>.
-    </p>
+    <>
+      <p class="install-one-liner-note">then wire your shell:</p>
+      <Code code={followOn} lang="bash" />
+      <p class="install-one-liner-note">
+        Installs <code>shll</code> and the whole toolkit via Homebrew — see the <a
+          href="/getting-started/install/">full install guide</a>.
+      </p>
+    </>
   ) : (
     <p class="install-one-liner-note">
       Installs <code>shll</code> + <code>{tool}</code> via Homebrew — or <a
