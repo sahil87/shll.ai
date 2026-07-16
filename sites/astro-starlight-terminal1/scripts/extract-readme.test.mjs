@@ -434,69 +434,69 @@ test('gate (M2): fabricated subcommands are STILL flagged (true positives preser
 
 // ── §9 docs/site link resolution (change x0br) — SITE-ABSOLUTE model ─────────
 // Reworked (x0br review): both transforms now emit a SITE-ABSOLUTE target
-// `/tools/<slug>/<resolved>` (not a relative `./<p>` / bare `.md`-strip), because
+// `/<slug>/<resolved>` (not a relative `./<p>` / bare `.md`-strip), because
 // the site serves pages as trailing-slash directories — a relative target resolves
 // one segment too deep. Transforms are slug-aware; the docs/site transform also
 // takes the page's mount path to resolve `.`/`..` against the page's directory.
 //
 // R5: a docs/site PAGE — resolve RELATIVE link/image targets against the page's
-// directory within the tree, strip `.md`, emit `/tools/<slug>/<resolved>`.
+// directory within the tree, strip `.md`, emit `/<slug>/<resolved>`.
 
 test('docs/site page: a sibling ./ link resolves site-absolute against the page dir (R5)', () => {
-  // page advanced/hooks.md → ./sibling.md resolves in advanced/ → /tools/idea/advanced/sibling
+  // page advanced/hooks.md → ./sibling.md resolves in advanced/ → /idea/advanced/sibling
   assert.equal(
     rewriteDocsSiteLinks('See [s](./sibling.md) for details.', 'idea', 'advanced/hooks'),
-    'See [s](/tools/idea/advanced/sibling) for details.',
+    'See [s](/idea/advanced/sibling) for details.',
   );
 });
 
 test('docs/site page: a ../ link resolves up one level then site-absolute (R5)', () => {
-  // page advanced/hooks.md → ../install.md pops advanced/ → /tools/idea/install
+  // page advanced/hooks.md → ../install.md pops advanced/ → /idea/install
   assert.equal(
     rewriteDocsSiteLinks('[i](../install.md)', 'idea', 'advanced/hooks'),
-    '[i](/tools/idea/install)',
+    '[i](/idea/install)',
   );
 });
 
 test('docs/site page: a bare-relative target from a top-level page is site-absolute (R5)', () => {
-  // page install.md (top-level) → [b](advanced/hooks.md) → /tools/idea/advanced/hooks
+  // page install.md (top-level) → [b](advanced/hooks.md) → /idea/advanced/hooks
   assert.equal(
     rewriteDocsSiteLinks('[a](other.md) [b](advanced/hooks.md)', 'idea', 'install'),
-    '[a](/tools/idea/other) [b](/tools/idea/advanced/hooks)',
+    '[a](/idea/other) [b](/idea/advanced/hooks)',
   );
 });
 
 test('docs/site page: a #fragment / ?query suffix survives the site-absolute rewrite (R5)', () => {
   assert.equal(
     rewriteDocsSiteLinks('[x](./guide.md#section)', 'idea', 'install'),
-    '[x](/tools/idea/guide#section)',
+    '[x](/idea/guide#section)',
   );
   assert.equal(
     rewriteDocsSiteLinks('[x](./guide.md?v=2)', 'idea', 'install'),
-    '[x](/tools/idea/guide?v=2)',
+    '[x](/idea/guide?v=2)',
   );
 });
 
-// R6: the README SLICE — `docs/site/<p>.md` → `/tools/<slug>/<p>` (site-absolute).
+// R6: the README SLICE — `docs/site/<p>.md` → `/<slug>/<p>` (site-absolute).
 
-test('readme slice: docs/site/ link becomes a site-absolute /tools/<slug>/ path (R6)', () => {
+test('readme slice: docs/site/ link becomes a site-absolute /<slug>/ path (R6)', () => {
   assert.equal(
     rewriteReadmeDocsSiteLinks('Read the [guide](docs/site/install.md).', 'idea'),
-    'Read the [guide](/tools/idea/install).',
+    'Read the [guide](/idea/install).',
   );
 });
 
 test('readme slice: nested docs/site path preserves subtree shape site-absolute (R6)', () => {
   assert.equal(
     rewriteReadmeDocsSiteLinks('[hooks](docs/site/advanced/hooks.md)', 'idea'),
-    '[hooks](/tools/idea/advanced/hooks)',
+    '[hooks](/idea/advanced/hooks)',
   );
 });
 
 test('readme slice: an anchor on a docs/site link is preserved site-absolute (R6)', () => {
   assert.equal(
     rewriteReadmeDocsSiteLinks('[flags](docs/site/install.md#flags)', 'idea'),
-    '[flags](/tools/idea/install#flags)',
+    '[flags](/idea/install#flags)',
   );
 });
 
@@ -505,7 +505,7 @@ test('readme slice: a docs/site link that ..-escapes the tree gets the unresolve
   // as the docs/site page side on an escape — a visibly-dead link, not a real page.
   assert.equal(
     rewriteReadmeDocsSiteLinks('[x](docs/site/../../etc/passwd.md)', 'idea'),
-    '[x](/tools/idea/__unresolved__/etc/passwd)',
+    '[x](/idea/__unresolved__/etc/passwd)',
   );
 });
 
@@ -520,7 +520,7 @@ test('readme slice: a relative link NOT under docs/site/ is left as-is (R6)', ()
 
 test('readme slice: a NON-.md docs/site target is NOT rewritten (only .md pages mount) (R6)', () => {
   // docs/site/img/logo.png is not a mounted page — rewriting it would silently
-  // produce a dead /tools/idea/img/logo URL. Leave it relative so the README link
+  // produce a dead /idea/img/logo URL. Leave it relative so the README link
   // lint catches it instead. (Copilot PR #43 finding.)
   assert.equal(
     rewriteReadmeDocsSiteLinks('![logo](docs/site/img/logo.png)', 'idea'),
@@ -551,11 +551,11 @@ test('guard: prose / code mentioning docs/site is NOT rewritten (R7)', () => {
 test('guard: raw-HTML href/src relative targets ARE rewritten site-absolute; absolute ones are not (R7)', () => {
   assert.equal(
     rewriteReadmeDocsSiteLinks('<a href="docs/site/install.md">install</a>', 'idea'),
-    '<a href="/tools/idea/install">install</a>',
+    '<a href="/idea/install">install</a>',
   );
   assert.equal(
     rewriteDocsSiteLinks('<a href="./advanced/hooks.md">hooks</a>', 'idea', 'install'),
-    '<a href="/tools/idea/advanced/hooks">hooks</a>',
+    '<a href="/idea/advanced/hooks">hooks</a>',
   );
   const abs = '<img src="https://raw.githubusercontent.com/x/y/docs/site/a.png">';
   assert.equal(rewriteDocsSiteLinks(abs, 'idea', 'install'), abs, 'absolute src untouched');
@@ -564,7 +564,7 @@ test('guard: raw-HTML href/src relative targets ARE rewritten site-absolute; abs
 test('guard: only the link target is rewritten, link TEXT mentioning .md is preserved (R7)', () => {
   assert.equal(
     rewriteDocsSiteLinks('[see install.md here](./install.md)', 'idea', 'guide'),
-    '[see install.md here](/tools/idea/install)',
+    '[see install.md here](/idea/install)',
     'the .md in the link TEXT survives; only the target is rewritten',
   );
 });
@@ -581,10 +581,10 @@ test('transforms are total: empty input does not throw (R5/R6)', () => {
 test('docs/site page: a ..-escape rewrites to a non-colliding marker, not a real page (R3/R8)', () => {
   // page install.md (top-level) → ../../secret.md climbs above the tree root.
   // The rewriter emits the reserved __unresolved__ segment (a visibly-dead link),
-  // NOT `/tools/idea/secret` (which would misroute to a plausible-but-wrong page).
+  // NOT `/idea/secret` (which would misroute to a plausible-but-wrong page).
   assert.equal(
     rewriteDocsSiteLinks('[x](../../secret.md)', 'idea', 'install'),
-    '[x](/tools/idea/__unresolved__/secret)',
+    '[x](/idea/__unresolved__/secret)',
   );
   // And the same target is independently reported as a closure escape:
   const v = findClosureViolations('install.md', '[x](../../secret.md)');
@@ -596,7 +596,7 @@ test('docs/site page: a non-escaping .. still resolves normally (R3)', () => {
   // advanced/hooks → ../install.md pops [advanced], stays intra-set → real page.
   assert.equal(
     rewriteDocsSiteLinks('[i](../install.md)', 'idea', 'advanced/hooks'),
-    '[i](/tools/idea/install)',
+    '[i](/idea/install)',
   );
   // ...and is NOT reported as an escape.
   assert.deepEqual(findClosureViolations('advanced/hooks.md', '[i](../install.md)'), []);

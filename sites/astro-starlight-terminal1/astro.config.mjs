@@ -2,20 +2,37 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import mdx from '@astrojs/mdx';
-import { docsSiteSidebarItems } from './src/lib/docs-site-sidebar.mjs';
+import { docsSiteSidebarItems, docsSiteRedirectEntries } from './src/lib/docs-site-sidebar.mjs';
+
+// The 7 canonical tool slugs, in display order. Kept in step with
+// src/lib/tool-slugs.ts (the runtime roster) — this config-eval copy exists
+// because astro.config.mjs is evaluated before the TS module graph loads.
+const TOOL_SLUGS = ['idea', 'hop', 'fab-kit', 'wt', 'run-kit', 'tu', 'shll'];
 
 export default defineConfig({
   site: 'https://shll.ai',
-  // Short, memorable per-tool URLs (shll.ai/wt) that redirect to the canonical
-  // docs page. Static <meta refresh> pages emitted at build — works on Pages.
+  // Change 3ke3: the short per-tool URLs (shll.ai/wt) are now CANONICAL real
+  // pages (via `slug:` frontmatter overrides — see the tool content files), not
+  // redirect stubs. The redirects are REVERSED: every previously-canonical/shared
+  // deep `/tools/<tool>/*` URL now redirects to its new root path, so old links
+  // still land. Static <meta refresh> pages emitted at build — works on Pages.
+  // (A redirect key that collides with a real route fails the build, which is
+  // why the old short-URL entries had to be removed — those paths are pages now.)
   redirects: {
-    '/idea': '/tools/idea/overview/',
-    '/hop': '/tools/hop/overview/',
-    '/fab-kit': '/tools/fab-kit/overview/',
-    '/wt': '/tools/wt/overview/',
-    '/run-kit': '/tools/run-kit/overview/',
-    '/tu': '/tools/tu/overview/',
-    '/shll': '/tools/shll/overview/',
+    ...Object.fromEntries(
+      TOOL_SLUGS.flatMap((t) => [
+        // Bare `/tools/<tool>` (previously a 404) — cheap goodwill entry.
+        [`/tools/${t}`, `/${t}/`],
+        // The three per-tool pages: overview collapses to the tool root.
+        [`/tools/${t}/overview`, `/${t}/`],
+        [`/tools/${t}/readme`, `/${t}/readme/`],
+        [`/tools/${t}/commands`, `/${t}/commands/`],
+      ]),
+    ),
+    // One entry per committed docs/site page: `/tools/<tool>/<path>` →
+    // `/<tool>/<path>/`. Enumerated programmatically (static builds can't
+    // wildcard-redirect) by the same collector that generates the sidebar.
+    ...docsSiteRedirectEntries(),
   },
   server: { host: '0.0.0.0' },
   vite: {
@@ -72,8 +89,8 @@ export default defineConfig({
       lastUpdated: false,
       tableOfContents: { minHeadingLevel: 2, maxHeadingLevel: 3 },
       // Route-dispatching ToC overrides: the single right-rail (and mobile
-      // dropdown) override slot fans out by route id — `tools/*/commands` pages
-      // get the first-level command list (CommandsToc), `tools/*/readme` pages
+      // dropdown) override slot fans out by route id — `<tool>/commands` pages
+      // get the first-level command list (CommandsToc), `<tool>/readme` pages
       // get a nested H2/H3 list from the README slice (ReadmeToc), and every
       // other page falls through to Starlight's default ToC. See
       // src/components/TocDispatcher.astro / MobileTocDispatcher.astro.
@@ -106,9 +123,9 @@ export default defineConfig({
               label: 'idea',
               collapsed: true,
               items: [
-                { label: 'Overview', slug: 'tools/idea/overview' },
-                { label: 'Readme', slug: 'tools/idea/readme' },
-                { label: 'Commands', slug: 'tools/idea/commands' },
+                { label: 'Overview', slug: 'idea' },
+                { label: 'Readme', slug: 'idea/readme' },
+                { label: 'Commands', slug: 'idea/commands' },
                 // Build-time-generated entries for the tool's pulled docs/site tree
                 // (content/idea/site/**) — including any install/workflows pages the
                 // tool repo publishes. Empty until the daily pull lands a tree.
@@ -119,9 +136,9 @@ export default defineConfig({
               label: 'hop',
               collapsed: true,
               items: [
-                { label: 'Overview', slug: 'tools/hop/overview' },
-                { label: 'Readme', slug: 'tools/hop/readme' },
-                { label: 'Commands', slug: 'tools/hop/commands' },
+                { label: 'Overview', slug: 'hop' },
+                { label: 'Readme', slug: 'hop/readme' },
+                { label: 'Commands', slug: 'hop/commands' },
                 ...docsSiteSidebarItems('hop'),
               ],
             },
@@ -129,9 +146,9 @@ export default defineConfig({
               label: 'fab-kit',
               collapsed: true,
               items: [
-                { label: 'Overview', slug: 'tools/fab-kit/overview' },
-                { label: 'Readme', slug: 'tools/fab-kit/readme' },
-                { label: 'Commands', slug: 'tools/fab-kit/commands' },
+                { label: 'Overview', slug: 'fab-kit' },
+                { label: 'Readme', slug: 'fab-kit/readme' },
+                { label: 'Commands', slug: 'fab-kit/commands' },
                 ...docsSiteSidebarItems('fab-kit'),
               ],
             },
@@ -139,9 +156,9 @@ export default defineConfig({
               label: 'wt',
               collapsed: true,
               items: [
-                { label: 'Overview', slug: 'tools/wt/overview' },
-                { label: 'Readme', slug: 'tools/wt/readme' },
-                { label: 'Commands', slug: 'tools/wt/commands' },
+                { label: 'Overview', slug: 'wt' },
+                { label: 'Readme', slug: 'wt/readme' },
+                { label: 'Commands', slug: 'wt/commands' },
                 ...docsSiteSidebarItems('wt'),
               ],
             },
@@ -149,9 +166,9 @@ export default defineConfig({
               label: 'run-kit',
               collapsed: true,
               items: [
-                { label: 'Overview', slug: 'tools/run-kit/overview' },
-                { label: 'Readme', slug: 'tools/run-kit/readme' },
-                { label: 'Commands', slug: 'tools/run-kit/commands' },
+                { label: 'Overview', slug: 'run-kit' },
+                { label: 'Readme', slug: 'run-kit/readme' },
+                { label: 'Commands', slug: 'run-kit/commands' },
                 ...docsSiteSidebarItems('run-kit'),
               ],
             },
@@ -159,9 +176,9 @@ export default defineConfig({
               label: 'tu',
               collapsed: true,
               items: [
-                { label: 'Overview', slug: 'tools/tu/overview' },
-                { label: 'Readme', slug: 'tools/tu/readme' },
-                { label: 'Commands', slug: 'tools/tu/commands' },
+                { label: 'Overview', slug: 'tu' },
+                { label: 'Readme', slug: 'tu/readme' },
+                { label: 'Commands', slug: 'tu/commands' },
                 ...docsSiteSidebarItems('tu'),
               ],
             },
@@ -169,9 +186,9 @@ export default defineConfig({
               label: 'shll',
               collapsed: true,
               items: [
-                { label: 'Overview', slug: 'tools/shll/overview' },
-                { label: 'Readme', slug: 'tools/shll/readme' },
-                { label: 'Commands', slug: 'tools/shll/commands' },
+                { label: 'Overview', slug: 'shll' },
+                { label: 'Readme', slug: 'shll/readme' },
+                { label: 'Commands', slug: 'shll/commands' },
                 ...docsSiteSidebarItems('shll'),
               ],
             },

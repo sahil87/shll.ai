@@ -25,12 +25,13 @@
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { TOOLS, toolShort } from '../lib/llms.ts';
+import { isToolSlug } from '../lib/tool-slugs.ts';
 import { repoRootFromModuleUrl } from '../lib/repo-root.ts';
 
 /** One curated link bullet. */
 interface LinkItem {
   label: string;
-  /** Site-absolute path (e.g. `/tools/wt/overview/`). */
+  /** Site-absolute path (e.g. `/wt/`). */
   pathname: string;
   /** One-line description (may be a noted omission). */
   desc: string;
@@ -48,14 +49,15 @@ export const GET: APIRoute = async ({ site }) => {
 
   // Tool overview `description` frontmatter, keyed by tool slug — the fallback
   // when a tool's `root.short` is missing/empty. Sourced from the same `docs`
-  // collection the HTML pages render (no hand-copy).
+  // collection the HTML pages render (no hand-copy). Since change 3ke3 the overview
+  // entry `id` is the bare tool slug (`idea`), not `tools/idea/overview` — the
+  // `slug:` frontmatter override maps the entry id directly to the tool slug.
   const docs = await getCollection('docs');
   const overviewDesc = new Map<string, string>();
   for (const entry of docs) {
-    const m = entry.id.match(/^tools\/([^/]+)\/overview$/);
-    if (m) {
+    if (isToolSlug(entry.id)) {
       const d = (entry.data.description ?? '').trim();
-      if (d) overviewDesc.set(m[1], d);
+      if (d) overviewDesc.set(entry.id, d);
     }
   }
 
@@ -64,7 +66,8 @@ export const GET: APIRoute = async ({ site }) => {
     const short = toolShort(repoRoot, tool) ?? overviewDesc.get(tool) ?? null;
     return {
       label: tool,
-      pathname: `/tools/${tool}/overview/`,
+      // Change 3ke3: the tool overview is canonical at the site root `/<tool>/`.
+      pathname: `/${tool}/`,
       desc: short ?? '(description unavailable — help/<tool>.json and overview frontmatter both missing)',
     };
   });

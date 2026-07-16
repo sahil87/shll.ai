@@ -29,14 +29,17 @@
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { TOOLS, readHelpDoc, readReadmeSlice, renderCommandTree, flattenMdx, absolutize } from '../lib/llms.ts';
+import { isToolSlug } from '../lib/tool-slugs.ts';
 import { repoRootFromModuleUrl } from '../lib/repo-root.ts';
 
-/** A docs-collection id prefix → human heading for the hand-authored MDX section. */
+/** A docs-collection id prefix → human heading for the hand-authored MDX section.
+ *  Since change 3ke3 a tool overview's entry `id` is the bare tool slug (`idea`),
+ *  so the overview group matches a roster slug rather than `tools/<tool>/overview`. */
 const MDX_GROUPS: { heading: string; match: (id: string) => boolean }[] = [
   { heading: 'Getting started', match: (id) => id.startsWith('getting-started/') },
   { heading: 'Reference', match: (id) => id === 'reference/command-index' },
   { heading: 'Workflows', match: (id) => id.startsWith('workflows/') },
-  { heading: 'Tool overviews', match: (id) => /^tools\/[^/]+\/overview$/.test(id) },
+  { heading: 'Tool overviews', match: (id) => isToolSlug(id) },
 ];
 
 export const GET: APIRoute = async ({ site }) => {

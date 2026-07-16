@@ -5,9 +5,12 @@
  * slot is global and singular, but three different pages need three different
  * rails, so this thin dispatcher inspects the route id and delegates:
  *
- *   - `tools/<tool>/commands` → CommandsToc   (first-level command list)
- *   - `tools/<tool>/readme`   → ReadmeToc     (nested H2/H3 from the README slice)
- *   - everything else         → Starlight's <Default /> ToC
+ *   - `<tool>/commands` → CommandsToc   (first-level command list)
+ *   - `<tool>/readme`   → ReadmeToc     (nested H2/H3 from the README slice)
+ *   - everything else   → Starlight's <Default /> ToC
+ *
+ * (Route ids lost their `tools/` prefix in change 3ke3 — the per-tool namespace
+ * moved to the site root — so the delegated helpers now roster-gate the flat id.)
  *
  * Each delegate independently re-checks the route and falls back to <Default />
  * on an empty source, so routing here is intentionally explicit and traceable

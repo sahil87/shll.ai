@@ -1,10 +1,11 @@
 /**
  * docs-site-tree — the single build-time walker of the committed `docs/site/`
  * collector (`content/<slug>/site/**`). Shared by BOTH the dynamic route
- * (`src/pages/tools/[slug]/[...path].astro`, which renders one page per file) and
- * the sidebar helper (`docs-site-sidebar.ts`, which lists them in the nav), so the
- * mount math (content/<slug>/site/<path>.md → /tools/<slug>/<path>) and the page
- * set live in exactly one place and cannot drift between route and sidebar.
+ * (`src/pages/[slug]/[...path].astro`, which renders one page per file) and
+ * the sidebar helper (`docs-site-sidebar.mjs`, which lists them in the nav), so the
+ * mount math (content/<slug>/site/<path>.md → /<slug>/<path>; namespace moved to
+ * root by change 3ke3) and the page set live in exactly one place and cannot drift
+ * between route and sidebar.
  *
  * Build-time + dependency-free (Constitution I/VI): plain `node:fs` walk, no npm
  * import. A tool with no committed `site/` tree simply contributes no pages — a
@@ -20,7 +21,7 @@ export interface DocsSitePage {
   slug: string;
   /** Page path under `site/`, POSIX-separated, no leading slash and no `.md`
    *  (e.g. `install`, `advanced/hooks`). Used as the `[...path]` route param and
-   *  to build the `/tools/<slug>/<path>` URL. */
+   *  to build the `/<slug>/<path>` URL. */
   path: string;
   /** Absolute path to the markdown file on disk. */
   absPath: string;

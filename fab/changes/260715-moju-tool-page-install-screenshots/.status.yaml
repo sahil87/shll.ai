@@ -1,0 +1,53 @@
+id: moju
+name: 260715-moju-tool-page-install-screenshots
+created: 2026-07-15T21:21:39Z
+created_by: sahil-noon
+change_type: feat
+issues: []
+progress:
+    intake: done
+    apply: done
+    review: done
+    hydrate: done
+    ship: done
+    review-pr: done
+plan:
+    generated: true
+    task_count: 10
+    acceptance_count: 12
+    acceptance_completed: 12
+confidence:
+    certain: 2
+    confident: 4
+    tentative: 0
+    unresolved: 0
+    score: 4.7
+    fuzzy: true
+    dimensions:
+        signal: 69.2
+        reversibility: 80.8
+        competence: 84.2
+        disambiguation: 77.5
+stage_metrics:
+    intake: {started_at: "2026-07-15T21:21:39Z", driver: fab-new, iterations: 1, completed_at: "2026-07-15T21:23:40Z"}
+    apply: {started_at: "2026-07-15T21:42:08Z", driver: fab-fff, iterations: 2, completed_at: "2026-07-15T21:46:11Z"}
+    review: {started_at: "2026-07-15T21:46:11Z", driver: fab-fff, iterations: 2, completed_at: "2026-07-15T21:57:41Z"}
+    hydrate: {started_at: "2026-07-15T21:57:41Z", driver: fab-fff, iterations: 1, completed_at: "2026-07-15T22:00:33Z"}
+    ship: {started_at: "2026-07-15T22:00:33Z", driver: fab-fff, iterations: 1, completed_at: "2026-07-15T22:03:36Z"}
+    review-pr: {started_at: "2026-07-15T22:03:36Z", driver: git-pr, iterations: 1, completed_at: "2026-07-15T22:20:03Z"}
+prs:
+    - https://github.com/sahil87/shll.ai/pull/87
+true_impact:
+    added: 1513
+    deleted: 343
+    net: 1170
+    excluding:
+        added: 572
+        deleted: 239
+        net: 333
+    computed_at: "2026-07-15T22:03:36Z"
+    computed_at_stage: ship
+change_type_source: explicit
+summary: 'Overview body shape gains an ## Install section (single-source InstallOneLiner.astro, shll whole-toolkit carve-out) and a ## Screenshots content class (site-owned curated .webp, constitution v2.1.3); documented in conventions/tool-page-rubric'
+# true_impact: lazily created on first stage-finish that computes it (no placeholder here).
+last_updated: 2026-07-15T22:20:03Z

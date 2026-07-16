@@ -22,11 +22,11 @@
  *   - flattenMdx — a pragmatic strip of frontmatter, `import` lines, and JSX
  *     component tags from an MDX body, leaving readable prose for a text/plain
  *     dump (exact fidelity is not required — intake Assumption #5/#7).
- *   - absolutize — rewrite root-relative URLs (`/tools/idea/overview/`) in
- *     appended docs content to site-absolute (`https://shll.ai/tools/idea/…`),
- *     so the absolute-URL discipline (intake Assumption #2) holds for the whole
- *     emitted file, not just the curated index. Both markdown `](/path)` and
- *     HTML `href`/`src="/path"` forms are covered.
+ *   - absolutize — rewrite root-relative URLs (`/idea/`) in appended docs content
+ *     to site-absolute (`https://shll.ai/idea/`), so the absolute-URL discipline
+ *     (intake Assumption #2) holds for the whole emitted file, not just the
+ *     curated index. Both markdown `](/path)` and HTML `href`/`src="/path"` forms
+ *     are covered.
  *
  * All disk reads are build-time only (Constitution I) and fail-soft per tool:
  * a missing slice/JSON degrades to null (the caller emits a noted omission and
@@ -190,9 +190,9 @@ export function flattenMdx(body: string): string {
  * absolute-URL discipline as the curated /llms.txt index (intake Assumption #2;
  * og:image precedent in seo-social-meta.md). README slices are already mostly
  * absolutized by the puller's link transforms, but the hand-authored MDX bodies
- * carry root-relative links (`[overview](/tools/idea/overview/)`, the homepage's
- * `<a href="/tools/…">`) — emitting those verbatim would leak relative URLs an
- * agent cannot resolve out of the toolkit context.
+ * carry root-relative links (`[idea](/idea/)`, the homepage's `<a href="/idea/">`)
+ * — emitting those verbatim would leak relative URLs an agent cannot resolve out
+ * of the toolkit context.
  *
  * Only genuine ROOT-relative URLs (a single leading `/`) are rewritten — both
  * markdown link targets `](/path)` and HTML `href`/`src` attributes. Left

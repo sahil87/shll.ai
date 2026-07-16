@@ -3,9 +3,12 @@
  * MobileTocDispatcher — the mobile counterpart to TocDispatcher, registered as
  * `components.MobileTableOfContents` in astro.config.mjs. Same route dispatch:
  *
- *   - `tools/<tool>/commands` → CommandsMobileToc
- *   - `tools/<tool>/readme`   → ReadmeMobileToc
- *   - everything else         → Starlight's <Default /> mobile ToC
+ *   - `<tool>/commands` → CommandsMobileToc
+ *   - `<tool>/readme`   → ReadmeMobileToc
+ *   - everything else   → Starlight's <Default /> mobile ToC
+ *
+ * (Route ids lost their `tools/` prefix in change 3ke3 — the delegated helpers
+ * now roster-gate the flat id.)
  *
  * See TocDispatcher.astro for the rationale (explicit, traceable routing; no
  * regression to the commands-page dropdown).

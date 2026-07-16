@@ -11,9 +11,10 @@
  * variable docs/site pages appear automatically with zero per-page maintenance.
  *
  * Mount math matches the dynamic route exactly (content/<slug>/site/<path>.md →
- * link `/tools/<slug>/<path>`). It is a `.mjs` (not `.ts`) so it loads cleanly
- * during Astro config evaluation. Dependency-free `node:fs` (Constitution VI); a
- * tool with no committed tree yields [] (a missing tree is an expected state).
+ * link `/<slug>/<path>`; namespace moved to root by change 3ke3). It is a `.mjs`
+ * (not `.ts`) so it loads cleanly during Astro config evaluation. Dependency-free
+ * `node:fs` (Constitution VI); a tool with no committed tree yields [] (a missing
+ * tree is an expected state).
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -76,7 +77,7 @@ const repoRoot = findRepoRoot(path.dirname(fileURLToPath(import.meta.url)));
  * Return the Starlight sidebar items for a tool's committed docs/site tree, as a
  * flat list of `{ label, link }` entries (one per page). Empty when the tool has
  * no committed `content/<slug>/site/` tree. Labels come from each page's first H1
- * (fallback: titleized path tail); links are absolute site paths `/tools/<slug>/<path>`.
+ * (fallback: titleized path tail); links are absolute site paths `/<slug>/<path>`.
  */
 export function docsSiteSidebarItems(slug) {
   if (!repoRoot) return [];
@@ -85,6 +86,42 @@ export function docsSiteSidebarItems(slug) {
     const routePath = rel.replace(/\.md$/i, '');
     const abs = path.join(siteDir, rel);
     const label = firstH1(fs.readFileSync(abs, 'utf8')) ?? titleizeTail(routePath);
-    return { label, link: `/tools/${slug}/${routePath}` };
+    return { label, link: `/${slug}/${routePath}` };
   });
+}
+
+/**
+ * Reverse-redirect map for every committed docs/site page, so a previously-shared
+ * or -indexed old deep URL still lands after the change-3ke3 namespace move
+ * (`/tools/<slug>/<path>` → `/<slug>/<path>/`). Returns an object shaped for Astro's
+ * `redirects:` config — `{ '/tools/<slug>/<path>': '/<slug>/<path>/' }` — enumerated
+ * programmatically because Astro static builds cannot wildcard-redirect. Walks the
+ * SAME committed trees `docsSiteSidebarItems` lists (same `content/<slug>/site/**`
+ * collector, same `walkMarkdown`), so the redirect set and the live page set cannot
+ * drift. The destination carries a trailing slash to match the dynamic route's
+ * trailing-slash directory serving; the source is the bare old path. Empty when no
+ * tree is committed (or the repo root is not found). Build-time / config-eval only.
+ */
+export function docsSiteRedirectEntries() {
+  if (!repoRoot) return {};
+  const contentDir = path.join(repoRoot, 'content');
+  let slugs;
+  try {
+    slugs = fs.readdirSync(contentDir, { withFileTypes: true });
+  } catch (err) {
+    if (err && err.code === 'ENOENT') return {};
+    throw err;
+  }
+  /** @type {Record<string, string>} */
+  const map = {};
+  for (const slugEntry of [...slugs].sort((a, b) => a.name.localeCompare(b.name))) {
+    if (!slugEntry.isDirectory()) continue;
+    const slug = slugEntry.name;
+    const siteDir = path.join(contentDir, slug, 'site');
+    for (const rel of walkMarkdown(siteDir)) {
+      const routePath = rel.replace(/\.md$/i, '');
+      map[`/tools/${slug}/${routePath}`] = `/${slug}/${routePath}/`;
+    }
+  }
+  return map;
 }

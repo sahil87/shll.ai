@@ -1,19 +1,25 @@
 ---
 title: idea
+slug: idea
 description: Plain-Markdown backlog tracker — worktree-aware, queryable from the CLI, feeds /fab-new.
 ---
 
 import GithubButton from '../../../../components/GithubButton.astro';
+import InstallOneLiner from '../../../../components/InstallOneLiner.astro';
 
 <GithubButton tool="idea" />
 
 `idea` is a plain-Markdown backlog tracker for AI-assisted development — it captures and manages a per-repo backlog in a single `fab/backlog.md` file, worktree-aware and queryable from the CLI. It's the same file `fab-kit`'s `/fab-new` reads to start a change, so a captured idea flows straight into the planning pipeline. If you run multiple coding agents in parallel, `idea` is where work waits its turn — no app to open, no database to query, just a file you can `cat`, `grep`, and `git diff`.
 
+## Install
+
+<InstallOneLiner tool="idea" />
+
 ## How it fits
 
-`idea` feeds the pipeline: a backlog item becomes a change in **[fab-kit](../../fab-kit/overview/)** via `/fab-new`, which runs inside an isolated **[wt](../../wt/overview/)** worktree. Watch what the whole run costs with **[tu](../../tu/overview/)**.
+`idea` feeds the pipeline: a backlog item becomes a change in **[fab-kit](/fab-kit/)** via `/fab-new`, which runs inside an isolated **[wt](/wt/)** worktree. Watch what the whole run costs with **[tu](/tu/)**.
 
 ## Where to next
 
-- **[Readme](../readme/)** — the full canonical guide, synced from idea's own repo.
-- **[Commands](../commands/)** — every subcommand and flag.
+- **[Readme](/idea/readme/)** — the full canonical guide, synced from idea's own repo.
+- **[Commands](/idea/commands/)** — every subcommand and flag.

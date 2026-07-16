@@ -552,22 +552,22 @@ export function findUnknownTokens(slice: string, doc: HelpDoc): string[] {
 //                                      RELATIVE link/image target against the page's
 //                                      own directory within the docs/site tree,
 //                                      strip `.md`, emit the SITE-ABSOLUTE path
-//                                      `/tools/<slug>/<resolved>`.
+//                                      `/<slug>/<resolved>`.
 //   - rewriteReadmeDocsSiteLinks(md, slug) — the README slice: a relative target
-//                                      `docs/site/<p>.md` → `/tools/<slug>/<p>`.
+//                                      `docs/site/<p>.md` → `/<slug>/<p>`.
 //   - findClosureViolations(rel, md) — REPORT-ONLY detector: relative link/image
 //                                      targets that escape docs/site (`..` climb)
 //                                      or relative images (must be absolute, §3).
 //
-// SITE-ABSOLUTE rewrite (reworked by change x0br review): every intra-set link
-// target becomes a site-absolute path `/tools/<slug>/<resolved-path>`. This is
-// serving-model-proof — the site serves each page as a trailing-slash directory
-// (`/tools/<slug>/<path>/`, i.e. `<path>/index.html`), so a RELATIVE rewrite
-// (`./<p>` or a bare `.md`-strip) resolves one segment too deep (a README at
-// `/tools/idea/readme/` + `./install` → `/tools/idea/readme/install`, but the page
-// is at `/tools/idea/install/`). A site-absolute target is immune to trailingSlash
+// SITE-ABSOLUTE rewrite (reworked by change x0br review; namespace moved to root
+// by change 3ke3): every intra-set link target becomes a site-absolute path
+// `/<slug>/<resolved-path>`. This is serving-model-proof — the site serves each
+// page as a trailing-slash directory (`/<slug>/<path>/`, i.e. `<path>/index.html`),
+// so a RELATIVE rewrite (`./<p>` or a bare `.md`-strip) resolves one segment too
+// deep (a README at `/idea/readme/` + `./install` → `/idea/readme/install`, but the
+// page is at `/idea/install/`). A site-absolute target is immune to trailingSlash
 // and matches Starlight's own sibling links (which are absolute, e.g.
-// `/tools/idea/install/`). Both transforms are therefore SLUG-AWARE (and the
+// `/idea/install/`). Both transforms are therefore SLUG-AWARE (and the
 // docs/site transform is also mount-path-aware to resolve `.`/`..`) — intended.
 //
 // ALL link-target editing flows through one scanner (`rewriteLinkTargets`) so the
@@ -674,7 +674,7 @@ function stripMdExt(path: string): string {
 /** The mount segment a closure-escaping docs/site target is rewritten under
  *  (R3). It is reserved-by-construction: not a static tool slug, and no real
  *  `docs/site/` page can mount here (this rewrite + the §closure lint own it), so
- *  the resulting `/tools/<slug>/__unresolved__/…` URL cannot collide with a real
+ *  the resulting `/<slug>/__unresolved__/…` URL cannot collide with a real
  *  page — it reads as broken-on-purpose, consistent with the lint's `escape`
  *  warning. (Was previously a silent clamp to the tool root, which produced a
  *  confidently-wrong link to a real page.) */
@@ -707,12 +707,16 @@ function resolvePath(base: string[], target: string): { segments: string[]; esca
 
 /**
  * Build the site-absolute mount URL for a resolved docs/site page path under a
- * tool slug: `/tools/<slug>/<segments…>` (no trailing slash, no `.md`). An empty
- * resolved path (target resolved to the tool root) yields `/tools/<slug>`.
+ * tool slug: `/<slug>/<segments…>` (no trailing slash, no `.md`). An empty
+ * resolved path (target resolved to the tool root) yields `/<slug>`.
+ *
+ * Change 3ke3: the per-tool namespace moved from `/tools/<slug>/` to the site
+ * root `/<slug>/`, so this emit target dropped its `/tools` prefix. The dynamic
+ * route now lives at `src/pages/[slug]/[...path].astro` and serves these URLs.
  */
 function toolMountUrl(slug: string, segments: string[]): string {
   const tail = segments.join('/');
-  return tail === '' ? `/tools/${slug}` : `/tools/${slug}/${tail}`;
+  return tail === '' ? `/${slug}` : `/${slug}/${tail}`;
 }
 
 /**
@@ -720,14 +724,14 @@ function toolMountUrl(slug: string, segments: string[]): string {
  * link/image target against the page's OWN directory within the docs/site tree
  * (`mountPath`, the page's path under `site/` without `.md`, e.g. `advanced/hooks`),
  * normalize `.`/`..`, strip `.md`, and emit the site-absolute mount URL
- * `/tools/<slug>/<resolved>`. Closure (§9.1.1) guarantees relative targets are
+ * `/<slug>/<resolved>`. Closure (§9.1.1) guarantees relative targets are
  * intra-set; a `..`-escape is flagged by the §closure lint AND, here, rewritten to
- * a non-colliding `/tools/<slug>/__unresolved__/…` marker (R3) — NOT clamped to a
+ * a non-colliding `/<slug>/__unresolved__/…` marker (R3) — NOT clamped to a
  * real page (which would misroute the broken link to a confidently-wrong page).
  * Absolute URLs, prose, and code are untouched; a `#`/`?` suffix is preserved.
  * Pure and total. Example: page `advanced/hooks` linking `../install.md` →
- * `/tools/<slug>/install`; `./sibling.md` → `/tools/<slug>/advanced/sibling`;
- * an escaping `../../x.md` → `/tools/<slug>/__unresolved__/x`.
+ * `/<slug>/install`; `./sibling.md` → `/<slug>/advanced/sibling`;
+ * an escaping `../../x.md` → `/<slug>/__unresolved__/x`.
  */
 export function rewriteDocsSiteLinks(
   markdown: string,
@@ -748,10 +752,10 @@ export function rewriteDocsSiteLinks(
 
 /**
  * R6 — the README SLICE transform (SITE-ABSOLUTE). A relative target of the form
- * `docs/site/<p>.md` → the site-absolute mount URL `/tools/<slug>/<p>` (the
+ * `docs/site/<p>.md` → the site-absolute mount URL `/<slug>/<p>` (the
  * `docs/site/` prefix maps to the tool root, `.md` stripped, nested `<p>` subtree
- * preserved). Example: `[guide](docs/site/install.md)` → `[guide](/tools/<slug>/install)`;
- * `docs/site/advanced/hooks.md` → `/tools/<slug>/advanced/hooks`. Relative targets
+ * preserved). Example: `[guide](docs/site/install.md)` → `[guide](/<slug>/install)`;
+ * `docs/site/advanced/hooks.md` → `/<slug>/advanced/hooks`. Relative targets
  * NOT under `docs/site/` are left as-is (a README's own relative links into
  * non-docs/site files are out of scope and self-heal via the absolute-by-author
  * producer rule). Absolute URLs / prose / code untouched; `#`/`?` suffix preserved.

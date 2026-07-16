@@ -25,9 +25,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createMarkdownProcessor } from '@astrojs/markdown-remark';
 import { repoRootFromModuleUrl } from './repo-root.ts';
+import { isToolSlug } from './tool-slugs.ts';
 
-/** Per-tool readme pages have route id `tools/<tool>/readme`. */
-const README_ROUTE_RE = /^tools\/([^/]+)\/readme$/;
+/** Per-tool readme pages have route id `<tool>/readme` (change 3ke3: the `tools/`
+ *  prefix was dropped when the namespace moved to the site root, so the captured
+ *  first segment is gated on the tool-slug roster rather than the prefix — a bare
+ *  `([^/]+)/readme` would otherwise false-positive on a root route). */
+const README_ROUTE_RE = /^([^/]+)\/readme$/;
 
 /** Top of the ToC depth window — matches `tableOfContents.minHeadingLevel`. */
 const MIN_DEPTH = 2;
@@ -46,10 +50,11 @@ export interface TocHeading {
   children: TocHeading[];
 }
 
-/** Tool slug if `id` is a per-tool readme route, else null. */
+/** Tool slug if `id` is a per-tool readme route (`<tool>/readme`, `<tool>` in the
+ *  roster), else null. */
 export function toolFromReadmeRouteId(id: string): string | null {
   const m = id.match(README_ROUTE_RE);
-  return m ? m[1] : null;
+  return m && isToolSlug(m[1]) ? m[1] : null;
 }
 
 /**

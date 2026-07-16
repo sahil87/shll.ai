@@ -1,0 +1,115 @@
+---
+/**
+ * InstallOneLiner — the per-tool one-step install one-liner for tool overviews.
+ *
+ * Renders a build-time terminal block (no client-side JS — Constitution I)
+ * carrying the toolkit's real one-step installer scoped to a single tool:
+ *
+ *     $ curl -fsSL https://shll.ai/install | sh -s -- <tool>
+ *
+ * plus one short site-authored sentence pointing at the whole-toolkit story.
+ * The `shll.ai/install` script (PR #84) accepts a tool subset via `sh -s --`,
+ * so this line is accurate and copy-pasteable per tool.
+ *
+ * SHLL IS SPECIAL: `shll` is the bootstrap meta-CLI, not a roster install
+ * target — the script execs `shll install "$@"`, and `shll install shll` hard-
+ * errors (shll isn't one of the six installable tools; see getting-started/
+ * install and help/shll.json). For `tool === 'shll'` we render the whole-toolkit
+ * one-liner `curl -fsSL https://shll.ai/install | sh` (no `sh -s -- shll`),
+ * which is exactly the bootstrap the homepage/install page document.
+ *
+ * SINGLE SOURCE: this component is the sole carrier of the per-tool one-liner.
+ * It deliberately does NOT add seven hand-copied install blocks. The two
+ * documented hand-copy surfaces — the homepage install block (index.mdx) and
+ * getting-started/install.md — stay the canonical hand-written carriers of the
+ * whole-toolkit quick-start and are untouched by this component.
+ *
+ * WHY AN .astro COMPONENT (not inline MDX): the command contains both `--` and
+ * a bare URL. MDX runs remark plugins over JSX text even inside <pre> —
+ * smartypants turns `--` into an em-dash and bare URLs get auto-linked — so an
+ * inline MDX block would mangle the copied command (see the remark-hazard note
+ * in index.mdx). An .astro template is plain HTML: the literal `sh -s -- <tool>`
+ * and the URL survive verbatim, with no per-file JSX-expression escaping.
+ *
+ * Colors come from the site's --c-* tokens (src/styles/terminal.css) via the
+ * shared .shell-session idiom, so dark-mode parity is automatic (Constitution
+ * V). The `$` prompt is user-select:none, so selection copies the command
+ * only. No new dependency (Constitution VI).
+ *
+ * Placement convention: an `## Install` section between the overview's lead and
+ * `## How it fits`. See docs/memory/conventions/tool-page-rubric.
+ */
+import { isToolSlug } from '../lib/tool-slugs.ts';
+
+interface Props {
+  /** Tool slug — the install subset passed to `sh -s -- <tool>`. */
+  tool: string;
+}
+
+const { tool } = Astro.props as Props;
+
+// A missing slug is a page-author error (the prop was forgotten) — fail the
+// build loudly rather than emitting a broken `sh -s -- ` line, mirroring
+// GithubButton's and CommandReference's top-level guards.
+if (!tool) {
+  throw new Error('InstallOneLiner: a `tool` slug prop is required.');
+}
+
+// An unknown slug would emit an install command for a tool that does not exist
+// in the roster — a defect that must not deploy. Gate on the shared roster
+// (the same isToolSlug gate every root-namespace dispatcher uses, change 3ke3).
+if (!isToolSlug(tool)) {
+  throw new Error(
+    `InstallOneLiner: unknown tool slug \`${tool}\` — not one of the roster in src/lib/tool-slugs.ts.`,
+  );
+}
+
+// `shll` bootstraps the whole toolkit — it is NOT a `shll install` target, so
+// `sh -s -- shll` would hard-error. Render the whole-toolkit bootstrap instead.
+const isShll = tool === 'shll';
+
+// The one-liner is built here (not in the template) so the `--` and the URL
+// never pass through any markdown/remark transform.
+const oneLiner = isShll
+  ? `curl -fsSL https://shll.ai/install | sh`
+  : `curl -fsSL https://shll.ai/install | sh -s -- ${tool}`;
+---
+
+<div class="install-one-liner not-content">
+  <pre class="shell-session not-content"><span class="shell-line"><span class="shell-prompt">$</span> {oneLiner}</span></pre>
+  {isShll ? (
+    <p class="install-one-liner-note">
+      Installs <code>shll</code> and the whole toolkit via Homebrew — see the <a
+        href="/getting-started/install/">full install guide</a>.
+    </p>
+  ) : (
+    <p class="install-one-liner-note">
+      Installs <code>shll</code> + <code>{tool}</code> via Homebrew — or <a
+        href="/getting-started/install/">install the whole toolkit</a>.
+    </p>
+  )}
+</div>
+
+<style>
+  /* The block reuses the shared .shell-session idiom (terminal.css) for the
+     command line — dark-mode parity via --c-* tokens for free (Constitution V).
+     The note's link styling also lives in terminal.css: change ld0j keeps every
+     terminal-styled link in ONE selector group (.shell-session a, .home-prose a,
+     .tools-listing a, .install-one-liner-note a) — one source, no per-class
+     copies — so no link rules are duplicated here. */
+  .install-one-liner {
+    margin: 0.75rem 0 1.25rem;
+  }
+  .install-one-liner .shell-session {
+    margin: 0 0 0.5rem;
+  }
+  .install-one-liner-note {
+    margin: 0;
+    font-family: var(--sl-font-mono);
+    font-size: 0.85rem;
+    color: var(--c-fg-dim);
+  }
+  .install-one-liner-note code {
+    color: var(--c-fg);
+  }
+</style>

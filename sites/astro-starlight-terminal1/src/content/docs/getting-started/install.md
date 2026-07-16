@@ -49,7 +49,7 @@ shll version
 
 ## Optional: run-kit agent state
 
-The `run-kit agent-setup` line above is optional and once per machine — it lights up live agent state in [run-kit](/tools/run-kit/overview/)'s dashboard: **active** / **waiting** / **idle** for every pane running a coding agent. It installs agent-harness hooks into your user-global agent config (v1: Claude Code) that report each pane's lifecycle state; until it's run, agent state shows `—` in the dashboard. It shows the settings diff and asks before writing, re-running is idempotent, and `run-kit agent-setup --uninstall` removes exactly the run-kit-owned entries. Details in the [run-kit install guide](/tools/run-kit/install/).
+The `run-kit agent-setup` line above is optional and once per machine — it lights up live agent state in [run-kit](/run-kit/)'s dashboard: **active** / **waiting** / **idle** for every pane running a coding agent. It installs agent-harness hooks into your user-global agent config (v1: Claude Code) that report each pane's lifecycle state; until it's run, agent state shows `—` in the dashboard. It shows the settings diff and asks before writing, re-running is idempotent, and `run-kit agent-setup --uninstall` removes exactly the run-kit-owned entries. Details in the [run-kit install guide](/run-kit/install/).
 
 ## Per-tool install
 
@@ -79,4 +79,4 @@ Updates every installed tool to the latest tap version. To pin a specific tool, 
 
 ---
 
-Next: head to a [tool overview](/tools/idea/overview/) or learn the [daily flow](/workflows/daily-flow/).
+Next: head to a [tool overview](/idea/) or learn the [daily flow](/workflows/daily-flow/).
