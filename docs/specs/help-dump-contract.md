@@ -4,10 +4,13 @@
 **Created**: 2026-06-03 (change `oa63`)
 **Schema anchor**: [`sites/astro-starlight-terminal1/src/lib/schemas.ts`](../../sites/astro-starlight-terminal1/src/lib/schemas.ts)
 **Consumed by**: [`docs/memory/conventions/help-collection.md`](../memory/conventions/help-collection.md)
+**Producer-facing standard**: [`sahil87/shll` → `docs/site/help-dump.md`](https://github.com/sahil87/shll/blob/main/docs/site/help-dump.md), rendered at [shll.ai/shll/help-dump](https://shll.ai/shll/help-dump)
+
+> **Producer/consumer split (2026-07-17).** The **producer-facing standard** — the page a tool repo reads to conform — now lives canonically in the shll repo's `docs/site/` tree (linked above), alongside the toolkit-wide [CLI principles](https://shll.ai/shll/principles). It distills this spec's producer sections (§1–§8). THIS spec remains the **consumer-side authority**: the machine-checkable schema anchor (`schemas.ts`), capture/validation/render behavior, the pull model, and the historical teardown record. On any divergence over producer obligations, the shll standard is corrected to agree with the schema anchor here — `schemas.ts` stays the single machine-checkable truth (§Schema reference).
 
 ## Overview
 
-This is the single forward contract for what each shll toolkit CLI's `help-dump` subcommand MUST emit. It is the one document the 7 tool repos (`idea`, `hop`, `fab-kit`, `wt`, `run-kit`, `tu`, `shll`) reference forever. As of 2026-06-03, shll.ai **pulls** help via `help-dump` (a scheduled refresh job — change `oa63`); the prior push model is retired.
+This is the forward contract for what each shll toolkit CLI's `help-dump` subcommand MUST emit. The 7 tool repos (`idea`, `hop`, `fab-kit`, `wt`, `run-kit`, `tu`, `shll`) conform by reading the producer-facing standard in the shll repo (see the split note above); this spec is the consumer-side contract that standard distills. As of 2026-06-03, shll.ai **pulls** help via `help-dump` (a scheduled refresh job — change `oa63`); the prior push model is retired.
 
 **The tool's single obligation**: *emit valid `help-dump` output. Everything downstream — capture, timestamping, validation, commit, render — is shll.ai's job.* A tool author's entire responsibility to the command reference is keeping `help-dump` conformant to this contract. There is no transport, no token, no PR, no auto-merge to reason about.
 
@@ -219,5 +222,6 @@ The single **machine-checkable** anchor for this contract is:
 
 | Date | Change |
 |------|--------|
+| 2026-07-17 | Re-scoped (producer/consumer split): the **producer-facing standard** moved to its canonical toolkit home — `sahil87/shll` `docs/site/help-dump.md`, rendered at `shll.ai/shll/help-dump` (a sibling of the new toolkit CLI principles page). Added the split banner + reframed the Overview: tool repos conform by reading the shll standard; this spec remains the consumer-side authority (schema anchor `schemas.ts`, capture/validation/render, pull model, teardown record). No schema or mechanical change. |
 | 2026-06-03 | Added (change `oa63`): a paste-ready **Teardown directive** to the §Pull model section — a self-contained, single-PR task block for a tool-repo agent to remove the push wiring (producer CI, PR-opening, auto-merge, `SHLLAI_TOKEN`) while preserving the `help-dump` command. Clarified that the slug↔binary mapping is shll.ai's concern (lives in the scheduled job), so the directive is slug-free and a tool author never reasons about it. |
 | 2026-06-03 | Created (change `oa63`): forward contract for `help-dump` output. §1 Invocation (STDOUT JSON envelope, stderr-empty/exit-0, non-zero = failed capture), §2 Hidden + self-filtering, §3 schema (envelope + recursive Node, the `captured_at` shll.ai-owned asymmetry), §4 filter rules (`completion`/`help`/`Hidden`), §5 programmatic discovery & full recursion (never regex `-h`), §6 version from the built binary, §7 the `tu` Node/TS flat-tree exception (`help/tu.json` may be MISSING during rollout), §8 schema evolution (frozen at `1`, future fields OPTIONAL). Bounded dated §Pull model migration section (push retired; lists the four deletable items per tool repo; teardown gated on the puller being live + proven). §Schema reference cross-links `sites/astro-starlight-terminal1/src/lib/schemas.ts` both ways. |
