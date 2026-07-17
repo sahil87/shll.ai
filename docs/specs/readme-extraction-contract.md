@@ -5,15 +5,18 @@
 **Extraction anchor**: [`sites/astro-starlight-terminal1/src/lib/extract-readme.ts`](../../sites/astro-starlight-terminal1/src/lib/extract-readme.ts)
 **Consumed by**: [`docs/memory/conventions/readme-extraction.md`](../memory/conventions/readme-extraction.md) *(created at hydrate)*
 **Sibling contract**: [`help-dump-contract.md`](./help-dump-contract.md)
+**Producer-facing standard**: [`sahil87/shll` → `docs/site/readme-extraction.md`](https://github.com/sahil87/shll/blob/main/docs/site/readme-extraction.md), rendered at [shll.ai/shll/readme-extraction](https://shll.ai/shll/readme-extraction)
+
+> **Producer/consumer split (2026-07-17).** The **producer-facing standard** — the page a tool repo reads to conform — now lives canonically in the shll repo's `docs/site/` tree (linked above), alongside the toolkit-wide [CLI principles](https://shll.ai/shll/principles). It distills this spec's producer rules (§1–§6, §9.1/§9.2, and the §Producer conformance directive). THIS spec remains the **consumer-side authority**: the machine-anchored extraction behavior (`extract-readme.ts`), the pull workflow, the lints and link-resolution transforms, and the render model. On any divergence over producer obligations, the shll standard is corrected to agree with the extraction anchor here — `extract-readme.ts` stays the single machine-checkable truth (§Extraction reference).
 
 ## Overview
 
-This is the single forward contract for how each shll toolkit CLI's `README.md` MUST be
+This is the forward contract for how each shll toolkit CLI's `README.md` MUST be
 structured so that shll.ai can pull a **deduced, curated slice** of it and render that slice
 on the tool's page. It is the README-prose counterpart to [`help-dump-contract.md`](./help-dump-contract.md)
 (which governs the machine-generated command reference). The two are intentionally symmetric:
-a **producer contract** in `docs/specs/` + a **consumer** (a scheduled pull workflow + a
-build-time render component).
+a **producer-facing standard** in the shll repo (see the split note above) + a **consumer** (this
+spec's scheduled pull workflow + build-time render component).
 
 **The asymmetry with `help-dump` (state it plainly).** `help-dump` asks each tool to *emit a new
 artifact* (a JSON envelope). This contract mostly **constrains an artifact tools already have** —
@@ -586,10 +589,16 @@ so the tested detection and the CI detection cannot drift. The detector returns 
 
 ## §Producer conformance directive
 
+> **Canonical entry point moved (2026-07-17).** Tool repos now conform by reading the producer-facing
+> standard at [`sahil87/shll` → `docs/site/readme-extraction.md`](https://github.com/sahil87/shll/blob/main/docs/site/readme-extraction.md)
+> (rendered at [shll.ai/shll/readme-extraction](https://shll.ai/shll/readme-extraction)), which distills
+> this directive. This section remains the detailed, single-sourced reference that standard is
+> reconciled against.
+
 This section is the **per-repo conformance work**, written as a ready-to-hand-to-an-agent task — the
 README-prose sibling of [`help-dump-contract.md`](./help-dump-contract.md)'s "Teardown directive."
-Each of the 7 tool repos conforms by **reading this section** (the maintainer points the repo's agent
-at this file). The four producer rules (§9.1) and the README structure (§1/§2/§3/§5) are **identical
+Each of the 7 tool repos conforms by reading the producer-facing standard above, which distills this
+section (the maintainer can still point a repo's agent here for the full detail). The four producer rules (§9.1) and the README structure (§1/§2/§3/§5) are **identical
 for every tool**; the only per-tool variance is the repo's **slug** and which **reserved static slugs**
 that tool already uses — captured in the per-tool table below. One shared directive (not seven copies)
 keeps this single-sourced — the same anti-duplication value the contract enforces for content.
@@ -820,6 +829,7 @@ The single **machine-anchored** definition of the deduction + strip + verify beh
 
 | Date | Change |
 |------|--------|
+| 2026-07-17 | Re-scoped (producer/consumer split): the **producer-facing standard** moved to its canonical toolkit home — `sahil87/shll` `docs/site/readme-extraction.md`, rendered at `shll.ai/shll/readme-extraction` (a sibling of the new toolkit CLI principles page). Added the split banner, reframed the Overview symmetry line, and marked the §Producer conformance directive as the detailed reference the standard distills (tool repos now enter via the shll standard). No mechanical/consumer change; `extract-readme.ts` remains the machine anchor. |
 | 2026-06-04 | Created (change `w32m`): forward contract for README extraction. §1 head rule (skip H1 + toolkit blockquote + contiguous badge/image lines), §2 tail rule (final denylist `Contributing`/`Development`/`Building`/`License`/`Acknowledgements`; `Install` INCLUDED; `Changelog`/`Roadmap`/`FAQ` kept), §3 image rule (reference-not-copy, alt-text-travels, co-capture, ≤24h transient-404 accepted, vendoring deferred), §4 dark-theme producer/consumer stanzas (`data-theme` not `prefers-color-scheme`; `<picture>` mapping deferred), §5 mermaid Option A (strip inline, require rendered SVG), §6 strips (mermaid fences + `#gh-*-mode-only` images), §7 the `vn39` validation gate (sole install guard; `shll shell-install` failure mode; single-sourced `findUnknownTokens` verifier), §8 pull model (sibling of `scheduled-help-refresh.yml`, `content/<slug>/` repo-root collector, direct-commit-gated-on-validation, off-deploy, per-tool isolation, `ReadmeSlice.astro` build-time render injected into overviews), §9 `docs/site/` escape hatch (audience axis) marked RESERVED / not yet implemented — only `README.md` is pulled today. §Extraction reference anchors `src/lib/extract-readme.ts`. Symmetric with `help-dump-contract.md`. |
 | 2026-06-04 | Reframed (change `4s3e`): the §7 `vn39` cross-check flips from a **blocking publish gate** to a **non-fatal divergence reporter** — the tool README is canonical and rendered verbatim; divergence emits a CI `::warning::` and the slice is still committed (`extract-readme-cli.mjs` → warn + write + exit 0, not exit 1; missing `help/<slug>.json` → "unverified" warning + still write). The `vn39` rule stays a hard rule only for *hand-written* site prose. §8 pull model: **always commit, warn-not-skip** on divergence; per-tool isolation now applies ONLY to genuine fetch/read failures (which keep last-good), not to divergence. Install language (§2/§7): the reporter is an accuracy *reporter*, not the *sole guard*. Render model: the slice now renders on a **parallel per-tool `readme` page** (`/tools/<slug>/readme`, sidebar "Readme", sibling of `commands`), NOT injected into `overview.mdx`; each `overview.mdx` is thinned to a directory entry (GithubButton + framing + nav links). `findUnknownTokens` detection logic is unchanged; false-positive tuning deferred to a follow-up. Anti-drift intro reconciled. |
 | 2026-06-07 | Activated `docs/site/` (change `x0br`): §9 flips RESERVED → **ACTIVE** as a **closed-set** model — §9.1 publishes the four producer rules (closure: `docs/site/` is fully self-contained, no `..` escape; external links absolute-by-author; all images absolute everywhere; README→`docs/site/` links written naturally); §9.2 records the reserved-slug precedence (`overview`/`readme`/`commands`/`install`/`workflows`). New **§link resolution**: the consumer's entire rewrite surface is two pure context-free transforms on relative link/image targets only — `rewriteDocsSiteLinks` (`.md`-strip) for docs/site pages, `rewriteReadmeDocsSiteLinks` (`docs/site/`→`./` prefix + `.md`-strip) for the README slice — plus the **rewrite guard** (never touch absolute URLs / prose / code; relative-prefix only; suffix preserved). New **§closure lint**: report-only `findClosureViolations` emits a `::warning::` on a `..`-escape or relative image and STILL commits (mirrors §7). §3 refined: **all images absolute everywhere** (README + `docs/site/`); shll.ai vendors zero binaries; a relative image is a closure violation. §8 extended: a sibling **tarball** fetch (`codeload.github.com/.../tar.gz/<branch>`, untar `docs/site/` subtree, main→master fallback) + multi-page render via the FIRST **dynamic route** (`src/pages/tools/[slug]/[...path].astro`, `getStaticPaths` over `content/<slug>/site/**`, one page per file at `/tools/<slug>/<path>`, rendered through the same `@astrojs/markdown-remark` path as `ReadmeSlice` inside Starlight's `<StarlightPage>`) + a build-time-generated **sidebar** group appended per tool. New consumer functions anchored in §Extraction reference; pinned by `scripts/extract-readme.test.mjs`. Conforming the 7 external repos remains out of scope (forward, per-repo). |
