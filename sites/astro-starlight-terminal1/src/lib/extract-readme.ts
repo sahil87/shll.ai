@@ -1,7 +1,8 @@
 /**
  * extract-readme — a pure, dependency-free build-time transform that deduces the
  * shll.ai site slice from a tool's canonical `README.md`, plus the `vn39`
- * validation gate that guards the pulled prose against fabricated commands/flags.
+ * divergence reporter that flags fabricated commands/flags in the pulled prose
+ * (report-only — it never withholds the canonical slice; see below).
  *
  * This is the README-prose counterpart to `parse-help.ts` (which decomposes the
  * machine-generated command reference). Like that module it is:
@@ -27,11 +28,16 @@
  *     carries the GitHub-proprietary `#gh-dark-mode-only` / `#gh-light-mode-only`
  *     fragment. Ordinary code fences and plain images survive.
  *
- * Validation gate (contract §7): `findUnknownTokens(slice, helpDoc)` returns the
- * command/flag tokens referenced by the slice that are ABSENT from the tool's
- * help tree — the SOLE guard on pulled-install accuracy now that Install is
- * pulled. The workflow fails a tool's pull when this set is non-empty; the unit
- * test pins the same behavior, so CI and test cannot drift.
+ * Divergence reporter (contract §7, REPORT-ONLY since change `4s3e`):
+ * `findUnknownTokens(slice, helpDoc)` returns the command/flag tokens referenced by
+ * the slice that are ABSENT from the tool's help tree. The tool's README is
+ * CANONICAL and rendered verbatim, so this is a non-fatal REPORTER, not a publish
+ * gate: `extract-readme-cli.mjs` consumes a non-empty result as a `::warning::` +
+ * exit 0 (writes the slice), never a failed pull. The detector is intentionally
+ * conservative — code-span-only scanning, a leaf-stopping command-tree walk, plus
+ * four false-positive guards (§7.1): the bare-`--` and `<placeholder>` flag-scan
+ * stops, the gated cobra `completion`/`help` seed, and the `UNDUMPED_TOKENS`
+ * allowlist. The unit test pins the same detection, so CI and test cannot drift.
  */
 import { parseHelp } from './parse-help.ts';
 import type { HelpDoc, Node } from './schemas.ts';
@@ -406,13 +412,49 @@ function* walkNodes(node: Node): Generator<Node> {
   for (const child of node.commands ?? []) yield* walkNodes(child);
 }
 
+/** Cobra's auto-generated subcommands. `help-dump` excludes them from every dump
+ *  (help-dump-contract §4 noise filtering), so a README documenting `<tool>
+ *  completion` / `<tool> help <cmd>` would otherwise flag as an unknown
+ *  subcommand. They are seeded as universal, valid LEAF children of every tool's
+ *  root — the direct analogue of the universal-flag seed below. Registering them
+ *  as leaves (no grandchildren) means a `completion <shell>` / `help <cmd>` tail
+ *  is treated as positional args and never flagged. */
+const UNIVERSAL_ROOT_COMMANDS = ['completion', 'help'];
+
+/**
+ * Tokens that are REAL on the tool but deliberately absent from its help dump
+ * (hidden cobra nodes, hidden flags, sibling-binary commands). Hiddenness is not
+ * representable in `help/<tool>.json` (the dump strips it — help-dump-contract
+ * §2/§4), so the checker cannot infer these; this narrow, checker-only allowlist
+ * declares them. NEVER rendered — the allowlist only quiets the divergence
+ * reporter. Keyed by the dump's ROOT path (the binary name) so
+ * `findUnknownTokens(slice, doc)` keeps its signature.
+ */
+const UNDUMPED_TOKENS: Record<string, { rootCommands?: string[]; flags?: string[] }> = {
+  // fab-kit ships two binaries; help/fab-kit.json dumps only the `fab` binary.
+  // The workspace commands live on the `fab-kit` binary and are invocable via
+  // hidden aliases on `fab` (verified: `fab init --help` works, printing
+  // "Usage: fab-kit init"). Full visible command set of the fab-kit binary
+  // (`fab-kit --help`): init, sync, doctor, upgrade-repo, update, migrations-status.
+  // Enumerated in full (not just the currently-warned four) so a future README
+  // mention of e.g. `fab update` does not resurface the bug.
+  fab: { rootCommands: ['init', 'sync', 'doctor', 'upgrade-repo', 'update', 'migrations-status'] },
+  // `hop --shim-plan` is a deliberately hidden internal flag documented in hop's
+  // README ("an internal call").
+  hop: { flags: ['--shim-plan'] },
+};
+
 /**
  * Collect the ground-truth command paths, the parent→children map, and flag
  * tokens from a tool's help document. Command paths and the children map come
  * from the JSON `commands[]` tree (e.g. "shll" → {install, shell-init, …}); flags
  * come from the build-time `parseHelp` decomposition of each node's `text` (so
  * flag truth is the same one the command reference trusts — no second source).
- * `-h`/`--help`/`-v`/`--version` are universal and always treated as valid.
+ * `-h`/`--help`/`-v`/`--version` are universal and always treated as valid, as
+ * are the cobra `completion`/`help` subcommands (excluded from the dump by
+ * contract §4). A per-binary {@link UNDUMPED_TOKENS} allowlist seeds tokens that
+ * are real on the tool but deliberately absent from its dump (hidden nodes/flags,
+ * the fab-kit sibling binary).
  */
 function helpFacts(doc: HelpDoc): HelpFacts {
   const commandPaths = new Set<string>();
@@ -427,7 +469,31 @@ function helpFacts(doc: HelpDoc): HelpFacts {
       if (f.short) flags.add(`-${f.short}`);
     }
   }
-  return { binary: doc.root.path, commandPaths, childrenOf, flags };
+
+  // Seed the root's children with cobra's undumped `completion`/`help` and any
+  // allowlisted sibling-binary root commands (both as LEAF children — no
+  // grandchildren registered, so their tails are positional args). Merge into
+  // the EXISTING root children set (the root is always in `childrenOf`).
+  const rootPath = doc.root.path;
+  const rootChildren = childrenOf.get(rootPath) ?? new Set<string>();
+  const undumped = UNDUMPED_TOKENS[rootPath];
+  // GUARD: only seed root SUBCOMMANDS when the root is already a cobra PARENT
+  // (has ≥1 real subcommand). A leaf-root binary — one with no subcommands at all,
+  // e.g. `tu` (its `help/tu.json` root has `commands: []`) — has no `completion`/
+  // `help` subcommand tree, and its root is a known LEAF so every bare-word tail
+  // (`tu sync`, `tu status`) is already treated as a positional arg. Seeding
+  // children here would flip that leaf into a non-leaf and wrongly flag every real
+  // tail as a fabricated subcommand. Flags (below) are unconditional — they never
+  // change leaf/non-leaf semantics.
+  if (rootChildren.size > 0) {
+    for (const c of [...UNIVERSAL_ROOT_COMMANDS, ...(undumped?.rootCommands ?? [])]) {
+      rootChildren.add(c);
+    }
+    childrenOf.set(rootPath, rootChildren);
+  }
+  for (const f of undumped?.flags ?? []) flags.add(f);
+
+  return { binary: rootPath, commandPaths, childrenOf, flags };
 }
 
 /** Spans of `inline code` and fenced ``` code ``` — where command/flag examples
@@ -530,9 +596,26 @@ export function findUnknownTokens(slice: string, doc: HelpDoc): string[] {
       }
 
       // ── flags: any flag token in this statement absent from the tool's set.
+      // First truncate the statement at the first STOP token, so flags that
+      // belong to a DIFFERENT program are not attributed to this tool:
+      //   - a bare `--` (POSIX end-of-options): everything after it is passed
+      //     through to another program (e.g. `run-kit riff -- --worktree-name …`
+      //     forwards `--worktree-name` to `wt`), and
+      //   - an angle-bracket `<placeholder>`: for launcher tools the remainder is
+      //     an example-shaped foreign command (e.g. `hop <name> git push --force`
+      //     runs git in the target dir, so `--force` is git's flag).
+      // `[optional]`-style bracket placeholders do NOT stop the scan, so real tool
+      // flags after an optional positional keep being checked (e.g.
+      // `wt create [branch] --base main` still checks `--base`).
+      const flagScanTokens: string[] = [];
+      for (const t of tokens) {
+        if (t === '--' || /^<[^>]*>$/.test(t)) break;
+        flagScanTokens.push(t);
+      }
+      const flagScanStmt = flagScanTokens.join(' ');
       let m: RegExpExecArray | null;
       FLAG_TOKEN_RE.lastIndex = 0;
-      while ((m = FLAG_TOKEN_RE.exec(noComment)) !== null) {
+      while ((m = FLAG_TOKEN_RE.exec(flagScanStmt)) !== null) {
         const flag = m[1];
         if (!facts.flags.has(flag)) unknown.add(flag);
       }
@@ -602,6 +685,48 @@ const HTML_ATTR_RE = /\b(href|src)\s*=\s*(["'])([^"']*)(\2)/gi;
  *  relative image. NOT used by the rewriter (the rewriter handles single-URL
  *  href/src only). */
 const HTML_SRCSET_RE = /\bsrcset\s*=\s*(["'])([^"']*)(\1)/gi;
+
+/**
+ * Blank out CODE (fenced blocks + inline `` `code` `` spans) in `markdown`,
+ * replacing every code character with a space while preserving line structure and
+ * total length (so a scanner's byte offsets are unaffected). The link/image lints
+ * ({@link findClosureViolations}, {@link findReadmeLinkViolations}) run over the
+ * masked text so an ILLUSTRATIVE link/image inside a code sample — e.g. a
+ * backtick-wrapped `` `![alt](…)` `` syntax example in prose, or a `[x](rel.md)`
+ * inside a fenced block — is NOT mistaken for a real relative link/image.
+ *
+ * Reuses the shared {@link openFence}/{@link isClosingFence} CommonMark fence
+ * discipline (same as `tailBoundary`/`stripMermaid`/`codeSpans`) so all scanners
+ * agree on where code is: a longer outer fence is not closed by a shorter inner
+ * one. Inline spans use the same `` `[^`]+` `` shape `codeSpans` uses. Fence
+ * marker lines are blanked too (harmless — they carry no link target). Pure and
+ * total. NOTE: this masks the DETECTORS only — the rewriter (`rewriteLinkTargets`)
+ * keeps its documented no-fence-tracking over-reach (rendering frozen).
+ */
+function maskCode(markdown: string): string {
+  const blankLine = (line: string): string => ' '.repeat(line.length);
+  const lines = markdown.split('\n');
+  const out: string[] = [];
+  let open: OpenFence | null = null;
+  for (const line of lines) {
+    if (open !== null) {
+      // Inside a fenced block: blank every line until the matching close fence
+      // (same family, run length >= the opening run — CommonMark).
+      if (isClosingFence(line, open)) open = null;
+      out.push(blankLine(line));
+      continue;
+    }
+    const fence = openFence(line);
+    if (fence) {
+      open = fence;
+      out.push(blankLine(line)); // blank the opening fence line too
+      continue;
+    }
+    // Outside a fence: blank inline `code` spans in place (same length).
+    out.push(line.replace(/`[^`]+`/g, (span) => ' '.repeat(span.length)));
+  }
+  return out.join('\n');
+}
 
 /** True when `target` is an ABSOLUTE/non-relative URL the guard must NOT touch:
  *  a scheme (`https:`, `mailto:`), a protocol-relative `//host`, a root-absolute
@@ -817,6 +942,11 @@ export function findClosureViolations(
   const violations: ClosureViolation[] = [];
   const seen = new Set<string>();
 
+  // Scan the CODE-MASKED text so an illustrative link/image inside a fenced block
+  // or an inline `` `code` `` span (e.g. a backtick-wrapped `` `![alt](…)` ``
+  // syntax example in prose) is not mistaken for a real relative link/image.
+  const scanned = maskCode(markdown);
+
   const record = (target: string, isImage: boolean) => {
     if (isAbsoluteTarget(target)) return; // absolute → clean
     const [path] = splitTargetSuffix(target);
@@ -842,13 +972,13 @@ export function findClosureViolations(
   // Markdown links/images. The leading `!` distinguishes an image from a link.
   let m: RegExpExecArray | null;
   MD_LINK_RE.lastIndex = 0;
-  while ((m = MD_LINK_RE.exec(markdown)) !== null) {
+  while ((m = MD_LINK_RE.exec(scanned)) !== null) {
     const isImage = m[1].startsWith('!');
     record(m[2], isImage);
   }
   // Raw-HTML href (link) / src (image). `src` is treated as an image target.
   HTML_ATTR_RE.lastIndex = 0;
-  while ((m = HTML_ATTR_RE.exec(markdown)) !== null) {
+  while ((m = HTML_ATTR_RE.exec(scanned)) !== null) {
     const isImage = m[1].toLowerCase() === 'src';
     record(m[3], isImage);
   }
@@ -856,7 +986,7 @@ export function findClosureViolations(
   // The value is a comma-separated candidate list; each candidate is
   // `<url> [descriptor]` — record the URL part of each as an image target (R4).
   HTML_SRCSET_RE.lastIndex = 0;
-  while ((m = HTML_SRCSET_RE.exec(markdown)) !== null) {
+  while ((m = HTML_SRCSET_RE.exec(scanned)) !== null) {
     for (const candidate of m[2].split(',')) {
       const url = candidate.trim().split(/\s+/)[0];
       if (url) record(url, true);
@@ -906,6 +1036,11 @@ export function findReadmeLinkViolations(slice: string): ReadmeLinkViolation[] {
   const violations: ReadmeLinkViolation[] = [];
   const seen = new Set<string>();
 
+  // Scan the CODE-MASKED slice so an illustrative link/image inside a fenced block
+  // or an inline `` `code` `` span (e.g. a backtick-wrapped `` `[x](docs/specs/y.md)` ``
+  // syntax example in prose) is not mistaken for a real relative link/image.
+  const scanned = maskCode(slice);
+
   const record = (target: string, isImage: boolean) => {
     if (isAbsoluteTarget(target)) return; // absolute → clean
     const [path] = splitTargetSuffix(target);
@@ -934,19 +1069,19 @@ export function findReadmeLinkViolations(slice: string): ReadmeLinkViolation[] {
   // Markdown links/images. The leading `!` distinguishes an image from a link.
   let m: RegExpExecArray | null;
   MD_LINK_RE.lastIndex = 0;
-  while ((m = MD_LINK_RE.exec(slice)) !== null) {
+  while ((m = MD_LINK_RE.exec(scanned)) !== null) {
     const isImage = m[1].startsWith('!');
     record(m[2], isImage);
   }
   // Raw-HTML href (link) / src (image).
   HTML_ATTR_RE.lastIndex = 0;
-  while ((m = HTML_ATTR_RE.exec(slice)) !== null) {
+  while ((m = HTML_ATTR_RE.exec(scanned)) !== null) {
     const isImage = m[1].toLowerCase() === 'src';
     record(m[3], isImage);
   }
   // Raw-HTML srcset (image) — each candidate URL.
   HTML_SRCSET_RE.lastIndex = 0;
-  while ((m = HTML_SRCSET_RE.exec(slice)) !== null) {
+  while ((m = HTML_SRCSET_RE.exec(scanned)) !== null) {
     for (const candidate of m[2].split(',')) {
       const url = candidate.trim().split(/\s+/)[0];
       if (url) record(url, true);

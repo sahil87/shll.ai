@@ -1,0 +1,52 @@
+id: 715p
+name: 260718-715p-fix-drift-checker-false-positives
+created: 2026-07-18T11:48:55Z
+created_by: sahil-noon
+change_type: fix
+issues: []
+progress:
+    intake: done
+    apply: done
+    review: done
+    hydrate: done
+    ship: done
+    review-pr: done
+plan:
+    generated: true
+    task_count: 7
+    acceptance_count: 17
+    acceptance_completed: 0
+confidence:
+    certain: 4
+    confident: 5
+    tentative: 0
+    unresolved: 0
+    score: 4.7
+    fuzzy: true
+    dimensions:
+        signal: 76.7
+        reversibility: 86.7
+        competence: 86.1
+        disambiguation: 73.9
+stage_metrics:
+    intake: {started_at: "2026-07-18T11:48:55Z", driver: fab-new, iterations: 1, completed_at: "2026-07-18T11:55:45Z"}
+    apply: {started_at: "2026-07-18T12:18:59Z", driver: fab-fff, iterations: 2, completed_at: "2026-07-18T12:22:16Z"}
+    review: {started_at: "2026-07-18T12:22:16Z", driver: fab-fff, iterations: 2, completed_at: "2026-07-18T12:29:43Z"}
+    hydrate: {started_at: "2026-07-18T12:29:43Z", driver: fab-fff, iterations: 1, completed_at: "2026-07-18T12:34:34Z"}
+    ship: {started_at: "2026-07-18T12:34:34Z", driver: fab-fff, iterations: 1, completed_at: "2026-07-18T12:37:04Z"}
+    review-pr: {started_at: "2026-07-18T12:37:04Z", driver: git-pr, iterations: 1, completed_at: "2026-07-18T12:43:14Z"}
+prs:
+    - https://github.com/sahil87/shll.ai/pull/96
+true_impact:
+    added: 903
+    deleted: 32
+    net: 871
+    excluding:
+        added: 324
+        deleted: 15
+        net: 309
+    computed_at: "2026-07-18T12:37:04Z"
+    computed_at_stage: ship
+summary: Document the four drift-checker false-positive guards (two flag-scan stops, gated completion/help seed, UNDUMPED_TOKENS allowlist) + link-lint code-span masking across readme-extraction/docs-site-tree/help-collection
+# true_impact: lazily created on first stage-finish that computes it (no placeholder here).
+last_updated: 2026-07-18T12:43:14Z

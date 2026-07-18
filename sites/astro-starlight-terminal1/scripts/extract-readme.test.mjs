@@ -862,3 +862,177 @@ test('docs/site mount MIRRORS upstream: a zero-page pull empties the mount (e52v
 
   assert.equal(await exists(join(mirrorOut, 'install.md')), false, 'prior page removed on a zero-page pull');
 });
+
+// ── change 715p: drift-checker false-positive fixes ──────────────────────────
+// Six narrow fixes to the report-only detectors so the vn39 divergence reporter
+// and the §closure lint stop flagging illustrative/pass-through/undumped tokens:
+//   R1 code-span masking in both link lints; R2 bare `--` flag-scan stop;
+//   R3 angle-bracket `<placeholder>` flag-scan stop; R4 universal completion/help
+//   root children; R5 the UNDUMPED_TOKENS allowlist (fab-kit sibling binary +
+//   hop's hidden --shim-plan). Each true positive the detector exists for MUST
+//   still flag; only the false positives are quieted.
+
+// ── R1: link/image lints skip code (inline spans + fenced blocks) ────────────
+
+test('715p R1 closure: an inline-code `![alt](…)` example is NOT flagged (masked)', () => {
+  // The exact live shll docs/site false positive: a backtick-wrapped image-syntax
+  // example in prose. Masked → no relative-image violation.
+  assert.deepEqual(
+    findClosureViolations('standards/readme-extraction.md', 'Keep meaningful `![alt](…)` text — it travels verbatim.'),
+    [],
+  );
+});
+
+test('715p R1 closure: a fenced-block relative image is NOT flagged (masked)', () => {
+  const md = ['Intro.', '', '```markdown', '![alt](./arch.png)', '```'].join('\n');
+  assert.deepEqual(findClosureViolations('install.md', md), []);
+});
+
+test('715p R1 closure: a REAL prose relative image is STILL flagged (outside code)', () => {
+  const v = findClosureViolations('install.md', 'See ![diagram](./arch.png) below.');
+  assert.equal(v.length, 1);
+  assert.equal(v[0].kind, 'relative-image');
+  assert.equal(v[0].target, './arch.png');
+});
+
+test('715p R1 closure: a fenced-block ..-escaping link is NOT flagged (masked)', () => {
+  const md = ['```', '[x](../../secret.md)', '```'].join('\n');
+  assert.deepEqual(findClosureViolations('install.md', md), []);
+});
+
+test('715p R1 readme lint: an inline-code relative-link example is NOT flagged (masked)', () => {
+  // A backtick-wrapped `[x](docs/specs/y.md)` example in prose must not be read as
+  // a real site-escaping link.
+  assert.deepEqual(
+    findReadmeLinkViolations('A relative link like `[x](docs/specs/y.md)` 404s on the site.'),
+    [],
+  );
+});
+
+test('715p R1 readme lint: a fenced-block relative link/image is NOT flagged (masked)', () => {
+  const md = ['```markdown', '[x](docs/specs/y.md)', '![i](rel.png)', '```'].join('\n');
+  assert.deepEqual(findReadmeLinkViolations(md), []);
+});
+
+test('715p R1 readme lint: a REAL prose relative link is STILL flagged (outside code)', () => {
+  const v = findReadmeLinkViolations('See [overview](docs/specs/overview.md).');
+  assert.equal(v.length, 1);
+  assert.equal(v[0].kind, 'relative-link');
+  assert.equal(v[0].target, 'docs/specs/overview.md');
+});
+
+test('715p R1: a longer outer fence masks a shorter inner fence as one block (CommonMark)', () => {
+  // The outer block opens with FOUR backticks and contains a THREE-backtick line;
+  // the inner ``` does NOT close the outer block, so the relative image AFTER the
+  // inner fence is still inside code and must stay masked.
+  const md = ['````markdown', 'nested:', '```', '![i](./inside.png)', '```', '````'].join('\n');
+  assert.deepEqual(findClosureViolations('install.md', md), []);
+  assert.deepEqual(findReadmeLinkViolations(md), []);
+});
+
+// ── R2: flag scan stops at a bare `--` end-of-options separator ───────────────
+
+test('715p R2: a flag after a bare `--` is NOT attributed to the tool', async () => {
+  const rk = await loadHelp('run-kit');
+  // run-kit's README example: `run-kit riff -- --worktree-name pacing-canyon`
+  // forwards `--worktree-name` to `wt` — it is NOT a run-kit flag.
+  const slice = ['```bash', 'run-kit riff -- --worktree-name pacing-canyon', '```'].join('\n');
+  assert.ok(!findUnknownTokens(slice, rk).includes('--worktree-name'), 'post-`--` flag not attributed');
+});
+
+test('715p R2: a fabricated flag BEFORE the `--` is STILL flagged', async () => {
+  const rk = await loadHelp('run-kit');
+  const slice = ['```bash', 'run-kit riff --bogus -- --passthrough', '```'].join('\n');
+  const unknown = findUnknownTokens(slice, rk);
+  assert.ok(unknown.includes('--bogus'), 'pre-`--` fabricated flag still flagged');
+  assert.ok(!unknown.includes('--passthrough'), 'post-`--` passthrough flag not attributed');
+});
+
+// ── R3: flag scan stops at an angle-bracket `<placeholder>` token ─────────────
+
+test('715p R3: a flag after a <placeholder> is NOT attributed (launcher passthrough)', async () => {
+  const hop = await loadHelp('hop');
+  // hop's passthrough example: `hop <name> git push --force` runs git in the
+  // target dir, so `--force` is git's flag, not hop's.
+  const slice = ['```bash', 'hop <name> git push --force', '```'].join('\n');
+  assert.ok(!findUnknownTokens(slice, hop).includes('--force'), 'post-<placeholder> flag not attributed');
+});
+
+test('715p R3: `hop rm --force` (no placeholder) STILL flags --force', async () => {
+  const hop = await loadHelp('hop');
+  // No angle-bracket placeholder precedes the flag → the flag is checked and,
+  // being absent from hop's set, flagged (a real fabricated-flag true positive).
+  const slice = ['```bash', 'hop rm --force', '```'].join('\n');
+  assert.ok(findUnknownTokens(slice, hop).includes('--force'), '--force flagged without a placeholder');
+});
+
+test('715p R3: a `[optional]` bracket does NOT stop the scan (real flags still checked)', async () => {
+  const wt = await loadHelp('wt');
+  // `wt create [branch] --nope main` — the `[branch]` optional placeholder must
+  // NOT stop the scan (only `<...>` angle placeholders do), so a fabricated
+  // `--nope` after it is still caught.
+  const slice = ['```bash', 'wt create [branch] --nope main', '```'].join('\n');
+  assert.ok(findUnknownTokens(slice, wt).includes('--nope'), 'flag after [optional] still checked');
+});
+
+// ── R4: cobra completion/help are universally-valid root children ────────────
+
+test('715p R4: `completion` / `help` subcommands are NOT flagged (universal seed)', async () => {
+  const rk = await loadHelp('run-kit');
+  const fk = await loadHelp('fab-kit');
+  // README command-table style: `run-kit completion`, `run-kit help riff`,
+  // `fab completion bash`. help-dump excludes these (contract §4), but they are
+  // real on every cobra tool → seeded valid; their tails are positional args.
+  const rkSlice = ['```bash', 'run-kit completion', 'run-kit help riff', '```'].join('\n');
+  assert.deepEqual(findUnknownTokens(rkSlice, rk), [], 'run-kit completion/help clean');
+  const fkSlice = ['```bash', 'fab completion bash', 'fab help init', '```'].join('\n');
+  assert.deepEqual(findUnknownTokens(fkSlice, fk), [], 'fab completion/help clean');
+});
+
+// ── R5: the UNDUMPED_TOKENS allowlist (fab-kit sibling binary + hop hidden flag) ─
+
+test('715p R5: fab-kit sibling-binary commands pass under the allowlist', async () => {
+  const fk = await loadHelp('fab-kit');
+  // The `fab-kit` binary's workspace commands (init/sync/doctor/upgrade-repo/…)
+  // are hidden aliases on the `fab` binary help/fab-kit.json dumps — deliberately
+  // absent from the dump, allowlisted as real.
+  const slice = ['```bash', 'fab init', 'fab sync', 'fab doctor', 'fab upgrade-repo', 'fab update', 'fab migrations-status', '```'].join('\n');
+  assert.deepEqual(findUnknownTokens(slice, fk), [], 'allowlisted fab-kit commands clean');
+});
+
+test('715p R5: a genuinely fabricated `fab frobnicate` is STILL flagged', async () => {
+  const fk = await loadHelp('fab-kit');
+  // The allowlist is narrow — a made-up subcommand not in the tree OR the
+  // allowlist is still a true positive.
+  const slice = ['```bash', 'fab frobnicate', '```'].join('\n');
+  assert.ok(findUnknownTokens(slice, fk).includes('fab frobnicate'), 'fabricated fab subcommand still flagged');
+});
+
+test('715p R5: hop hidden flag `--shim-plan` passes under the allowlist', async () => {
+  const hop = await loadHelp('hop');
+  // A deliberately hidden internal flag (hiddenness is not representable in the
+  // dump) — allowlisted so a README documenting it does not warn.
+  const slice = ['```bash', 'hop --shim-plan', '```'].join('\n');
+  assert.ok(!findUnknownTokens(slice, hop).includes('--shim-plan'), '--shim-plan not flagged');
+});
+
+test('715p R5: the allowlist does NOT leak across tools (only fab gets the fab commands)', async () => {
+  const shll = await loadHelp('shll');
+  // `shll init` — `init` is a fab-kit allowlist entry keyed by the `fab` binary,
+  // NOT a universal one; shll has no `init`, so this must still flag.
+  const slice = ['```bash', 'shll init', '```'].join('\n');
+  assert.ok(findUnknownTokens(slice, shll).includes('shll init'), 'allowlist is per-binary, not global');
+});
+
+test('715p R4: a LEAF-root tool (no subcommands) is not turned into a non-leaf by the seed', async () => {
+  const tu = await loadHelp('tu');
+  // `tu`'s help doc root has `commands: []` — a genuine leaf binary with no
+  // subcommand tree (hence no `completion`/`help` subcommand). Seeding
+  // `completion`/`help` as root children MUST NOT fire here: doing so would flip
+  // the leaf root into a non-leaf and wrongly flag every real bare-word tail
+  // (`tu sync`, `tu status`, …) as a fabricated subcommand. The seed is gated on
+  // the root already having ≥1 real subcommand.
+  assert.equal((tu.root.commands ?? []).length, 0, 'precondition: tu root is a leaf');
+  const slice = ['```bash', 'tu sync', 'tu status', 'tu update', '```'].join('\n');
+  assert.deepEqual(findUnknownTokens(slice, tu), [], 'leaf-root tails stay positional args, not flagged');
+});

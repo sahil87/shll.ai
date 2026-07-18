@@ -1,0 +1,15 @@
+{"action":"enter","driver":"fab-new","event":"stage-transition","stage":"intake","ts":"2026-07-18T11:48:55Z"}
+{"args":"Fix 4 bugs in the README-vs-help-dump drift checker (findClosureViolations / findUnknownTokens) plus two narrow guards: inline-code relative-image false positive, shell -- separator, cobra completion/help, fab-kit dual binaries, hop --shim-plan hidden flag, hop passthrough --force","cmd":"fab-new","event":"command","ts":"2026-07-18T11:48:55Z"}
+{"delta":"+4.7","event":"confidence","score":4.7,"trigger":"calc-score","ts":"2026-07-18T11:51:48Z"}
+{"cmd":"fab-fff","event":"command","ts":"2026-07-18T11:55:32Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"apply","ts":"2026-07-18T11:55:45Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-07-18T11:57:05Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"review","ts":"2026-07-18T12:08:36Z"}
+{"event":"review","result":"failed","ts":"2026-07-18T12:18:59Z"}
+{"action":"re-entry","driver":"fab-fff","event":"stage-transition","stage":"apply","ts":"2026-07-18T12:18:59Z"}
+{"action":"re-entry","driver":"fab-fff","event":"stage-transition","stage":"review","ts":"2026-07-18T12:22:16Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"hydrate","ts":"2026-07-18T12:29:43Z"}
+{"event":"review","result":"passed","ts":"2026-07-18T12:29:43Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"ship","ts":"2026-07-18T12:34:34Z"}
+{"action":"enter","driver":"git-pr","event":"stage-transition","stage":"review-pr","ts":"2026-07-18T12:37:04Z"}
+{"event":"review","result":"passed","ts":"2026-07-18T12:43:14Z"}

@@ -257,13 +257,72 @@ README slice.
 The reporter is implemented as a **pure, single-sourced verifier** shared by the extraction module's
 unit test and the workflow — `findUnknownTokens(slice, helpDoc)` in
 [`src/lib/extract-readme.ts`](../../sites/astro-starlight-terminal1/src/lib/extract-readme.ts) — so
-the tested detection and the CI detection cannot drift. The detector's logic is **unchanged**;
-`extract-readme-cli.mjs` consumes a non-empty result as a `::warning::` + exit 0 (writes the slice),
-not exit 1. (False-positive tuning of the detector — Cobra `completion`/`help`, the `h ou<TAB>`
-completion-demo idiom, per-subcommand flag scoping — is a separate follow-up; a noisy-but-non-fatal
-warning is tolerable until tuned.) Command/flag truth comes from the same `help/<tool>.json` tree
-(command **paths**) and the build-time `parseHelp` decomposition (**flags**) the command reference
-already trusts.
+the tested detection and the CI detection cannot drift. `extract-readme-cli.mjs` consumes a non-empty
+result as a `::warning::` + exit 0 (writes the slice), not exit 1. Command/flag truth comes from the
+same `help/<tool>.json` tree (command **paths**) and the build-time `parseHelp` decomposition
+(**flags**) the command reference already trusts.
+
+#### §7.1 Detection mechanics — the false-positive guards (change `715p`)
+
+The detector is intentionally **conservative** — a report-only reporter that trains readers to trust
+it must not be dominated by false positives. Detection scans only the slice's **code spans** (inline
+`` `code` `` + fenced blocks — where command/flag examples live, not free prose), walks the help
+**tree** from the binary for command paths (descending only into known children, stopping at a known
+**leaf** so a positional arg after a real command is not a "fabricated subcommand" — the `childrenOf`
+walk), and scans `--long` / `-x` flag tokens. On top of that base it applies four guards so
+deliberately-undumped or foreign tokens are not attributed to the tool:
+
+1. **Bare `--` end-of-options stop (flag scan).** Within a statement, the flag scan stops at the first
+   whitespace-delimited bare `--` token (POSIX end-of-options). Flags after it are passed through to a
+   different program and are NOT the tool's — e.g. `run-kit riff -- --worktree-name …` forwards
+   `--worktree-name` to `wt`. (The command-path walk already stops at the first `-`-prefixed token, so
+   only the flag scan needed the explicit `--` stop.)
+2. **Angle-bracket `<placeholder>` stop (flag scan).** The flag scan also stops at the first token
+   matching `/^<[^>]*>$/` (an angle-bracket placeholder). For launcher tools the statement's remainder
+   after a `<placeholder>` is an example-shaped **foreign** command whose flags belong to another
+   program — e.g. `hop <name> git push --force` runs git in the target dir, so `--force` is git's flag.
+   This is **angle-only**: a `[optional]`-style bracket placeholder does NOT stop the scan, so a real
+   tool flag after an optional positional keeps being checked (`wt create [branch] --base main` still
+   checks `--base`). Accepted false-negative: a genuinely fabricated flag after a `<placeholder>` goes
+   unchecked — the right trade for a conservative report-only detector.
+3. **Cobra `completion`/`help` seed (gated on a non-leaf root).** `completion` and `help` are seeded
+   as valid **leaf** children of a tool's root, mirroring the universal-flag seed
+   (`--help`/`-h`/`--version`/`-v`). help-dump excludes these auto-generated subcommands from every dump
+   (see `help-dump-contract.md` §4 noise filtering), so a README documenting `<tool> completion` /
+   `<tool> help <cmd>` would otherwise flag as an unknown subcommand. Registering them as leaves means a
+   `completion <shell>` / `help <cmd>` tail is positional args and is not flagged. **The seed is gated
+   on the root already being a cobra PARENT** — a root with ≥1 real subcommand in its dump. A
+   **leaf-root** tool (a dump whose root has `commands: []` — no subcommand tree at all, e.g. `tu`,
+   whose `help/tu.json` exists but exposes no subcommands) genuinely has no `completion`/`help`
+   subcommand and its root is already a known LEAF, so every bare-word tail (`tu sync`, `tu status`) is
+   correctly treated as a positional arg; seeding children there would flip that leaf into a non-leaf
+   and wrongly flag every real tail as a fabricated subcommand. So the seed fires for the six
+   multi-command tools (idea/hop/fab-kit/wt/run-kit/shll) and is skipped for a leaf-root dump. (Flags
+   are seeded unconditionally — they never change leaf/non-leaf semantics.)
+4. **`UNDUMPED_TOKENS` allowlist — tokens real-but-undumped.** A narrow, **checker-only** allowlist
+   (keyed by the dump's ROOT path, i.e. the binary name) declares tokens that are real on the tool but
+   deliberately absent from its dump because **hiddenness is not representable in `help/<tool>.json`**
+   (the dump strips hidden nodes/flags — see `help-dump-contract.md` §2/§4): (a) the **fab-kit sibling
+   binary** — `help/fab-kit.json` dumps only the `fab` binary, but fab-kit's workspace commands
+   (`init`, `sync`, `doctor`, `upgrade-repo`, `update`, `migrations-status` — the binary's full visible
+   set, so a future README mention of any does not resurface the bug) live on the `fab-kit` binary and
+   are invocable via hidden `fab` aliases; and (b) hop's **hidden `--shim-plan`** internal flag. These
+   tokens are **never rendered** — the allowlist only quiets the reporter; it merges into the same
+   root-children / flag sets `helpFacts` builds, so `findUnknownTokens`'s signature is unchanged.
+   Merging both fab-kit binaries' dumps was rejected: it is upstream-blocked (`fab-kit help-dump` fails
+   on the installed binary) and would change **rendered** surfaces (the commands page, homepage tool
+   cards, `/llms.txt`) — a far larger blast radius than a checker-only guard. Drift cost if upstream
+   renames a command: one stale allowlist entry whose worst case is a suppressed warning — acceptable
+   for a report-only surface.
+
+**Remaining warning classes stay warned (out of scope for `715p`).** Structurally-different residues
+are deliberately left flagged, each needing its own future design: hop's `hop <project> [command…]`
+launcher positionals (the root has both children and positional args), wt's cobra aliases (`ls`/`new`/
+`rm` — aliases are not in dump `commands[]`), shll's legacy-alias/historical-flag/fenced-prose mentions
+(`shll shell-install`, `--trust-tap`, `shll OK`, `shll the`), and `run-kit url` (genuine drift — absent
+from the shipped binary's dump). The detector does **no** prose-level NLP; a "documents absence"
+sentence (`` No `--force` on … ``) is already handled by the first-token-≠-binary skip on a standalone
+inline span.
 
 ### GIVEN/WHEN/THEN
 
@@ -273,9 +332,27 @@ already trusts.
   STILL written to `content/shll/README.md`, and the CLI exits 0.
 - **A clean slice is silent** — GIVEN a slice whose every command path and flag exists in
   `help/<tool>.json`; WHEN the reporter runs; THEN no warning is emitted and the slice is committed.
-- **Missing `help/<tool>.json` → unverified warning, still commit** — GIVEN a slug with no
-  `help/<tool>.json` (e.g. `tu`); WHEN the CLI runs against a readable README; THEN an "unverified"
-  `::warning::` is emitted, the canonical slice is STILL written, and the CLI exits 0.
+- **Missing `help/<tool>.json` → unverified warning, still commit** — GIVEN a slug with no committed
+  `help/<slug>.json` (the documented interim state before a tool's first successful dump pull); WHEN
+  the CLI runs against a readable README; THEN an "unverified" `::warning::` is emitted, the canonical
+  slice is STILL written, and the CLI exits 0.
+- **A passthrough flag after `--` is not attributed (§7.1.1)** — GIVEN a run-kit slice
+  `run-kit riff -- --worktree-name pacing-canyon`; WHEN the reporter runs; THEN `--worktree-name` is
+  NOT flagged (it follows the bare `--`), while a fabricated flag placed BEFORE the `--` still is.
+- **A foreign flag after a `<placeholder>` is not attributed; `[optional]` still checks (§7.1.2)** —
+  GIVEN `hop <name> git push --force`; WHEN the reporter runs; THEN `--force` is NOT flagged (it
+  follows the `<name>` placeholder), while `hop rm --force` (no placeholder) still flags `--force` and
+  `wt create [branch] --base main` still checks `--base` (a `[optional]` bracket does not stop the scan).
+- **Cobra `completion`/`help` never flag; a leaf-root tool is not falsely broken (§7.1.3)** — GIVEN a
+  README documenting `run-kit completion` and `run-kit help riff` (a multi-command tool); WHEN the
+  reporter runs; THEN neither is flagged (seeded valid leaf children; the tails are positional args).
+  AND GIVEN a leaf-root tool whose dump root has `commands: []` (e.g. `tu`) documenting a real tail
+  `tu sync`; WHEN the reporter runs; THEN `tu sync` is NOT flagged (the seed is skipped for a leaf root,
+  so its bare-word tails stay positional args rather than becoming fabricated subcommands).
+- **Undumped-but-real tokens pass; fabricated ones still flag (§7.1.4)** — GIVEN fab-kit's README
+  documenting `fab init`/`fab sync`/… (sibling-binary commands absent from `help/fab-kit.json`) and
+  hop's `--shim-plan` (a hidden flag); WHEN the reporter runs; THEN none are flagged (the
+  `UNDUMPED_TOKENS` allowlist), while a genuinely fabricated `fab frobnicate` still is.
 
 ## §8 Pull model — the consumer (sibling of the help refresh)
 
@@ -288,9 +365,11 @@ verifier (§7 command/flag cross-check, a report-only reporter — not Zod-schem
 - **Per-tool pipeline** (looped over all 7 tools): fetch the repo's `README.md` → apply §1 head +
   §2 tail deduction → §6 strips → §7 divergence reporter (non-fatal) → **README-slice link lint**
   (non-fatal, `findReadmeLinkViolations`: warns on a relative link that is not a `docs/site/` link, or a
-  relative image — both 404/break on the site; report-only, mirrors §7) → **always commit** the slice to
-  `content/<slug>/README.md` (a divergence or a link violation emits a `::warning::` but is committed; a
-  missing `help/<slug>.json` commits with an "unverified" warning).
+  relative image — both 404/break on the site; report-only, mirrors §7; scans **code-masked** text so an
+  illustrative link/image inside a code span or fenced block is not flagged — change `715p`, see
+  §closure lint) → **always commit** the slice to `content/<slug>/README.md` (a divergence or a link
+  violation emits a `::warning::` but is committed; a missing `help/<slug>.json` commits with an
+  "unverified" warning).
 - **Per-tool `docs/site/` tree pipeline** (sibling step, change `x0br`): in the same run, fetch the
   repo **tarball** (`https://codeload.github.com/sahil87/<repo>/tar.gz/<branch>`, main→master fallback)
   and untar **only** the `docs/site/` subtree → run the §closure lint per page (non-fatal `::warning::`
@@ -567,6 +646,18 @@ Image targets are scanned in **all three forms**: markdown `![](…)`, raw-HTML 
 raw-HTML `<source srcset=…>` (each comma-separated `srcset` candidate's URL is checked) — so a relative
 image delivered via the §4-recommended `<picture><source srcset>` is caught, not just markdown images.
 
+**Code is masked before scanning (change `715p`).** The lint scans the page with fenced code blocks
+and inline `` `code` `` spans **blanked out** (each code character replaced by a space, preserving line
+structure so scanner offsets are unchanged), reusing the same CommonMark fence discipline
+(`openFence`/`isClosingFence`) the head/tail/strip scanners use. So an **illustrative** link/image
+inside a code sample — a backtick-wrapped `` `![alt](…)` `` image-syntax example in prose, or a
+`[x](rel.md)` inside a fenced block — is NOT mistaken for a real relative link/image. A relative link
+or image in genuine (non-code) prose still flags. This masks the **detector** only; the render-side
+rewriter (`rewriteLinkTargets`, §link resolution) keeps its documented no-fence-tracking over-reach
+(rendering behavior is frozen — a code sample's relative link rewrites to the same resolved path, a
+known display wart, out of scope). The README-slice link lint (`findReadmeLinkViolations`, §8) masks
+code the same way, for the same reason.
+
 It is implemented as a pure, single-sourced detector,
 `findClosureViolations(relPath, markdown)` in
 [`extract-readme.ts`](../../sites/astro-starlight-terminal1/src/lib/extract-readme.ts), shared by the
@@ -586,6 +677,10 @@ so the tested detection and the CI detection cannot drift. The detector returns 
   absolute, §3), and the page is still committed.
 - **An intra-set link and an absolute link are clean** — GIVEN a relative `[z](./other.md)` (resolving
   inside `docs/site/`) and an absolute `[a](https://x/y)`; WHEN the lint runs; THEN neither is reported.
+- **A link/image inside code is not flagged; a real prose one is (change `715p`)** — GIVEN a page whose
+  prose has an inline-code `` `![alt](…)` `` example and a fenced block containing `[x](../../secret.md)`;
+  WHEN the lint runs; THEN neither is reported (code is masked), while an unmasked prose
+  `![diagram](./arch.png)` still reports a `relative-image` violation.
 
 ## §Producer conformance directive
 
@@ -829,6 +924,7 @@ The single **machine-anchored** definition of the deduction + strip + verify beh
 
 | Date | Change |
 |------|--------|
+| 2026-07-18 | Reconciled prose to consumer-code fixes (change `715p` — drift-checker false positives). New **§7.1 "Detection mechanics — the false-positive guards"**: `findUnknownTokens` now (1) stops the flag scan at a bare `--` end-of-options separator, (2) stops it at an angle-bracket `<placeholder>` token (angle-only — `[optional]` does not stop), (3) seeds cobra `completion`/`help` as valid leaf root-children (excluded from every dump by `help-dump-contract.md` §4) — **gated on the root already being a cobra parent** (≥1 real subcommand) so a leaf-root dump like `tu` (`commands: []`) is not falsely turned into a non-leaf that flags its own real tails, and (4) applies a checker-only `UNDUMPED_TOKENS` allowlist for tokens real-but-undumped (the fab-kit sibling-binary command set + hop's hidden `--shim-plan`; hiddenness is not representable in `help/<tool>.json`). Merged dumps rejected (upstream-blocked + changes rendered surfaces). **§closure lint** + the §8 **README-slice link lint** now scan **code-masked** text (fenced blocks + inline `` `code` `` spans blanked, reusing the CommonMark fence discipline) so an illustrative link/image inside a code sample is not flagged; the render-side rewriter is unchanged (its no-fence-tracking over-reach stays, rendering frozen). Remaining warning classes (hop launcher positionals, wt aliases, shll legacy/historical/fenced artifacts, `run-kit url`) stay warned — out of scope. `help-dump-contract.md` untouched (no dump-side change). Code-side change; the machine anchor `extract-readme.ts` stays authoritative and the prose is reconciled to it. |
 | 2026-07-18 | Link refresh: the producer-facing standards moved into `docs/site/standards/` in the shll repo (sahil87/shll#42 — the same change also added the fourth standard, `skill`, and a scope column to `shll standards`). Banner + §Producer conformance directive links updated to `docs/site/standards/readme-extraction.md` / `shll.ai/shll/standards/readme-extraction` (+ the principles link). Historical changelog rows keep the old paths. No content or mechanical change. |
 | 2026-07-17 | Re-scoped (producer/consumer split): the **producer-facing standard** moved to its canonical toolkit home — `sahil87/shll` `docs/site/readme-extraction.md`, rendered at `shll.ai/shll/readme-extraction` (a sibling of the new toolkit CLI principles page). Added the split banner, reframed the Overview symmetry line, and marked the §Producer conformance directive as the detailed reference the standard distills (tool repos now enter via the shll standard). No mechanical/consumer change; `extract-readme.ts` remains the machine anchor. |
 | 2026-06-04 | Created (change `w32m`): forward contract for README extraction. §1 head rule (skip H1 + toolkit blockquote + contiguous badge/image lines), §2 tail rule (final denylist `Contributing`/`Development`/`Building`/`License`/`Acknowledgements`; `Install` INCLUDED; `Changelog`/`Roadmap`/`FAQ` kept), §3 image rule (reference-not-copy, alt-text-travels, co-capture, ≤24h transient-404 accepted, vendoring deferred), §4 dark-theme producer/consumer stanzas (`data-theme` not `prefers-color-scheme`; `<picture>` mapping deferred), §5 mermaid Option A (strip inline, require rendered SVG), §6 strips (mermaid fences + `#gh-*-mode-only` images), §7 the `vn39` validation gate (sole install guard; `shll shell-install` failure mode; single-sourced `findUnknownTokens` verifier), §8 pull model (sibling of `scheduled-help-refresh.yml`, `content/<slug>/` repo-root collector, direct-commit-gated-on-validation, off-deploy, per-tool isolation, `ReadmeSlice.astro` build-time render injected into overviews), §9 `docs/site/` escape hatch (audience axis) marked RESERVED / not yet implemented — only `README.md` is pulled today. §Extraction reference anchors `src/lib/extract-readme.ts`. Symmetric with `help-dump-contract.md`. |
