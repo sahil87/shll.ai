@@ -106,6 +106,12 @@ export default defineConfig({
         // attrs as Astro attributes, which HTML-escapes the JSON quotes to &quot;;
         // this override renders the literal <script> instead — see Head.astro.
         Head: './src/components/Head.astro',
+        // Override the theme picker: a cycling bracket-tag button ([dark] →
+        // [light] → [auto]) instead of the native <select>, whose open option
+        // list is OS-rendered and unthemable. A hidden real <select> stays as
+        // the seam for the terminal prompt's `theme` command and Starlight's
+        // ThemeProvider sync — see src/components/ThemeSelect.astro.
+        ThemeSelect: './src/components/ThemeSelect.astro',
       },
       sidebar: [
         {
