@@ -252,6 +252,60 @@ header .site-title span::after {
   margin-inline-start: 0.05em;
 }
 
+/* Theme select — restyle the closed face of Starlight's native <select> as a
+   bracket-tag (`[dark ▾]`) echoing the site-title's [shll]. Only the closed
+   control is themable this way; the open option list stays OS-rendered.
+   Starlight's own select styles live in `@layer starlight.core`
+   (Select.astro), so these unlayered rules win the cascade regardless of the
+   scoped-style specificity. Markup is untouched, so the terminal prompt's
+   `theme` command target (`starlight-theme-select select`) keeps working.
+   Covers both instances: the desktop header and the mobile menu drawer. */
+starlight-theme-select label {
+  gap: 0;
+  color: var(--c-fg-dim);
+}
+starlight-theme-select label:hover {
+  color: var(--c-fg);
+}
+/* Drop the GUI icons (laptop + chevron SVGs) — the bracket-tag decorations
+   below replace them. The label is a flex row, so its ::before/::after land
+   exactly at the tag's edges. */
+starlight-theme-select .label-icon,
+starlight-theme-select .caret {
+  display: none;
+}
+starlight-theme-select label::before {
+  content: '[';
+  color: var(--c-fg-faint);
+}
+starlight-theme-select label::after {
+  content: '▾]';
+  color: var(--c-fg-faint);
+}
+starlight-theme-select select {
+  /* Starlight pads for the (now hidden) icons and fixes the width at 6.25em;
+     shrink to the text: 6ch fits the longest option ("light") in the mono
+     font, with the end padding spacing the ▾ off the value. */
+  width: 6ch;
+  padding-inline: 0.3ch 0.8ch;
+  margin-inline: 0;
+  text-transform: lowercase;
+}
+/* Hug the selected value where supported (Chrome 123+) — drops the fixed
+   width's trailing slack when "dark"/"auto" (4ch) is shown. */
+@supports (field-sizing: content) {
+  starlight-theme-select select {
+    field-sizing: content;
+    width: auto;
+  }
+}
+/* Visible focus state for keyboard users (Constitution Accessibility) —
+   matches the terminal-chip ring. */
+starlight-theme-select select:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 1px;
+}
+
 /* Sidebar — remove the slightly raised feel. */
 nav.sidebar {
   background: var(--c-bg);
