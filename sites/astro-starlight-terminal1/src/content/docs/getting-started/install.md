@@ -13,7 +13,7 @@ Then wire your shell:
 
 ```bash
 shll shell-setup                        # wire your shell integration
-run-kit agent-setup                     # optional, once per machine: agent state in the run-kit dashboard
+shll agent-setup                        # optional, once per machine: agent context + run-kit dashboard state
 exec $SHELL                             # reload so the shell integration takes effect
 ```
 
@@ -49,7 +49,7 @@ shll version
 
 ## Optional: run-kit agent state
 
-The `run-kit agent-setup` line above is optional and once per machine — it lights up live agent state in [run-kit](/run-kit/)'s dashboard: **active** / **waiting** / **idle** for every pane running a coding agent. It installs agent-harness hooks into your user-global agent config (v1: Claude Code) that report each pane's lifecycle state; until it's run, agent state shows `—` in the dashboard. It shows the settings diff and asks before writing, re-running is idempotent, and `run-kit agent-setup --uninstall` removes exactly the run-kit-owned entries. Details in the [run-kit install guide](/run-kit/install/).
+The `shll agent-setup` line above is optional and once per machine — it writes the toolkit's agent-context stanza into your installed agent harnesses (v1: Claude Code), teaching agents the `shll skill` two-step. It also **delegates** run-kit's hook installation to `run-kit agent-setup` (now hooks-only), which is what lights up live agent state in [run-kit](/run-kit/)'s dashboard: **active** / **waiting** / **idle** for every pane running a coding agent. Details on the dashboard and the hooks it installs are in the [run-kit install guide](/run-kit/install/).
 
 ## Per-tool install
 
