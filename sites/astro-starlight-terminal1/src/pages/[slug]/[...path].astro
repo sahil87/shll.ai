@@ -38,6 +38,7 @@
  * Starlight pattern for a custom route in a content-collection site.
  */
 import fs from 'node:fs';
+import type { MarkdownHeading } from '@astrojs/markdown-remark';
 import { createMarkdownProcessor } from '@astrojs/markdown-remark';
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 import { repoRootFromModuleUrl } from '../../lib/repo-root.ts';
@@ -79,6 +80,11 @@ const { absPath, title, slug, mountPath } = Astro.props as Props;
 const raw = fs.readFileSync(absPath, 'utf8');
 const processor = await createMarkdownProcessor({});
 let html: string;
+// Starlight's right-rail "On this page" cannot see headings inside a `set:html`
+// string — they must be handed to <StarlightPage> via its `headings` prop. The
+// processor's heading manifest carries the SAME slugs the rendered `id`s use,
+// so anchors match by construction (same source readme-toc.ts taps).
+let headings: MarkdownHeading[];
 try {
   // R5: rewrite relative link/image targets to a SITE-ABSOLUTE path
   // `/<slug>/<resolved>` BEFORE render. Site-absolute (not a relative
@@ -92,13 +98,14 @@ try {
     rewriteDocsSiteLinks(raw, slug, mountPath),
   );
   html = rendered.code;
+  headings = rendered.metadata.headings;
 } catch (err) {
   const detail = err instanceof Error ? err.message : String(err);
   throw new Error(`Failed to render docs/site page at ${absPath}:\n${detail}`);
 }
 ---
 
-<StarlightPage frontmatter={{ title }}>
+<StarlightPage frontmatter={{ title }} headings={headings}>
   <div class="docs-site-page" set:html={html} />
 </StarlightPage>
 
