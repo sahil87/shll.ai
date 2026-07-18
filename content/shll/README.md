@@ -7,7 +7,7 @@ From a clean machine to a fully wired toolkit:
 ```sh
 curl -fsSL https://shll.ai/install | sh          # install shll + the whole roster
 shll shell-setup                                 # wire shell integration into your rc file
-run-kit agent-setup                              # optional, once per machine: agent state in run-kit's dashboard
+shll agent-setup                                 # optional, once per machine: place the toolkit skill for agent harnesses
 exec $SHELL                                      # reload so the shell integration takes effect
 ```
 
@@ -19,7 +19,7 @@ curl -fsSL https://shll.ai/install | sh -s -- hop wt
 
 Requires Homebrew ≥ 6.0.4 (on 6.0.0–6.0.3, run `brew update` first) — the script exits with a pointer to https://brew.sh if brew is absent (it never auto-installs Homebrew). It bootstraps `shll` itself first (recording the Homebrew 6.0 tap trust `shll` needs), then hands off to `shll install` for the rest of the roster (which trusts each formula it installs — drop that with `--no-trust` if you manage trust yourself). It's idempotent — safe to re-run, and a no-op for anything already installed.
 
-The `run-kit agent-setup` line is optional and once per machine — it installs the agent-harness hooks that light up live agent state (**active** / **waiting** / **idle**) in [run-kit](https://github.com/sahil87/run-kit)'s dashboard. It shows the settings diff and asks before writing; skip it if you don't use the dashboard.
+The `shll agent-setup` line is optional and once per machine — it places one thin `shll-toolkit` Agent Skill at two global skill paths (`~/.agents/skills/` for Codex, Cursor, and OpenCode; `~/.claude/skills/` for Claude Code) so an agent driving this machine knows to load `shll skill` before reaching for a tool, and it delegates run-kit's dashboard hooks (live **active** / **waiting** / **idle** state in [run-kit](https://github.com/sahil87/run-kit)'s dashboard) to `run-kit agent-setup`. It just overwrites shll-owned skill files (idempotent — no prompt); skip it if you don't drive this machine with agents.
 
 > **Why `brew trust` first?** Homebrew 6.0 made tap-trust a **hard install requirement** (it defaults `HOMEBREW_REQUIRE_TAP_TRUST=1`). shll's tap formulae download a binary and run a sandboxed `def install` (not a bottle pour), and that sandboxed step re-checks trust against a real persisted trust record — so naming the formula on the CLI is not enough; you must trust it first. Requires **Homebrew ≥ 6.0.4** (an earlier 6.0.x Linux sandbox bug is fixed there); if you're on 6.0.0–6.0.3, run `brew update` first. See [Troubleshooting](#tap-sahil87tap-must-be-trusted-before-install) for the full explanation.
 
@@ -219,6 +219,32 @@ $ shll standards principles   # print the full document (raw markdown, stdout)
 
 The agent-facing reader for the toolkit's standards ([docs/site/standards/principles.md](docs/site/standards/principles.md) and companions). The bare form is a self-describing glossary — an agent that has only been told "run `shll standards`" can pick the right document from the list alone, with a **scope** column (foundation / binary / repo / binary+repo) naming where each standard's obligations live; `shll standards <name>` prints that document byte-identical to its canonical `docs/site/standards/` source. Content is embedded at build time, so it's offline and versioned with the release (a drift-guard test keeps the embedded copies byte-matched to `docs/site/standards/`). Pass `--json` on the bare form for a `{name, description, scope, source_path}` array (`source_path` is `docs/site/standards/<name>.md`); an unknown name errors on stderr naming the valid names and exits non-zero.
 
+### `shll skill` — agent skill bundles for the toolkit
+
+```sh
+$ shll skill                  # glossary: one line per installed tool (shll first)
+shll     the manager for the shll toolkit
+wt       Git worktree management — create, list, open, delete worktrees
+hop      Fast directory/project jumping across worktrees
+
+Run 'shll skill <tool>' for that tool's full agent skill bundle.
+
+$ shll skill hop              # print hop's full agent skill bundle (raw markdown)
+$ shll skill shll             # shll's own bundle (served from the embedded copy)
+```
+
+The agent-facing reader for each tool's offline skill bundle — the one-page usage briefing an agent loads before driving the tool (per the toolkit's [`skill` standard](docs/site/standards/skill.md)). The bare form is a **glossary**, not a dump of every bundle: it lists the installed tools one line each (shll first, then the roster, PATH probe only — no brew calls), never concatenating bundles, so an agent picks the one it needs and asks for it by name. `shll skill <tool>` streams that tool's own `<tool> skill` output **byte-for-byte** (`shll skill shll` serves shll's own bundle from an embedded copy, drift-guarded against [docs/site/skill.md](docs/site/skill.md)). A tool that isn't installed, or whose version predates its `skill` subcommand, prints a one-line notice to stderr and exits 1; an unknown tool name is a usage error (exit 2).
+
+### `shll agent-setup` — wire agent harnesses
+
+```sh
+shll agent-setup              # place the shll-toolkit skill at both locations (idempotent)
+shll agent-setup --print      # print the SKILL.md content and both target paths, write nothing
+shll agent-setup --uninstall  # remove both placed skill directories
+```
+
+Mechanically places one thin `shll-toolkit` Agent Skill into the harnesses' global skills directories — `~/.agents/skills/shll-toolkit/SKILL.md` (the [agentskills.io](https://agentskills.io) open-standard path, read by Codex and compat-read by Cursor and OpenCode) and `~/.claude/skills/shll-toolkit/SKILL.md` (Claude Code, which doesn't read `~/.agents/`) — so an agent driving this machine learns to load `shll skill` before reaching for a tool. The skill directories are shll-owned, so placement is idempotent by construction: install writes them, a re-run overwrites them, `--uninstall` deletes them — no merge, no prompt, no sentinel machinery. A per-path written/updated/unchanged summary is printed. Then it delegates run-kit's dashboard-hook wiring to `run-kit agent-setup` (skipped silently when run-kit isn't installed; `--print`/`--uninstall` don't delegate a placement). This graduates the toolkit's harness wiring from `run-kit agent-setup`, where it was mis-homed on a leaf tool, up to the manager.
+
 ## How composition works
 
 shll has no state, no database, and no special knowledge of the tools it wraps. Every subcommand is a thin coordinator over the per-tool CLIs:
@@ -233,6 +259,8 @@ shll has no state, no database, and no special knowledge of the tools it wraps. 
 | `shll list` | probes each tool's install status, renders the roster (name, description, repo) |
 | `shll doctor` | probes `<tool> --version` + reads your rc file, reports install + wiring health |
 | `shll standards` | prints build-time-embedded copies of the canonical `docs/site/` standards (no subprocess, no network) |
+| `shll skill <tool>` | passes through the tool's own `<tool> skill` output byte-for-byte (`shll skill shll` serves an embedded copy) |
+| `shll agent-setup` | places the `shll-toolkit` skill at the two global skill paths, then delegates `run-kit agent-setup` for run-kit's hooks |
 
 Per Constitution Principle IV (Composition, Not Replacement): `hop update`, `wt shell-init`, etc. continue to work standalone. shll's only job is to fan-out, collect output, and degrade gracefully when a tool is missing.
 

@@ -157,7 +157,7 @@ It installs agent-harness hooks into your user-global agent config (v1: Claude C
 
 > **Upgrading from an earlier run-kit?** Older installs had the hook *logic* inlined in `settings.json`. Run `run-kit agent-setup` once more to swap in the new delegating wrapper, then restart your agent sessions (harnesses snapshot hook config at session start). This is the last time a hook *logic* change needs a re-setup — future fixes ship in the binary. (Changes to which events map to which state still need a re-setup, since that mapping lives in the settings entries.)
 
-The cross-repo convention is documented in [`docs/specs/agent-state.md`](docs/specs/agent-state.md).
+The cross-repo convention is documented in [`docs/specs/agent-state.md`](https://github.com/sahil87/run-kit/blob/main/docs/specs/agent-state.md).
 
 ## Boards — watch many panes at once
 
@@ -243,7 +243,8 @@ Supports `zsh`, `bash`, `fish`, and `powershell`. Completion-only — run-kit ha
 | `run-kit riff` | Create a worktree + tmux window + agent/command pane(s). |
 | `run-kit serve` | Start the HTTP server (foreground or daemon). |
 | `run-kit status` | Show a tmux session summary. |
-| `run-kit context` | Print agent-optimized environment info (server URL, ports, etc.) — designed to be read by AI agents inside a run-kit-spawned workspace. |
+| `run-kit url` | Print the run-kit server URL (config-derived from `RK_HOST`/`RK_PORT`, default `http://127.0.0.1:3000`) — a heuristic for AI agents, not a liveness probe. |
+| `run-kit skill` | Print the agent skill bundle — a static usage briefing for agents operating run-kit (canonical source `docs/site/skill.md`); `run-kit skill display` prints the visual-display topic page. |
 | `run-kit notify` | Send a Web Push notification to your subscribed devices (see [Push notifications](#push-notifications)). Fail-silent. |
 | `run-kit doctor` | Check runtime dependencies. Run this first when something breaks. |
 | `run-kit agent-setup` | Install agent-harness hooks (v1: Claude Code) so panes report busy/waiting/idle state (see [Agent state](#agent-state--run-kit-agent-setup)). Once per machine; `--uninstall` reverses it. |

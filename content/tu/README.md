@@ -42,7 +42,7 @@ tu update
 
 ## Usage
 
-> 📖 See [workflows](docs/site/workflows.md) for end-to-end recipes, and the full [command reference](https://shll.ai/tools/tu/commands/) for every command and flag.
+> 📖 See [workflows](docs/site/workflows.md) for end-to-end recipes, and the full [command reference](https://shll.ai/tu/commands/) for every command and flag.
 
 ```bash
 tu                   # Today's cost, all tools
@@ -57,8 +57,14 @@ Sources: `cc` (Claude Code), `codex`/`co` (Codex), `oc` (OpenCode), `gemini`/`ge
 ### Flags
 
 ```
-  --json               Output data as JSON (data commands only)
+  --json / -j          Output data as JSON (data commands only)
+  --csv                Output data as CSV (data commands only)
+  --md                 Output data as Markdown (data commands only)
+  --since / -s <date>  Only include entries on/after date (YYYY-MM-DD or YYYYMMDD, history display)
+  --until <date>       Only include entries on/before date (YYYY-MM-DD or YYYYMMDD, history display)
+  --full               Show full history (default: last 3 months for daily/weekly history)
   --sync               Sync metrics before fetching (multi mode)
+  --dry-run            Preview sync without writing (tu sync only)
   --fresh / -f         Bypass cache, fetch fresh data (data commands only)
   --watch / -w         Persistent polling mode with live display (data commands only)
   --interval / -i <s>  Poll interval in seconds (default: 10, range: 5-3600)

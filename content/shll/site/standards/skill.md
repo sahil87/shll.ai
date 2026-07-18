@@ -42,9 +42,20 @@ Explicitly **out** of the bundle: exhaustive flag tables (defer to `-h`), full c
 ## Rules with teeth
 
 - **Static only.** The bytes are identical on every invocation, on every machine, for a given release. No timestamps, no environment lookups, no session state (contrast `run-kit context`).
-- **Bounded — ≤150 lines.** A hard budget, per principle №9. Agents load this bundle into context every session, and bundles will later be **aggregated** across every installed tool (see [Forward design](#forward-design-shll-agent-setup)); a bloated bundle taxes every conversation that pays for it. If it doesn't fit in 150 lines, it is trying to be a README.
+- **Bounded — ≤150 lines.** A hard budget, per principle №9. Agents load this bundle into context every session, and bundles will later be **aggregated** across every installed tool (see [Forward design](#forward-design-shll-agent-setup)); a bloated bundle taxes every conversation that pays for it. If it doesn't fit in 150 lines, it is trying to be a README — or it is a large-scope tool whose depth belongs in [topic pages](#topic-pages-large-scope-tools), never in a bigger core.
 - **Byte-identical to the canonical file.** `<tool> skill` stdout MUST equal `docs/site/skill.md` byte-for-byte. The content is embedded at build time via a **sync + drift-guard** pattern — committed embedded copies, a sync script that refreshes them from the canonical `docs/site/` source, and a drift-guard test that fails the build when they diverge. This is the exact mechanism `shll standards` established for the standards documents; reuse it.
 - **Renders on the site for free.** Because `docs/site/skill.md` is part of the pulled `docs/site/**` tree, the bundle also renders at `/<tool>/skill` on shll.ai automatically — the same page an agent reads offline via `<tool> skill`.
+
+## Topic pages (large-scope tools)
+
+The ≤150-line budget prices the toolkit-wide *aggregate* (see [Forward design](#forward-design-shll-agent-setup)), so it deliberately does not scale with tool size. A tool whose usage knowledge genuinely exceeds one page — run-kit and fab-kit are the expected cases — does not get a bigger budget; it splits depth into **topic pages**:
+
+- **`<tool> skill <topic>`** prints one topic page (e.g. `rk skill windows`, `fab skill dispatch`) under the same invocation contract: raw markdown to stdout, stderr empty on success, exit 0.
+- Each topic page is canonical at **`docs/site/skill/<topic>.md`** and independently bounded at ≤150 lines, with the same rules with teeth — static-only, byte-identical to its canonical file, embedded via the sync + drift-guard pattern. (The core stays `docs/site/skill.md`; the file and the `skill/` directory coexist, and each topic renders at `/<tool>/skill/<topic>` on shll.ai as part of the pulled tree.)
+- The core bundle carries a **topic index** — one line per topic naming what it covers and the command that serves it — so depth is discovered from the core and pulled at use time by the agent that needs it.
+- Bare `<tool> skill` never inlines topic pages, and aggregation (`shll agent-setup`) reads **core bundles only** — a tool's ambient context cost stays ≤150 lines no matter how many topics it ships.
+- An unknown topic fails fast: non-zero exit, an error on stderr naming the valid topics — never a silent empty stdout.
+- **Sprawl guard.** Topics carry depth a caller reaches for deliberately — a subsystem's contract, a composition recipe — not a mirror of the command tree. A tool SHOULD ship a handful of topics at most; a topic page is still a briefing, and flag reference still defers to `-h` / `help-dump`.
 
 ## Name rationale
 
@@ -52,11 +63,11 @@ The subcommand is `skill`, deliberately not `agent`. `agent` was rejected: it co
 
 ## Adoption
 
-Phased, per-repo — like help-dump's rollout was. **No tool ships `skill` today**; this standard is the contract each repo conforms to as it adopts, on its own release cadence (no seven-repo flag-day). A tool without a `skill` subcommand is not yet in violation — principle №10 is a SHOULD, and the bundle is its most forward-leaning obligation.
+Phased, per-repo — like help-dump's rollout was. This standard is the contract each repo conforms to as it adopts, on its own release cadence (no seven-repo flag-day). A tool that has not yet adopted is not in violation — principle №10 is a SHOULD, and the bundle is its most forward-leaning obligation. Topic pages are equally per-tool: a tool adds them when its bundle presses the budget, and a tool shipping only a core bundle is fully conformant.
 
 ## Forward design: `shll agent-setup`
 
-*(Planned, not yet built — recorded here because it is why bundles must stay small and static.)* A future `shll agent-setup` will graduate from `run-kit agent-setup`: it will **aggregate every installed tool's `<tool> skill` output** into the agent's context, and **delegate run-kit hook installation to `run-kit agent-setup`** (whose context-injection responsibility will be removed, leaving it to do only hook wiring). When N bundles are concatenated into one context payload, every wasted line is paid N times — which is the whole reason for the static-only rule and the ≤150-line budget above.
+*(Planned, not yet built — recorded here because it is why bundles must stay small and static.)* A future `shll agent-setup` will graduate from `run-kit agent-setup`: it will **aggregate every installed tool's core `<tool> skill` output** — never topic pages — into the agent's context, and **delegate run-kit hook installation to `run-kit agent-setup`** (whose context-injection responsibility will be removed, leaving it to do only hook wiring). When N bundles are concatenated into one context payload, every wasted line is paid N times — which is the whole reason for the static-only rule and the ≤150-line budget above.
 
 ## Verifying conformance
 
@@ -67,3 +78,4 @@ Before shipping a change that touches your tool's `skill` bundle:
 - The bundle is ≤150 lines and carries no dynamic, environment-derived content.
 - The bundle stays in genre — usage briefing, not a README clone or a flag table.
 - `docs/site/skill.md` renders at `/<tool>/skill` on shll.ai (it is part of the pulled tree).
+- If the tool ships topic pages: each `<tool> skill <topic>` meets the same contract (stdout-only, static, ≤150 lines, byte-identical to `docs/site/skill/<topic>.md`), the core's topic index lists every shipped topic, and an unknown topic exits non-zero with the valid topics on stderr.
