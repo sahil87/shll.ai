@@ -1,0 +1,156 @@
+---
+/**
+ * ThemeSelect override — replaces Starlight's native <select> theme picker
+ * with a cycling bracket-tag button ([dark] → [light] → [auto]) so no
+ * OS-rendered menu ever opens: the native select's open option list can't be
+ * themed (only its closed face can), which broke the terminal aesthetic.
+ *
+ * Two existing integrations target `starlight-theme-select select`, so a
+ * REAL (hidden) <select> stays in the markup as the compatibility seam:
+ *   - TerminalPrompt's `theme` command sets `.value` and dispatches `change`
+ *   - Starlight's ThemeProvider.updatePickers() syncs `.value` on load
+ * The visible button cycles the hidden select and dispatches the same
+ * `change` event, so every path converges on one handler below.
+ *
+ * The button shows the raw value tokens (dark/light/auto), not the translated
+ * option labels — deliberate: the site is English-only and the header speaks
+ * lowercase terminal (`[shll]`, the prompt's `theme → dark`).
+ */
+---
+
+<starlight-theme-select>
+  <select hidden autocomplete="off">
+    <option value="dark">{Astro.locals.t('themeSelect.dark')}</option>
+    <option value="light">{Astro.locals.t('themeSelect.light')}</option>
+    <option value="auto" selected>{Astro.locals.t('themeSelect.auto')}</option>
+  </select>
+  <button type="button" title="Switch theme (dark → light → auto)" aria-live="polite">
+    <span class="sr-only">{Astro.locals.t('themeSelect.accessibleLabel')}: </span>
+    <span class="value">auto</span>
+  </button>
+</starlight-theme-select>
+
+{/* Inlined to avoid FOUC (mirrors Starlight's own ThemeSelect): stamp the
+    stored preference onto the select + button before first paint. Renders
+    once per instance (header + mobile drawer); re-running is idempotent. */}
+<script is:inline>
+  (() => {
+    const stored =
+      (typeof localStorage !== 'undefined' && localStorage.getItem('starlight-theme')) || 'auto';
+    const theme = stored === 'dark' || stored === 'light' ? stored : 'auto';
+    document.querySelectorAll('starlight-theme-select').forEach((picker) => {
+      const select = picker.querySelector('select');
+      if (select) select.value = theme;
+      const value = picker.querySelector('.value');
+      if (value) value.textContent = theme;
+    });
+  })();
+</script>
+
+<script>
+  type Theme = 'auto' | 'dark' | 'light';
+
+  /** Global installed by Starlight's ThemeProvider (inlined in <head>). */
+  declare const StarlightThemeProvider: { updatePickers(theme?: string): void };
+
+  /** Key in `localStorage` to store color theme preference at. */
+  const storageKey = 'starlight-theme';
+
+  /** Click order — matches the old select's option order. */
+  const cycle: Theme[] = ['dark', 'light', 'auto'];
+
+  /** Get a typesafe theme string from any JS value (unknown values are coerced to `'auto'`). */
+  const parseTheme = (theme: unknown): Theme =>
+    theme === 'auto' || theme === 'dark' || theme === 'light' ? theme : 'auto';
+
+  /** Load the user's preference from `localStorage`. */
+  const loadTheme = (): Theme =>
+    parseTheme(typeof localStorage !== 'undefined' && localStorage.getItem(storageKey));
+
+  /** Store the user's preference in `localStorage`. */
+  function storeTheme(theme: Theme): void {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(storageKey, theme === 'light' || theme === 'dark' ? theme : '');
+    }
+  }
+
+  /** Get the preferred system color scheme. */
+  const getPreferredColorScheme = (): Theme =>
+    matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+
+  /** Update picker UI (hidden selects + visible buttons), document theme, and storage. */
+  function onThemeChange(theme: Theme): void {
+    StarlightThemeProvider.updatePickers(theme);
+    document.documentElement.dataset.theme = theme === 'auto' ? getPreferredColorScheme() : theme;
+    storeTheme(theme);
+    document.querySelectorAll('starlight-theme-select .value').forEach((value) => {
+      value.textContent = theme;
+    });
+  }
+
+  // React to changes in system color scheme.
+  matchMedia(`(prefers-color-scheme: light)`).addEventListener('change', () => {
+    if (loadTheme() === 'auto') onThemeChange('auto');
+  });
+
+  class StarlightThemeSelect extends HTMLElement {
+    constructor() {
+      super();
+      onThemeChange(loadTheme());
+      const select = this.querySelector('select');
+      select?.addEventListener('change', (e) => {
+        if (e.currentTarget instanceof HTMLSelectElement) {
+          onThemeChange(parseTheme(e.currentTarget.value));
+        }
+      });
+      this.querySelector('button')?.addEventListener('click', () => {
+        if (!select) return;
+        select.value = cycle[(cycle.indexOf(parseTheme(select.value)) + 1) % cycle.length];
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+    }
+  }
+  customElements.define('starlight-theme-select', StarlightThemeSelect);
+</script>
+
+<style>
+  /* Bracket-tag styling echoing the site-title's [shll] — colors come from
+     the --c-* tokens (terminal.css), which flip with data-theme, so dark-mode
+     parity is automatic (Constitution V). */
+  button {
+    font: inherit;
+    font-size: var(--sl-text-sm);
+    display: inline-flex;
+    align-items: center;
+    background: none;
+    border: 0;
+    padding: 0.5rem 0;
+    cursor: pointer;
+    color: var(--c-fg-dim);
+  }
+  button:hover {
+    color: var(--c-fg);
+  }
+  button::before {
+    content: '[';
+    color: var(--c-fg-faint);
+  }
+  button::after {
+    content: ']';
+    color: var(--c-fg-faint);
+  }
+  /* Visible focus state for keyboard users (Constitution Accessibility) —
+     matches the terminal-chip ring. */
+  button:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 1px;
+  }
+  .value {
+    /* Fixed at the longest token ("light") so cycling never jitters the
+       header layout; centered so shorter tokens sit evenly in the tag. */
+    display: inline-block;
+    width: 5ch;
+    text-align: center;
+    text-transform: lowercase;
+  }
+</style>
