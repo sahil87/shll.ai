@@ -1,14 +1,14 @@
 {
   "tool": "run-kit",
-  "version": "v3.7.4",
-  "captured_at": "2026-07-18T08:58:06Z",
+  "version": "v3.8.2",
+  "captured_at": "2026-07-19T09:15:31Z",
   "schema_version": 1,
   "root": {
     "name": "run-kit",
     "path": "run-kit",
     "short": "run-kit — tmux session manager with web UI",
     "usage": "run-kit [flags]",
-    "text": "Usage:\n  run-kit [flags]\n  run-kit [command]\n\nAvailable Commands:\n  agent-hook  Report an agent's lifecycle state to run-kit (invoked by installed hooks)\n  agent-setup Install agent-harness hooks that report agent state to run-kit\n  completion  Generate the autocompletion script for the specified shell\n  context     Show agent-optimized environment info\n  daemon      Manage the background run-kit daemon (tmux-managed run-kit serve)\n  doctor      Check runtime dependencies\n  help        Help about any command\n  init-conf   Scaffold default tmux.conf and tmux.d/ drop-in directory to ~/.rk/\n  notify      Send a Web Push notification to subscribed devices\n  reaper      Reap leaked test tmux servers and stale sockets by prefix\n  riff        Create a worktree, tmux window, and Claude Code session\n  serve       Start the HTTP server (foreground)\n  shell-init  emit shell integration (completion) for zsh or bash\n  skill       Print run-kit's agent skill bundle (static usage briefing)\n  status      Show tmux session summary\n  update      Update run-kit to the latest version\n\nFlags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit [command] --help\" for more information about a command.\n",
+    "text": "Usage:\n  run-kit [flags]\n  run-kit [command]\n\nAvailable Commands:\n  agent-hook  Report an agent's lifecycle state to run-kit (invoked by installed hooks)\n  agent-setup Install agent-harness hooks that report agent state to run-kit\n  completion  Generate the autocompletion script for the specified shell\n  daemon      Manage the background run-kit daemon (tmux-managed run-kit serve)\n  doctor      Check runtime dependencies\n  help        Help about any command\n  init-conf   Scaffold default tmux.conf and tmux.d/ drop-in directory to ~/.rk/\n  notify      Send a Web Push notification to subscribed devices\n  reaper      Reap leaked test tmux servers and stale sockets by prefix\n  riff        Create a worktree, tmux window, and Claude Code session\n  serve       Start the HTTP server (foreground)\n  shell-init  emit shell integration (completion) for zsh or bash\n  skill       Print run-kit's agent skill bundle (static usage briefing)\n  status      Show tmux session summary\n  update      Update run-kit to the latest version\n  url         Print the run-kit server URL (config-derived)\n\nFlags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit [command] --help\" for more information about a command.\n",
     "commands": [
       {
         "name": "agent-hook",
@@ -24,14 +24,6 @@
         "short": "Install agent-harness hooks that report agent state to run-kit",
         "usage": "run-kit agent-setup [flags]",
         "text": "Usage:\n  run-kit agent-setup [flags]\n\nFlags:\n      --dry-run     Show the diff and write nothing (wins over --yes)\n      --uninstall   Remove the rk-owned hook entries instead of installing them\n  -y, --yes         Write without prompting (non-interactive consent)\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
-        "commands": []
-      },
-      {
-        "name": "context",
-        "path": "run-kit context",
-        "short": "Show agent-optimized environment info",
-        "usage": "run-kit context",
-        "text": "Usage:\n  run-kit context [flags]\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
         "commands": []
       },
       {
@@ -135,8 +127,8 @@
         "name": "skill",
         "path": "run-kit skill",
         "short": "Print run-kit's agent skill bundle (static usage briefing)",
-        "usage": "run-kit skill",
-        "text": "Usage:\n  run-kit skill [flags]\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+        "usage": "run-kit skill [topic]",
+        "text": "Usage:\n  run-kit skill [topic] [flags]\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
         "commands": []
       },
       {
@@ -153,6 +145,14 @@
         "short": "Update run-kit to the latest version",
         "usage": "run-kit update [flags]",
         "text": "Usage:\n  run-kit update [flags]\n\nAliases:\n  update, upgrade\n\nFlags:\n      --skip-brew-update   Skip the internal 'brew update' tap-metadata refresh (still runs brew info/upgrade and restarts the daemon)\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+        "commands": []
+      },
+      {
+        "name": "url",
+        "path": "run-kit url",
+        "short": "Print the run-kit server URL (config-derived)",
+        "usage": "run-kit url",
+        "text": "Usage:\n  run-kit url [flags]\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
         "commands": []
       }
     ]

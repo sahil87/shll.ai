@@ -1,14 +1,14 @@
 {
   "tool": "fab",
-  "version": "2.15.4",
-  "captured_at": "2026-07-18T08:58:06Z",
+  "version": "2.16.0",
+  "captured_at": "2026-07-19T09:15:31Z",
   "schema_version": 1,
   "root": {
     "name": "fab",
     "path": "fab",
     "short": "Fab workflow engine — single binary replacement for kit shell scripts",
     "usage": "fab",
-    "text": "Usage:\n  fab [command]\n\nAvailable Commands:\n  agent         Launch (or --print) the resolved agent session command in the current shell\n  batch         Multi-target batch operations\n  change        Change lifecycle management\n  completion    Generate the autocompletion script for the specified shell\n  config        Inspect fab project configuration\n  dispatch      Headless process manager for CLI-dispatched pipeline stages\n  fab-help      Show fab workflow overview and available commands\n  help          Help about any command\n  impact        Compute git diff line counts (added/deleted/net) between two refs\n  kit-path      Print the resolved kit directory path\n  log           Append-only JSON logging to .history.jsonl\n  memory-index  Deterministically (re)generate docs/memory index files\n  operator      Launch operator in a dedicated tmux tab (singleton)\n  pane          Tmux pane operations\n  pr-meta       Render the `## Meta` block of a fab-generated PR as final markdown\n  preflight     Validate project state and output structured YAML\n  resolve       Resolve a change reference to a canonical output\n  resolve-agent Resolve a pipeline stage (or role tier) to its {provider, model, effort} agent profile\n  score         Compute confidence score from Assumptions table\n  shell-init    Emit shell completion script for sourcing (alias for 'completion <shell>')\n  status        Manage workflow stages, states, and .status.yaml\n\nUse \"fab [command] --help\" for more information about a command.\n",
+    "text": "Usage:\n  fab [command]\n\nAvailable Commands:\n  agent         Launch (or --print) the resolved agent session command in the current shell\n  batch         Multi-target batch operations\n  change        Change lifecycle management\n  completion    Generate the autocompletion script for the specified shell\n  config        Inspect fab project configuration\n  dispatch      Headless process manager for CLI-dispatched pipeline stages\n  fab-help      Show fab workflow overview and available commands\n  help          Help about any command\n  impact        Compute git diff line counts (added/deleted/net) between two refs\n  kit-path      Print the resolved kit directory path\n  log           Append-only JSON logging to .history.jsonl\n  memory-index  Deterministically (re)generate docs/memory index files\n  operator      Launch operator in a dedicated tmux tab (singleton)\n  pane          Tmux pane operations\n  pr-meta       Render the `## Meta` block of a fab-generated PR as final markdown\n  preflight     Validate project state and output structured YAML\n  resolve       Resolve a change reference to a canonical output\n  resolve-agent Resolve a pipeline stage (or role tier) to its {provider, model, effort} agent profile\n  score         Compute confidence score from Assumptions table\n  shell-init    Emit shell completion script for sourcing (alias for 'completion <shell>')\n  skill         Print the fab agent skill bundle (offline, embedded, static)\n  status        Manage workflow stages, states, and .status.yaml\n\nUse \"fab [command] --help\" for more information about a command.\n",
     "commands": [
       {
         "name": "agent",
@@ -30,7 +30,7 @@
             "path": "fab batch archive",
             "short": "Archive multiple completed changes in one pass",
             "usage": "fab batch archive [change...] [flags]",
-            "text": "Usage:\n  fab batch archive [change...] [flags]\n\nFlags:\n      --dry-run   Show what would be archived without archiving\n  -y, --yes       Archive all archivable changes without prompting\n",
+            "text": "Usage:\n  fab batch archive [change...] [flags]\n\nExamples:\n  # Preview what would be archived, without archiving\n  fab batch archive --dry-run\n\n  # Archive all archivable changes without prompting\n  fab batch archive --yes\n\n  # Archive two specific changes (4-char ID or folder substring)\n  fab batch archive b91h ptwh\n\nFlags:\n      --dry-run   Show what would be archived without archiving\n  -q, --quiet     Suppress per-change progress output (keep the summary footer and all stderr)\n  -y, --yes       Archive all archivable changes without prompting\n",
             "commands": []
           },
           {
@@ -46,7 +46,7 @@
             "path": "fab batch switch",
             "short": "Open tmux tabs in worktrees for one or more changes",
             "usage": "fab batch switch [change...] [flags]",
-            "text": "Usage:\n  fab batch switch [change...] [flags]\n\nFlags:\n      --all    Open tabs for all changes\n      --list   Show available changes\n",
+            "text": "Usage:\n  fab batch switch [change...] [flags]\n\nExamples:\n  # Show available changes\n  fab batch switch --list\n\n  # Open tmux tabs in worktrees for two changes\n  fab batch switch b91h ptwh\n\n  # Open tabs for all changes\n  fab batch switch --all\n\nFlags:\n      --all     Open tabs for all changes\n      --list    Show available changes\n  -q, --quiet   Suppress per-change progress output\n",
             "commands": []
           }
         ]
@@ -136,7 +136,7 @@
             "path": "fab config init",
             "short": "Write a system scaffold (--system) or generate a project config from the registry (--project)",
             "usage": "fab config init (--system | --project) [flags]",
-            "text": "Usage:\n  fab config init (--system | --project) [flags]\n\nFlags:\n      --description string        Project description (--project seed)\n      --name string               Project name (--project seed)\n      --project                   Generate fab/project/config.yaml from the registry (identity fields + fence)\n      --source-path stringArray   Source path (--project seed; repeatable)\n      --system                    Write the ~/.fab-kit/config.yaml system-layer scaffold\n      --test-path stringArray     Test path pattern (--project seed; repeatable)\n",
+            "text": "Usage:\n  fab config init (--system | --project) [flags]\n\nExamples:\n  # Write the ~/.fab-kit/config.yaml system-layer scaffold\n  fab config init --system\n\n  # Generate fab/project/config.yaml from the field registry\n  fab config init --project --name my-app --description \"My application\"\n\n  # Seed source/test paths (repeatable flags)\n  fab config init --project --name my-app --source-path src/ --test-path '**/*_test.go'\n\nFlags:\n      --description string        Project description (--project seed)\n      --name string               Project name (--project seed)\n      --project                   Generate fab/project/config.yaml from the registry (identity fields + fence)\n      --source-path stringArray   Source path (--project seed; repeatable)\n      --system                    Write the ~/.fab-kit/config.yaml system-layer scaffold\n      --test-path stringArray     Test path pattern (--project seed; repeatable)\n",
             "commands": []
           },
           {
@@ -152,7 +152,7 @@
             "path": "fab config show",
             "short": "Print the effective (post-cascade) config, optionally with per-field provenance",
             "usage": "fab config show [flags]",
-            "text": "Usage:\n  fab config show [flags]\n\nFlags:\n      --origin   Annotate each field with its provenance (project path / system path / default)\n",
+            "text": "Usage:\n  fab config show [flags]\n\nExamples:\n  # Print the effective (post-cascade) config\n  fab config show\n\n  # Annotate each field with its provenance (project / system / default)\n  fab config show --origin\n\nFlags:\n      --origin   Annotate each field with its provenance (project path / system path / default)\n",
             "commands": []
           },
           {
@@ -201,7 +201,7 @@
             "path": "fab dispatch start",
             "short": "Launch a stage's resolved spawn command detached, reading the prompt on stdin",
             "usage": "fab dispatch start <change> <stage> [flags]",
-            "text": "Usage:\n  fab dispatch start <change> <stage> [flags]\n\nFlags:\n      --timeout timeout <secs>   Enforce a POSIX timeout <secs> inside the launch wrapper (0 = none)\n",
+            "text": "Usage:\n  fab dispatch start <change> <stage> [flags]\n\nExamples:\n  # Launch the apply stage's dispatch command, prompt on stdin\n  fab dispatch start b91h apply < prompt.md\n\n  # Enforce a 30-minute POSIX timeout inside the launch wrapper\n  fab dispatch start --timeout 1800 b91h apply < prompt.md\n\nFlags:\n      --timeout timeout <secs>   Enforce a POSIX timeout <secs> inside the launch wrapper (0 = none)\n",
             "commands": []
           },
           {
@@ -284,7 +284,7 @@
         "path": "fab memory-index",
         "short": "Deterministically (re)generate docs/memory index files",
         "usage": "fab memory-index [flags]",
-        "text": "Usage:\n  fab memory-index [flags]\n\nFlags:\n      --check     Write nothing; encode drift severity in the exit code (0 clean / 1 benign drift / 2 destructive loss)\n      --json      With --check, emit the loss report as JSON on stdout (suppresses human-readable text)\n      --rebuild   DESTRUCTIVE: discard the frozen log.md state and re-project every log.md from current git (the pre-freeze behavior, opt-in). Ignored with --check (which never writes)\n",
+        "text": "Usage:\n  fab memory-index [flags]\n\nFlags:\n      --check            Write nothing; encode index-drift severity in the exit code (0 clean / 1 benign drift / 2 destructive loss). Malformed frontmatter floors the exit at 1 independent of drift\n      --json malformed   With --check, emit the loss report as JSON on stdout (suppresses human-readable text); includes an additive malformed array\n      --rebuild          DESTRUCTIVE: discard the frozen log.md state and re-project every log.md from current git (the pre-freeze behavior, opt-in). Ignored with --check (which never writes)\n",
         "commands": []
       },
       {
@@ -399,7 +399,7 @@
         "path": "fab resolve",
         "short": "Resolve a change reference to a canonical output",
         "usage": "fab resolve [change] [flags]",
-        "text": "Usage:\n  fab resolve [change] [flags]\n\nFlags:\n      --dir             Output directory path\n      --folder          Output full folder name\n      --id              Output 4-char change ID (default)\n      --pane            Output tmux pane ID\n  -L, --server string   Target tmux socket label for --pane (passed as 'tmux -L <name>'). Defaults to $TMUX / tmux default socket.\n      --status          Output .status.yaml path\n",
+        "text": "Usage:\n  fab resolve [change] [flags]\n\nExamples:\n  # 4-char ID of the active change (default output)\n  fab resolve\n\n  # Full folder name for a change reference\n  fab resolve --folder b91h\n\n  # Path to the change's .status.yaml\n  fab resolve --status b91h\n\n  # tmux pane ID, targeting a specific tmux socket\n  fab resolve --pane -L work b91h\n\nFlags:\n      --dir             Output directory path\n      --folder          Output full folder name\n      --id              Output 4-char change ID (default)\n      --pane            Output tmux pane ID\n  -L, --server string   Target tmux socket label for --pane (passed as 'tmux -L <name>'). Defaults to $TMUX / tmux default socket.\n      --status          Output .status.yaml path\n",
         "commands": []
       },
       {
@@ -415,7 +415,7 @@
         "path": "fab score",
         "short": "Compute confidence score from Assumptions table",
         "usage": "fab score <change> [flags]",
-        "text": "Usage:\n  fab score <change> [flags]\n\nFlags:\n      --check-gate     Gate check mode (read-only)\n      --stage string   Stage for scoring (intake; spec retired in 1.10.0) (default \"intake\")\n",
+        "text": "Usage:\n  fab score <change> [flags]\n\nExamples:\n  # Compute and persist the intake confidence score\n  fab score b91h\n\n  # Read-only gate check — exits non-zero below the threshold\n  fab score --check-gate --stage intake b91h\n\nFlags:\n      --check-gate     Gate check mode (read-only)\n      --stage string   Stage for scoring (intake; spec retired in 1.10.0) (default \"intake\")\n",
         "commands": []
       },
       {
@@ -424,6 +424,14 @@
         "short": "Emit shell completion script for sourcing (alias for 'completion <shell>')",
         "usage": "fab shell-init <bash|zsh|fish>",
         "text": "Usage:\n  fab shell-init <bash|zsh|fish>\n",
+        "commands": []
+      },
+      {
+        "name": "skill",
+        "path": "fab skill",
+        "short": "Print the fab agent skill bundle (offline, embedded, static)",
+        "usage": "fab skill",
+        "text": "Usage:\n  fab skill\n",
         "commands": []
       },
       {
@@ -461,32 +469,32 @@
             "name": "all-stages",
             "path": "fab status all-stages",
             "short": "List all stage IDs in order",
-            "usage": "fab status all-stages",
-            "text": "Usage:\n  fab status all-stages\n",
+            "usage": "fab status all-stages [flags]",
+            "text": "Usage:\n  fab status all-stages [flags]\n\nFlags:\n      --json   Output as JSON\n",
             "commands": []
           },
           {
             "name": "confidence",
             "path": "fab status confidence",
             "short": "Extract confidence fields",
-            "usage": "fab status confidence <change>",
-            "text": "Usage:\n  fab status confidence <change>\n",
+            "usage": "fab status confidence <change> [flags]",
+            "text": "Usage:\n  fab status confidence <change> [flags]\n\nFlags:\n      --json   Output as JSON\n",
             "commands": []
           },
           {
             "name": "current-stage",
             "path": "fab status current-stage",
             "short": "Detect active stage",
-            "usage": "fab status current-stage <change>",
-            "text": "Usage:\n  fab status current-stage <change>\n",
+            "usage": "fab status current-stage <change> [flags]",
+            "text": "Usage:\n  fab status current-stage <change> [flags]\n\nFlags:\n      --json   Output as JSON\n",
             "commands": []
           },
           {
             "name": "display-stage",
             "path": "fab status display-stage",
             "short": "Display stage as stage:state",
-            "usage": "fab status display-stage <change>",
-            "text": "Usage:\n  fab status display-stage <change>\n",
+            "usage": "fab status display-stage <change> [flags]",
+            "text": "Usage:\n  fab status display-stage <change> [flags]\n\nFlags:\n      --json   Output as JSON\n",
             "commands": []
           },
           {
@@ -509,32 +517,32 @@
             "name": "get-issues",
             "path": "fab status get-issues",
             "short": "List issue IDs",
-            "usage": "fab status get-issues <change>",
-            "text": "Usage:\n  fab status get-issues <change>\n",
+            "usage": "fab status get-issues <change> [flags]",
+            "text": "Usage:\n  fab status get-issues <change> [flags]\n\nFlags:\n      --json   Output as JSON\n",
             "commands": []
           },
           {
             "name": "get-prs",
             "path": "fab status get-prs",
             "short": "List PR URLs",
-            "usage": "fab status get-prs <change>",
-            "text": "Usage:\n  fab status get-prs <change>\n",
+            "usage": "fab status get-prs <change> [flags]",
+            "text": "Usage:\n  fab status get-prs <change> [flags]\n\nFlags:\n      --json   Output as JSON\n",
             "commands": []
           },
           {
             "name": "get-summary",
             "path": "fab status get-summary",
             "short": "Print the per-change log summary",
-            "usage": "fab status get-summary <change>",
-            "text": "Usage:\n  fab status get-summary <change>\n",
+            "usage": "fab status get-summary <change> [flags]",
+            "text": "Usage:\n  fab status get-summary <change> [flags]\n\nFlags:\n      --json   Output as JSON\n",
             "commands": []
           },
           {
             "name": "plan",
             "path": "fab status plan",
             "short": "Extract plan fields",
-            "usage": "fab status plan <change>",
-            "text": "Usage:\n  fab status plan <change>\n",
+            "usage": "fab status plan <change> [flags]",
+            "text": "Usage:\n  fab status plan <change> [flags]\n\nFlags:\n      --json   Output as JSON\n",
             "commands": []
           },
           {
@@ -549,8 +557,8 @@
             "name": "progress-map",
             "path": "fab status progress-map",
             "short": "Extract stage:state pairs",
-            "usage": "fab status progress-map <change>",
-            "text": "Usage:\n  fab status progress-map <change>\n",
+            "usage": "fab status progress-map <change> [flags]",
+            "text": "Usage:\n  fab status progress-map <change> [flags]\n\nFlags:\n      --json   Output as JSON\n",
             "commands": []
           },
           {
