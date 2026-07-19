@@ -40,6 +40,7 @@ project:
     name: ai.shll.in
 source_paths:
     - sites/astro-starlight-terminal1/src/
+    - sites/astro-starlight-terminal1/scripts/
 # Glob/pathspec patterns identifying test files. Used by the true-impact
 # breakdown to attribute lines to tests vs. implementation (impl = total − tests).
 # Language-specific — no kit default. Patterns are :(glob) magic pathspecs, so

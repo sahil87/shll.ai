@@ -1,0 +1,9 @@
+{
+  "run-kit": { "notify": "minor" },
+  "fab-kit": { "notify": "minor" },
+  "shll": { "notify": "patch" },
+  "tu": { "notify": "minor" },
+  "wt": { "notify": "minor" },
+  "idea": { "notify": "minor" },
+  "hop": { "notify": "minor" }
+}
