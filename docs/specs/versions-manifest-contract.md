@@ -31,11 +31,11 @@ The endpoint emits a single JSON object (`application/json; charset=utf-8`), pre
   "generated_at": "2026-07-19T07:20:00Z",
   "tools": {
     "shll":    { "latest": "0.1.2",  "notify": "patch", "formula": "shll" },
-    "wt":      { "latest": "0.1.1",  "notify": "patch", "formula": "wt" },
-    "idea":    { "latest": "0.1.1",  "notify": "patch", "formula": "idea" },
-    "tu":      { "latest": "0.9.1",  "notify": "patch", "formula": "tu" },
+    "wt":      { "latest": "0.1.1",  "notify": "minor", "formula": "wt" },
+    "idea":    { "latest": "0.1.1",  "notify": "minor", "formula": "idea" },
+    "tu":      { "latest": "0.9.1",  "notify": "minor", "formula": "tu" },
     "run-kit": { "latest": "3.7.4",  "notify": "minor", "formula": "run-kit" },
-    "hop":     { "latest": "0.2.1",  "notify": "patch", "formula": "hop" },
+    "hop":     { "latest": "0.2.1",  "notify": "minor", "formula": "hop" },
     "fab-kit": { "latest": "2.15.4", "notify": "minor", "formula": "fab-kit" }
   }
 }
@@ -93,10 +93,10 @@ Hand-edited, project-level data at the **repo root** (a sibling of `help/`, **NO
   "run-kit": { "notify": "minor" },
   "fab-kit": { "notify": "minor" },
   "shll":    { "notify": "patch" },
-  "tu":      { "notify": "patch" },
-  "wt":      { "notify": "patch" },
-  "idea":    { "notify": "patch" },
-  "hop":     { "notify": "patch" }
+  "tu":      { "notify": "minor" },
+  "wt":      { "notify": "minor" },
+  "idea":    { "notify": "minor" },
+  "hop":     { "notify": "minor" }
 }
 ```
 

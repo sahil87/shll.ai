@@ -74,7 +74,7 @@ A missing or Zod-invalid `help/<slug>.json` SHALL omit that tool's row while the
 
 ## The policy file — `versions-policy.json`
 
-Hand-edited, project-level data at the **repo root** (a sibling of `help/`, **NOT** inside it — `refresh-help.yml`'s staleness gate and `validate-help.mjs` glob `help/*.json` and must not see a non-envelope file). It maps each tool slug to `{ "notify": <value> }` with an optional `"formula"` override. Seed values: `run-kit`/`fab-kit` → `minor`; the small tools (`shll`/`tu`/`wt`/`idea`/`hop`) → `patch`.
+Hand-edited, project-level data at the **repo root** (a sibling of `help/`, **NOT** inside it — `refresh-help.yml`'s staleness gate and `validate-help.mjs` glob `help/*.json` and must not see a non-envelope file). It maps each tool slug to `{ "notify": <value> }` with an optional `"formula"` override. Current values: every tool → `minor`, except `shll` → `patch`.
 
 These are deliberately **data, not design**: tuning a threshold is a one-line commit here, picked up by deployed run-kit daemons within a poll cycle — no consumer binary update, no shipping a threshold through the very channel being tuned.
 
