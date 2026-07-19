@@ -1,0 +1,125 @@
+---
+// Glitch404.astro — the custom 404 page's content: a glitching "404" headline,
+// a zsh-style error line, and a bracket-tag link home. Pure-CSS port of
+// pgalor's "Clean CSS Glitch" (codepen.io/pgalor/pen/OeRWJQ) with the pen's
+// hard-coded #131313/Google-Fonts swapped for the site's --c-* tokens and the
+// already-shipped JetBrains Mono stack — dark/light parity (Constitution V),
+// no new deps (VI), fully static (I).
+//
+// Accessibility: the headline is aria-hidden decoration — the ::before/::after
+// clones repeat the text, so exposing it would read "404" three times. The
+// page's real <h1> (Starlight's required frontmatter title) is visually hidden
+// by a page-scoped style in 404.mdx and stays in the accessibility tree.
+//
+// The one <script> is a progressive enhancement in the TerminalPrompt mold: it
+// echoes the actually-requested path into the error line via textContent (no
+// injection surface). JS off → the static "this page" fallback renders.
+---
+
+<div class="wrap">
+  <div class="glitch" aria-hidden="true" data-text="404">404</div>
+  <p class="shell-error">zsh: no such file or directory: <span data-notfound-path>this page</span></p>
+  <a class="home" href="/">cd&nbsp;~</a>
+</div>
+
+<script>
+  const el = document.querySelector('[data-notfound-path]');
+  if (el) el.textContent = window.location.pathname;
+</script>
+
+<style>
+  .wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    min-height: calc(100svh - var(--sl-nav-height) - 12rem);
+    text-align: center;
+  }
+
+  /* ── The glitch (pgalor's keyframes, timings kept verbatim) ─────────────
+     Two clipped clones of the text ride ::before/::after — top third and
+     bottom third — each jittering on its own cycle while the base skews. */
+  .glitch {
+    position: relative;
+    color: var(--c-fg);
+    font-size: clamp(4.5rem, 16vw, 8rem);
+    font-weight: 600;
+    letter-spacing: -0.07em;
+    line-height: 1;
+    animation: glitch-404 1s linear infinite;
+  }
+  .glitch::before,
+  .glitch::after {
+    content: attr(data-text);
+    /* Alt-text syntax mutes the clones for screen readers where supported;
+       the plain declaration above is the fallback where it isn't. */
+    content: attr(data-text) / '';
+    position: absolute;
+    inset: 0;
+  }
+  .glitch::before {
+    animation: glitch-404-top 1s linear infinite;
+    clip-path: polygon(0 0, 100% 0, 100% 33%, 0 33%);
+  }
+  .glitch::after {
+    animation: glitch-404-bottom 1.5s linear infinite;
+    clip-path: polygon(0 67%, 100% 67%, 100% 100%, 0 100%);
+  }
+
+  @keyframes glitch-404 {
+    2%, 64% { transform: translate(2px, 0) skew(0deg); }
+    4%, 60% { transform: translate(-2px, 0) skew(0deg); }
+    62% { transform: translate(0, 0) skew(5deg); }
+  }
+  @keyframes glitch-404-top {
+    2%, 64% { transform: translate(2px, -2px); }
+    4%, 60% { transform: translate(-2px, 2px); }
+    62% { transform: translate(13px, -1px) skew(-13deg); }
+  }
+  @keyframes glitch-404-bottom {
+    2%, 64% { transform: translate(-2px, 0); }
+    4%, 60% { transform: translate(-2px, 0); }
+    62% { transform: translate(-22px, 5px) skew(21deg); }
+  }
+
+  /* Constant motion is exactly what this media query exists for: the clones
+     collapse onto the base text, leaving a plain static "404". */
+  @media (prefers-reduced-motion: reduce) {
+    .glitch,
+    .glitch::before,
+    .glitch::after {
+      animation: none;
+    }
+  }
+
+  .shell-error {
+    margin: 0;
+    color: var(--c-fg-dim);
+    font-size: var(--sl-text-sm);
+    /* A long garbage path must wrap, not overflow, on narrow screens. */
+    overflow-wrap: anywhere;
+  }
+
+  /* Bracket-tag link home, echoing ThemeSelect's [dark] chip. */
+  .home {
+    color: var(--c-accent);
+    text-decoration: none;
+  }
+  .home::before {
+    content: '[ ';
+    color: var(--c-fg-faint);
+  }
+  .home::after {
+    content: ' ]';
+    color: var(--c-fg-faint);
+  }
+  .home:hover {
+    text-decoration: underline;
+  }
+  .home:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 2px;
+  }
+</style>
