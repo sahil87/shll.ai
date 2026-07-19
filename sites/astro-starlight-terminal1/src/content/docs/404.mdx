@@ -1,0 +1,19 @@
+---
+title: '404'
+description: Page not found.
+template: splash
+editUrl: false
+pagefind: false
+# The glitch headline in the body is the visual title. Starlight's required
+# frontmatter title still auto-renders an <h1>, so a page-scoped style —
+# delivered via head, guaranteed not to leak into other pages' CSS bundles —
+# visually hides it while keeping it in the accessibility tree (screen
+# readers announce "404" once, from here, not from the decorative glitch).
+head:
+  - tag: style
+    content: 'main h1#_top{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;}'
+---
+
+import Glitch404 from '../../components/Glitch404.astro';
+
+<Glitch404 />
