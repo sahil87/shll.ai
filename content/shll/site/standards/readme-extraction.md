@@ -1,6 +1,6 @@
 # Standard: README & docs/site structure
 
-How every repo in the [@sahil87 toolkit](https://shll.ai) structures its `README.md` and `docs/site/` tree so [shll.ai](https://shll.ai) can pull and render them mechanically. The site pulls a **deduced, curated slice** of the README (rendered at `/<tool>/readme`) and every page of the optional `docs/site/**` tree (each at `/<tool>/<path>`), daily and on demand. Nothing is hand-copied; the tool repo is canonical and pushes nothing.
+How every repo in the [shll toolkit](https://shll.ai) structures its `README.md` and `docs/site/` tree so [shll.ai](https://shll.ai) can pull and render them mechanically. The site pulls a **deduced, curated slice** of the README (rendered at `/<tool>/readme`) and every page of the optional `docs/site/**` tree (each at `/<tool>/<path>`), daily and on demand. Nothing is hand-copied; the tool repo is canonical and pushes nothing.
 
 This page is the **producer-facing standard**: the structure your repo keeps. The consumer mechanics — extraction code, pull workflows, lints, link rewriting — are shll.ai's job, specified with their machine anchor in the [shll.ai README-extraction contract](https://github.com/sahil87/shll.ai/blob/main/docs/specs/readme-extraction-contract.md). This is the README-prose sibling of the [help-dump standard](help-dump.md), and together they implement principles №3 and №10 of the [toolkit CLI principles](principles.md).
 
@@ -9,7 +9,7 @@ This page is the **producer-facing standard**: the structure your repo keeps. Th
 **1. Head — the slice starts after the GitHub chrome.** Keep the top of the README in this exact order: a single markdown `# Title` H1, then the canonical toolkit blockquote, then a contiguous run of badge lines, then your prose. The first non-chrome line is where the site slice begins — make it your tagline. No YAML frontmatter, HTML `<h1>`, or HTML comment above the H1 (anything unrecognized as chrome leaks into the slice as content). The blockquote is this exact line in all seven repos:
 
 ```markdown
-> Part of [@sahil87's open source toolkit](https://shll.ai) — see all projects there.
+> Part of the [shll toolkit](https://shll.ai) — see all projects there.
 ```
 
 **2. Tail — the slice ends at the first footer heading.** The pull stops immediately before the first heading (case-insensitive `##`/`###`) named `Contributing`, `Development`, `Building`, `License`, or `Acknowledgements`. Everything site-worthy goes above the first of those. `Install`, `Changelog`, `Roadmap`, and `FAQ` are deliberately **kept** — tool-specific install detail belongs on the site.

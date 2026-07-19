@@ -1,6 +1,6 @@
 # Toolkit CLI principles
 
-The ten principles every CLI in the [@sahil87 toolkit](https://shll.ai) is built against — `shll`, `hop`, `wt`, `tu`, `idea`, `run-kit`, and `fab`. They exist because these tools are operated at least as often by AI agents as by humans, and an agent cannot squint at ambiguous output, answer a surprise prompt, or guess what a tool meant.
+The ten principles every CLI in the [shll toolkit](https://shll.ai) is built against — `shll`, `hop`, `wt`, `tu`, `idea`, `run-kit`, and `fab`. They exist because these tools are operated at least as often by AI agents as by humans, and an agent cannot squint at ambiguous output, answer a surprise prompt, or guess what a tool meant.
 
 Each principle is a testable contract: an **obligation** (MUST/SHOULD, in the [RFC 2119](https://datatracker.ietf.org/doc/html/rfc2119) sense), a named **failure mode**, and an **enforcement receipt** — where the toolkit already implements or checks it. The receipt is what separates a standard from a wish list: a principle with no shipped mechanism behind it is marked as such.
 

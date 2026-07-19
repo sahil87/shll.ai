@@ -12,7 +12,7 @@ AI agents write code fast. The bottleneck is now your clarity: did you define th
 curl -fsSL https://shll.ai/install | sh -s -- fab-kit
 ```
 
-Installs fab-kit (plus the shll meta-CLI) via Homebrew, handling tap trust automatically. To install the entire sahil87 toolkit instead:
+Installs fab-kit (plus the shll meta-CLI) via Homebrew, handling tap trust automatically. To install the entire shll toolkit instead:
 
 ```sh
 curl -fsSL https://shll.ai/install | sh
@@ -426,7 +426,7 @@ Grades aggregate into a **confidence score** that gates `/fab-ff`. If ambiguity 
 | `/docs-hydrate-memory [sources...]` | Ingest external docs or generate memory from codebase analysis |
 | `/docs-hydrate-specs` | Detect gaps between memory and specs, propose additions |
 | `/docs-reorg-memory` | Analyze memory files for themes, suggest reorganization |
-| `/docs-distill-memory <domain>` | Rewrite a memory domain to the FKF present-truth style — strip narration, cap descriptions, relocate rationale |
+| `/docs-distill-memory [<domain>]` | Rewrite a memory domain to the FKF present-truth style — strip narration, cap descriptions, relocate rationale |
 | `/docs-reorg-specs` | Analyze spec files for themes, suggest reorganization |
 
 ### Multi-Agent Coordination

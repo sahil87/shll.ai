@@ -1,6 +1,6 @@
 # Standard: help-dump
 
-The machine-readable help contract for every CLI in the [@sahil87 toolkit](https://shll.ai). Each tool exposes a hidden `help-dump` subcommand that emits its full command tree as JSON; [shll.ai](https://shll.ai) pulls that output on a schedule and renders it as the tool's command reference. Help text is a release artifact, fresh by construction — nothing is hand-copied, and the tool pushes nothing.
+The machine-readable help contract for every CLI in the [shll toolkit](https://shll.ai). Each tool exposes a hidden `help-dump` subcommand that emits its full command tree as JSON; [shll.ai](https://shll.ai) pulls that output on a schedule and renders it as the tool's command reference. Help text is a release artifact, fresh by construction — nothing is hand-copied, and the tool pushes nothing.
 
 This page is the **producer-facing standard**: what your tool must emit. The consumer side — capture, `captured_at` stamping, Zod validation, rendering — is shll.ai's job, specified with its machine-checkable schema anchor in the [shll.ai help-dump contract](https://github.com/sahil87/shll.ai/blob/main/docs/specs/help-dump-contract.md). A tool author's entire obligation is keeping `help-dump` conformant to this page.
 
@@ -34,6 +34,7 @@ The tool emits an envelope wrapping a recursive node tree:
 ```jsonc
 {
   "name": "create",          // command name at this level
+  "aliases": ["mk"],         // optional; registered alias names — key omitted entirely when none
   "path": "wt create",       // full invocation path
   "short": "…",              // one-line description
   "usage": "wt create […]",  // usage line
@@ -46,6 +47,8 @@ Two rules with teeth:
 
 - **Do not emit `captured_at`.** The capture timestamp is owned by shll.ai — a tool cannot know its own capture time. The puller stamps it after capture.
 - **Every node carries both** the raw `text` and the structured `short`/`usage`/`path`. The redundancy is intentional: the structured fields let the site render trees and headers without re-parsing text; `text` stays the terminal-faithful authority.
+
+`aliases` is an **optional additive field** under `schema_version: 1` (per [Schema evolution](#schema-evolution)): producers SHOULD emit it when the framework exposes alias metadata (e.g. Cobra `cmd.Aliases`) and MUST omit the key entirely — never `[]` or `null` — for a command with no aliases; consumers MUST treat an alias-form invocation (the `path` with its `name` replaced by any listed alias) as a valid command. Tools adopt it on their own release cadence — no flag-day, no `schema_version` bump.
 
 ## Filter rules
 

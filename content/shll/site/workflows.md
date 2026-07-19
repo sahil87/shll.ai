@@ -1,6 +1,6 @@
 # Workflows
 
-Task-oriented walkthroughs for `shll`, the meta-CLI for the [@sahil87 toolkit](https://shll.ai). Each section starts from a goal and shows which `shll` command gets you there and what it actually does under the hood. For install paths and shell wiring, see [Install & shell wiring](install.md).
+Task-oriented walkthroughs for `shll`, the meta-CLI for the [shll toolkit](https://shll.ai). Each section starts from a goal and shows which `shll` command gets you there and what it actually does under the hood. For install paths and shell wiring, see [Install & shell wiring](install.md).
 
 ## Clean-machine bootstrap
 
@@ -51,7 +51,7 @@ You can also scope a run to specific tools: `shll update hop wt` upgrades just t
 eval "$(shll shell-init zsh)"
 ```
 
-`shll shell-init <shell>` concatenates the `shell-init` output of every installed sahil87 tool, in roster order, into a single blob — replacing what would otherwise be one eval line per tool. (You normally don't run this by hand; [`shll shell-setup`](install.md#shll-shell-setup--wire-the-rc-file-recommended) writes the eval line for you.)
+`shll shell-init <shell>` concatenates the `shell-init` output of every installed shll tool, in roster order, into a single blob — replacing what would otherwise be one eval line per tool. (You normally don't run this by hand; [`shll shell-setup`](install.md#shll-shell-setup--wire-the-rc-file-recommended) writes the eval line for you.)
 
 The composition is **eval-safe by construction**, which matters because the output is fed straight to `eval`:
 

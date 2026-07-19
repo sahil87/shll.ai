@@ -1,6 +1,6 @@
 # shll skill
 
-The agent skill bundle for **shll** — the meta-CLI that installs, updates, wires, and inspects the [@sahil87 toolkit](https://shll.ai) (`wt`, `idea`, `tu`, `run-kit`, `hop`, `fab-kit`). shll is stateless and composes each tool's own CLI; it never replaces them.
+The agent skill bundle for **shll** — the meta-CLI that installs, updates, wires, and inspects the [shll toolkit](https://shll.ai) (`wt`, `idea`, `tu`, `run-kit`, `hop`, `fab-kit`). shll is stateless and composes each tool's own CLI; it never replaces them.
 
 ## When to use shll
 
@@ -18,13 +18,13 @@ For a single tool's own operations (`wt` worktrees, `hop` jumping, `fab` workflo
 One line each, keyed to the subcommand:
 
 - `shll install [tool...]` — `brew install` every missing roster tool (trust-then-install); idempotent. `--dry-run` previews; `--no-trust` skips trust.
-- `shll update [tool...]` — `brew update` once, self-upgrade, then delegate to each installed tool's own `update`. `--dry-run` previews.
+- `shll update [tool...]` — `brew update` once, self-upgrade, then delegate to each installed tool's own `update`; ends by re-running `shll agent-setup` when a placement exists. `--dry-run` previews.
 - `shll uninstall [tool...]` — remove roster tools via brew, reverse order with shll-self last; confirm-gated (`--yes` skips, non-TTY refuses), `--dry-run` previews.
 - `shll changelog [tool[@old..new]...]` — GitHub release notes; no range = installed→latest ("what would an update bring?").
 - `shll shell-init <shell>` — emit one eval-safe shell-init blob composing every installed tool's shell-init. Stdout is meant to be `eval`'d.
 - `shll shell-setup [shell]` — append the `eval "$(shll shell-init …)"` line to your rc file (idempotent, sentinel-wrapped). `--print` / `--uninstall`.
 - `shll agent-setup` — place the `shll-toolkit` Agent Skill at two global skill paths (`~/.agents/skills/` for Codex/Cursor/OpenCode, `~/.claude/skills/` for Claude Code), then delegate run-kit's dashboard hooks to `run-kit agent-setup`. Idempotent (overwrite). `--print` / `--uninstall`.
-- `shll skill [tool]` — bare: one-line glossary of installed tools. `shll skill <tool>`: that tool's full agent skill bundle (this page is `shll skill shll`).
+- `shll skill [tool] [topic]` — bare: one-line glossary of installed tools. `shll skill <tool>`: that tool's full agent skill bundle (this page is `shll skill shll`). `shll skill <tool> <topic>`: one of that tool's topic pages, delegated to `<tool> skill <topic>` byte-for-byte.
 - `shll version` — one paste-friendly version row per tool (for bug reports).
 - `shll list` — the roster with install status, descriptions, repo links (`--json`).
 - `shll doctor` — read-only health check: installed, runnable, trusted, shell-wired (`--json`; any FAIL → exit 1).
@@ -47,7 +47,7 @@ One line each, keyed to the subcommand:
 
 ## Gotchas
 
-- **Two-step skill discovery.** `shll skill` alone is a *glossary* (one line per tool), not a dump of every bundle — call `shll skill <tool>` for the tool you actually need. Loading all bundles at once wastes context.
+- **Two-step skill discovery.** `shll skill` alone is a *glossary* (one line per tool), not a dump of every bundle — call `shll skill <tool>` for the tool you actually need. Loading all bundles at once wastes context. A large-scope tool's core bundle lists topic pages; reach them with `shll skill <tool> <topic>` (e.g. `shll skill rk display`), which fails with the tool's own unknown-topic error (its exit code and stderr propagated) when the topic is wrong.
 - **`shll skill <tool>` needs the tool installed and recent.** A tool not on PATH, or one whose version predates its `skill` subcommand, prints a one-line notice to stderr and exits 1 — run `shll update`.
 - **Homebrew ≥ 6.0.4 with tap trust.** `shll install` records per-formula trust before installing; on Homebrew 6.0+ an untrusted tap refuses the install. Bootstrap shll itself once with `brew trust --formula sahil87/tap/shll && brew install sahil87/tap/shll`.
 - **`shll install` never upgrades; `shll update` never installs missing tools.** They are distinct lifecycle verbs.

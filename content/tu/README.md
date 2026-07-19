@@ -7,7 +7,7 @@ Track your token usage in style!
 curl -fsSL https://shll.ai/install | sh -s -- tu
 ```
 
-Installs tu (plus the shll meta-CLI) via Homebrew, handling tap trust automatically. To install the entire sahil87 toolkit instead:
+Installs tu (plus the shll meta-CLI) via Homebrew, handling tap trust automatically. To install the entire shll toolkit instead:
 
 ```sh
 curl -fsSL https://shll.ai/install | sh
@@ -30,7 +30,7 @@ echo 'eval "$(tu shell-init zsh)"' >> ~/.zshrc
 tu shell-init fish > ~/.config/fish/completions/tu.fish
 ```
 
-> 💡 Have other sahil87 tools? [`shll shell-install`](https://github.com/sahil87/shll#shll-shell-install--wire-the-rc-file-recommended) handles all of their shell integrations and autocompletions at once.
+> 💡 Have other shll tools? [`shll shell-install`](https://github.com/sahil87/shll#shll-shell-install--wire-the-rc-file-recommended) handles all of their shell integrations and autocompletions at once.
 
 ## Update
 

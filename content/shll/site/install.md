@@ -1,6 +1,6 @@
 # Install & shell wiring
 
-The deep guide to getting `shll` and the rest of the [@sahil87 toolkit](https://shll.ai) onto a machine and wired into your shell. The README's Install section is the short version; this page covers every install path and the full `shll shell-setup` rc-wiring contract.
+The deep guide to getting `shll` and the rest of the [shll toolkit](https://shll.ai) onto a machine and wired into your shell. The README's Install section is the short version; this page covers every install path and the full `shll shell-setup` rc-wiring contract.
 
 `shll` doesn't replace the per-tool CLIs — it composes them. Everything below either shells out to `brew` or invokes a sub-tool's own command; `shll` keeps no state of its own.
 
@@ -125,7 +125,7 @@ eval "$(shll shell-init zsh)"   # in ~/.zshrc
 eval "$(shll shell-init bash)"  # in ~/.bashrc
 ```
 
-The output is the concatenation, in roster order (leaves-first: `wt`, `idea`, `tu`, `rk`, `hop`, `fab-kit`), of every installed sahil87 tool's own `shell-init`. What each tool contributes:
+The output is the concatenation, in roster order (leaves-first: `wt`, `idea`, `tu`, `rk`, `hop`, `fab-kit`), of every installed shll tool's own `shell-init`. What each tool contributes:
 
 | Tool | What it adds to your shell |
 |------|----------------------------|

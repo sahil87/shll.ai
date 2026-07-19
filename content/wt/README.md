@@ -10,7 +10,7 @@ workflow where each branch (or each AI session) gets its own checkout.
 curl -fsSL https://shll.ai/install | sh -s -- wt
 ```
 
-Installs wt (plus the shll meta-CLI) via Homebrew, handling tap trust automatically. To install the entire sahil87 toolkit instead:
+Installs wt (plus the shll meta-CLI) via Homebrew, handling tap trust automatically. To install the entire shll toolkit instead:
 
 ```sh
 curl -fsSL https://shll.ai/install | sh
@@ -40,7 +40,7 @@ wrapper to your shell profile:
 eval "$(wt shell-init)"
 ```
 
-> 💡 Have other sahil87 tools? [`shll shell-install`](https://github.com/sahil87/shll#shll-shell-install--wire-the-rc-file-recommended) handles all of their shell integrations and autocompletions at once.
+> 💡 Have other shll tools? [`shll shell-install`](https://github.com/sahil87/shll#shll-shell-install--wire-the-rc-file-recommended) handles all of their shell integrations and autocompletions at once.
 
 For the full install guide — every path, the shell wrapper, and cross-tool setup — see the [install guide](docs/site/install.md).
 

@@ -1,4 +1,4 @@
-One command to install, update, and shell-wire every tool in the [@sahil87 toolkit](https://shll.ai) (`wt`, `idea`, `tu`, `run-kit`, `hop`, `fab-kit`). `shll` doesn't replace the per-tool CLIs — it composes them.
+One command to install, update, and shell-wire every tool in the [shll toolkit](https://shll.ai) (`wt`, `idea`, `tu`, `run-kit`, `hop`, `fab-kit`). `shll` doesn't replace the per-tool CLIs — it composes them.
 
 ## Install
 
@@ -88,6 +88,8 @@ shll update --dry-run        # preview the upgrade plan, change nothing
 
 Runs `brew update --quiet` once, then `brew upgrade sahil87/tap/shll` (when shll itself was installed via brew), then delegates to each installed roster tool's **own `update` subcommand** (passing `--skip-brew-update` when the tool advertises it) so each tool's post-upgrade side effects — e.g. `run-kit`'s daemon restart — are preserved. A roster tool that exposes no `update` subcommand falls back to `brew upgrade sahil87/tap/<formula>`. Uninstalled tools are skipped silently, and the loop is best-effort — one tool's failure doesn't abort the rest. Brew and per-tool progress stream directly to your terminal.
 
+When agent skills were previously placed via [`shll agent-setup`](#shll-agent-setup--wire-agent-harnesses), the run ends by re-running `shll agent-setup` (as a subprocess, so the freshly upgraded binary places its own skill content) — the placed skills track the toolkit they describe without a manual follow-up. The refresh is placement-gated (a machine that never opted in gets no writes), best-effort (it never changes the run's exit code), and previewed by `--dry-run`.
+
 > **Legacy `rk` keg exception.** On a pre-rename machine still holding the old `rk` keg, `shll update` migrates `run-kit` **brew-direct** (`brew upgrade sahil87/tap/rk`, which resolves the rename) rather than delegating to `run-kit update`. Because that path skips `run-kit update`'s post-upgrade side effect, the daemon is **not** restarted automatically — shll prints a note suggesting `run-kit serve --restart` instead (Constitution III — shll never reimplements a tool's own logic). This is transitional; once legacy kegs are gone, updates always take the normal delegated path above.
 
 Pass one or more tool names to scope the run to a subset (valid targets: `shll`, `wt`, `idea`, `tu`, `run-kit`, `hop`, `fab-kit`; the legacy alias `rk` still resolves to `run-kit`), processed in roster order regardless of arg order. A named-but-not-installed target is a hard error here (unlike the whole-roster sweep, which silently skips it). `--dry-run` runs the read-only probes, prints the exact commands the real run would execute (`shll (self)` first when brew-installed), then exits without writing anything.
@@ -139,7 +141,7 @@ eval "$(shll shell-init zsh)"   # in ~/.zshrc
 eval "$(shll shell-init bash)"  # in ~/.bashrc
 ```
 
-The output is the concatenation (in roster order — leaves-first: `wt`, `idea`, `tu`, `run-kit`, `hop`, `fab-kit`) of every installed sahil87 tool's own shell-init, with a `# ── <tool> ──` comment separator before each block. What each roster tool is for, and what it adds to your shell:
+The output is the concatenation (in roster order — leaves-first: `wt`, `idea`, `tu`, `run-kit`, `hop`, `fab-kit`) of every installed shll tool's own shell-init, with a `# ── <tool> ──` comment separator before each block. What each roster tool is for, and what it adds to your shell:
 
 | Tool | What it's for | What it adds to your shell |
 |------|---------------|----------------------------|
@@ -171,13 +173,13 @@ One row for `shll` itself plus each roster tool, in roster order. Uninstalled to
 
 ```sh
 $ shll list
-ok  shll     the manager for the shll toolkit                                        https://github.com/sahil87/shll
-ok  wt       Git worktree management — create, list, open, delete worktrees          https://github.com/sahil87/wt
-ok  idea     Backlog idea management from the terminal                               https://github.com/sahil87/idea
-ok  tu       Token-usage tracker for AI coding tools (Claude Code, Codex, OpenCode)  https://github.com/sahil87/tu
-ok  run-kit  Run-kit — tmux session manager with a web UI                            https://github.com/sahil87/run-kit
-ok  hop      Fast directory/project jumping across worktrees                         https://github.com/sahil87/hop
-ok  fab-kit  Spec-driven workspace & workflow toolkit (the `fab` CLI)                https://github.com/sahil87/fab-kit
+ok  shll     the manager for the shll toolkit                                                                                                    https://github.com/sahil87/shll
+ok  wt       Git worktree management — create, list, open, delete worktrees                                                                      https://github.com/sahil87/wt
+ok  idea     Backlog idea management from the terminal                                                                                           https://github.com/sahil87/idea
+ok  tu       Token-usage tracker for AI coding tools (Claude Code, Codex, OpenCode)                                                              https://github.com/sahil87/tu
+ok  run-kit  Run-kit — tmux session manager with a web UI; can display web pages/HTML to the user and push notifications (rk stays as an alias)  https://github.com/sahil87/run-kit
+ok  hop      Fast directory/project jumping across worktrees                                                                                     https://github.com/sahil87/hop
+ok  fab-kit  Spec-driven workspace & workflow toolkit (the `fab` CLI)                                                                            https://github.com/sahil87/fab-kit
 ```
 
 `shll` leads, then one row per managed tool in roster order: an install-status marker (`ok` / `--`, or a green `✓` / red `✗` on a terminal), the name, a one-line description, and the source-repo URL. The leading `shll` row is the manager itself — it's surfaced so the toolkit reads as one family with `shll` as its manager-member (the same shll-first ordering `shll version` and `shll update` already use). Install status reuses the same PATH probe as `shll version` (it's install-mechanism agnostic, not a Homebrew check); a missing tool is shown as missing, never an error, so `shll list` always exits 0.
@@ -201,7 +203,7 @@ hop      OK  v0.1.16  wired
 fab-kit  OK  v2.1.1
 ```
 
-`shll` leads with an always-OK row (it's the running binary; version from the build, no wiring or trust check), then for every roster tool `doctor` checks that (1) the binary is on `PATH`, (2) it reports a version (so a half-installed or stale brew link is caught), (3) its Homebrew formula is **trusted** (so a future `brew upgrade` won't be refused on Homebrew 6.0+), and (4) — for the tools that ship shell integration (`wt`, `tu`, `hop`) — shll's composed eval block is present in your rc file. Each tool gets one line with an `OK` / `WARN` / `FAIL` marker, and every non-OK line carries an actionable suggestion (e.g. `run 'brew install …'`; `formula not trusted — run 'shll install' …`; or `not wired — run 'shll shell-setup' then 'exec $SHELL'`). The always-OK `shll` row never affects the exit code or the problem count (a single roster failure still reads `1 of 6`, never `1 of 7`).
+`shll` leads with its own row (it's the running binary; version from the build, no wiring or trust check — but it does verify any agent skill placed by [`shll agent-setup`](#shll-agent-setup--wire-agent-harnesses): a placement whose content is stale, typically from an older shll, is `WARN` with a refresh pointer; no placement means no check). Then for every roster tool `doctor` checks that (1) the binary is on `PATH`, (2) it reports a version (so a half-installed or stale brew link is caught), (3) its Homebrew formula is **trusted** (so a future `brew upgrade` won't be refused on Homebrew 6.0+), and (4) — for the tools that ship shell integration (`wt`, `tu`, `hop`) — shll's composed eval block is present in your rc file. Each tool gets one line with an `OK` / `WARN` / `FAIL` marker, and every non-OK line carries an actionable suggestion (e.g. `run 'brew install …'`; `formula not trusted — run 'shll install' …`; or `not wired — run 'shll shell-setup' then 'exec $SHELL'`). The `shll` row can at worst `WARN`, so it never affects the exit code.
 
 A missing or non-running binary is `FAIL`; an installed-but-untrusted or installed-but-unwired tool is `WARN` (it still works when invoked directly — but an untrusted tool's next upgrade will be refused). The trust sub-check queries `brew trust --json=v1` read-only (it never reads `~/.homebrew/trust.json` directly) and is skipped silently when your Homebrew is too old to ship `brew trust`. `doctor` is strictly **read-only** — it never installs, upgrades, trusts, or edits your rc file — and it **exits non-zero if any tool is FAIL**, so it's scriptable in CI. Pass `--json` for a machine-readable array (one object per tool) under the same checks and exit contract.
 
@@ -227,9 +229,10 @@ shll     the manager for the shll toolkit
 wt       Git worktree management — create, list, open, delete worktrees
 hop      Fast directory/project jumping across worktrees
 
-Run 'shll skill <tool>' for that tool's full agent skill bundle.
+Run 'shll skill <tool>' for that tool's full agent skill bundle ('shll skill <tool> <topic>' for a topic page).
 
 $ shll skill hop              # print hop's full agent skill bundle (raw markdown)
+$ shll skill run-kit display  # print one of a tool's topic pages (passed through to `run-kit skill display`)
 $ shll skill shll             # shll's own bundle (served from the embedded copy)
 ```
 
@@ -244,6 +247,8 @@ shll agent-setup --uninstall  # remove both placed skill directories
 ```
 
 Mechanically places one thin `shll-toolkit` Agent Skill into the harnesses' global skills directories — `~/.agents/skills/shll-toolkit/SKILL.md` (the [agentskills.io](https://agentskills.io) open-standard path, read by Codex and compat-read by Cursor and OpenCode) and `~/.claude/skills/shll-toolkit/SKILL.md` (Claude Code, which doesn't read `~/.agents/`) — so an agent driving this machine learns to load `shll skill` before reaching for a tool. The skill directories are shll-owned, so placement is idempotent by construction: install writes them, a re-run overwrites them, `--uninstall` deletes them — no merge, no prompt, no sentinel machinery. A per-path written/updated/unchanged summary is printed. Then it delegates run-kit's dashboard-hook wiring to `run-kit agent-setup` (skipped silently when run-kit isn't installed; `--print`/`--uninstall` don't delegate a placement). This graduates the toolkit's harness wiring from `run-kit agent-setup`, where it was mis-homed on a leaf tool, up to the manager.
+
+Once placed, the skill maintains itself: [`shll update`](#shll-update--upgrade-everything) ends each run by re-running `agent-setup` (so the placed content tracks the upgraded binaries), and [`shll doctor`](#shll-doctor--verify-install--wiring) flags a stale placement with a `WARN`. The skill's frontmatter description is generated from the tool roster — each tool contributes its name and a task-domain phrase ("git worktrees", "backlog ideas") so agents match on the task, not just the tool name, and run-kit additionally contributes an agent-proactive sentence (show visual content in a browser window, push notifications) so agents reach for those capabilities unprompted.
 
 ## How composition works
 
