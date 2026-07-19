@@ -103,6 +103,17 @@ test('PolicyEntrySchema requires notify', () => {
   assert.equal(PolicyEntrySchema.safeParse({ notify: 'patch' }).success, true);
 });
 
+test('PolicyEntrySchema rejects unknown keys (build-stop on site-authored typo)', () => {
+  // `.strict()` makes an unexpected key a hard failure, not a silent strip —
+  // site-authored policy must build-stop on an unrecognized field.
+  assert.equal(PolicyEntrySchema.safeParse({ notify: 'patch', bogus: true }).success, false);
+  // Nested through the whole-file schema too, so a stray key anywhere fails.
+  assert.equal(
+    VersionsPolicySchema.safeParse({ wt: { notify: 'patch', typo: 'x' } }).success,
+    false,
+  );
+});
+
 // ── readPolicy (R6 — build-stop on invalid) ────────────────────────────────
 
 test('readPolicy parses a valid policy file', () => {

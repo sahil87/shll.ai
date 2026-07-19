@@ -47,10 +47,12 @@ export type Notify = (typeof NOTIFY_VALUES)[number];
  * `formula` override (defaults to the slug — slug == Homebrew formula name for
  * all 7 tools today, so the override exists only for a future divergence).
  */
-export const PolicyEntrySchema = z.object({
-  notify: z.enum(NOTIFY_VALUES),
-  formula: z.string().optional(),
-});
+export const PolicyEntrySchema = z
+  .object({
+    notify: z.enum(NOTIFY_VALUES),
+    formula: z.string().optional(),
+  })
+  .strict();
 export type PolicyEntry = z.infer<typeof PolicyEntrySchema>;
 
 /**
