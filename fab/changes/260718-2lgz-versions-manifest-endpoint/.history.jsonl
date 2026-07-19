@@ -1,0 +1,3 @@
+{"action":"enter","driver":"fab-new","event":"stage-transition","stage":"intake","ts":"2026-07-18T19:49:40Z"}
+{"args":"Publish versions.json manifest at shll.ai — build-time Astro endpoint deriving per-tool latest versions from committed help/*.json envelopes plus a repo-root notify-policy file; cross-repo contract consumed by run-kit's update checker","cmd":"fab-new","event":"command","ts":"2026-07-18T19:49:40Z"}
+{"delta":"+5.0","event":"confidence","score":5,"trigger":"calc-score","ts":"2026-07-18T19:50:45Z"}

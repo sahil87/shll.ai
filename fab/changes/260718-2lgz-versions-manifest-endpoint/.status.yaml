@@ -1,0 +1,36 @@
+id: 2lgz
+name: 260718-2lgz-versions-manifest-endpoint
+created: 2026-07-18T19:49:40Z
+created_by: sahil-noon
+change_type: feat
+issues: []
+progress:
+    intake: ready
+    apply: pending
+    review: pending
+    hydrate: pending
+    ship: pending
+    review-pr: pending
+plan:
+    generated: false
+    task_count: 0
+    acceptance_count: 0
+    acceptance_completed: 0
+confidence:
+    certain: 7
+    confident: 2
+    tentative: 0
+    unresolved: 0
+    score: 5.0
+    fuzzy: true
+    dimensions:
+        signal: 69.4
+        reversibility: 88.9
+        competence: 87.8
+        disambiguation: 83.9
+stage_metrics:
+    intake: {started_at: "2026-07-18T19:49:40Z", driver: fab-new, iterations: 1}
+prs: []
+change_type_source: explicit
+# true_impact: lazily created on first stage-finish that computes it (no placeholder here).
+last_updated: 2026-07-18T19:50:45Z
