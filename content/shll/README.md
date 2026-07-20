@@ -17,35 +17,11 @@ Install a subset by naming tools after `sh -s --`:
 curl -fsSL https://shll.ai/install | sh -s -- hop wt
 ```
 
-Requires Homebrew ≥ 6.0.4 (on 6.0.0–6.0.3, run `brew update` first) — the script exits with a pointer to https://brew.sh if brew is absent (it never auto-installs Homebrew). It bootstraps `shll` itself first (recording the Homebrew 6.0 tap trust `shll` needs), then hands off to `shll install` for the rest of the roster (which trusts each formula it installs — drop that with `--no-trust` if you manage trust yourself). It's idempotent — safe to re-run, and a no-op for anything already installed.
+Requires Homebrew ≥ 6.0.4 (on 6.0.0–6.0.3, run `brew update` first); the script never auto-installs Homebrew. It's idempotent — safe to re-run, and a no-op for anything already installed.
 
-The `shll agent-setup` line is optional and once per machine — it places one thin `shll-toolkit` Agent Skill at two global skill paths (`~/.agents/skills/` for Codex, Cursor, and OpenCode; `~/.claude/skills/` for Claude Code) so an agent driving this machine knows to load `shll skill` before reaching for a tool, and it delegates run-kit's dashboard hooks (live **active** / **waiting** / **idle** state in [run-kit](https://github.com/sahil87/run-kit)'s dashboard) to `run-kit agent-setup`. It just overwrites shll-owned skill files (idempotent — no prompt); skip it if you don't drive this machine with agents.
+The `shll agent-setup` line is optional and once per machine — it places one thin `shll-toolkit` Agent Skill at the harnesses' global skill paths so an agent driving this machine knows to load `shll skill` before reaching for a tool, and delegates dashboard hooks to [run-kit](https://github.com/sahil87/run-kit)'s `agent-setup`. Skip it if you don't drive this machine with agents.
 
-> **Why `brew trust` first?** Homebrew 6.0 made tap-trust a **hard install requirement** (it defaults `HOMEBREW_REQUIRE_TAP_TRUST=1`). shll's tap formulae download a binary and run a sandboxed `def install` (not a bottle pour), and that sandboxed step re-checks trust against a real persisted trust record — so naming the formula on the CLI is not enough; you must trust it first. Requires **Homebrew ≥ 6.0.4** (an earlier 6.0.x Linux sandbox bug is fixed there); if you're on 6.0.0–6.0.3, run `brew update` first. See [Troubleshooting](#tap-sahil87tap-must-be-trusted-before-install) for the full explanation.
-
-### Manual bootstrap (brew)
-
-If you'd rather bootstrap by hand, trust-then-install `shll` directly:
-
-```sh
-brew trust --formula sahil87/tap/shll && brew install sahil87/tap/shll
-```
-
-The `brew trust` is required on Homebrew 6.0+ (which defaults to requiring explicit tap trust) — shll's formula runs a sandboxed install that needs a real trust record. Requires Homebrew ≥ 6.0.4; on 6.0.0–6.0.3, `brew update` first. From there, `shll install` owns trust for the other six tools.
-
-`shll` is also installed transitively via the `all` meta-formula (`brew trust --formula sahil87/tap/all && brew install sahil87/tap/all`), which pulls in every roster tool at once.
-
-### From source
-
-```sh
-git clone https://github.com/sahil87/shll.git
-cd shll
-just install
-```
-
-Builds the binary and copies it to `~/.local/bin/shll`. Make sure that directory is on your `$PATH`.
-
-For the full guide — brew vs `all`, from-source builds, shell wiring, and the tap-trust details — see [docs/site/install.md](docs/site/install.md).
+Everything else — the manual brew bootstrap, from-source builds, shell-wiring detail, and tap-trust troubleshooting — lives in the [install guide](docs/site/install.md) on [https://shll.ai](https://shll.ai).
 
 ## Why shll?
 
@@ -95,6 +71,20 @@ When agent skills were previously placed via [`shll agent-setup`](#shll-agent-se
 Pass one or more tool names to scope the run to a subset (valid targets: `shll`, `wt`, `idea`, `tu`, `run-kit`, `hop`, `fab-kit`; the legacy alias `rk` still resolves to `run-kit`), processed in roster order regardless of arg order. A named-but-not-installed target is a hard error here (unlike the whole-roster sweep, which silently skips it). `--dry-run` runs the read-only probes, prints the exact commands the real run would execute (`shll (self)` first when brew-installed), then exits without writing anything.
 
 Each tool gets a `[N/M]` progress header, and a timing summary tail (`Done — N of M tools succeeded in <dur>.`) closes the run. After the tail, a compact **"What changed:"** digest lists the release-note titles for every tool that actually bumped, followed by a copy-pasteable `shll changelog` command for the full notes.
+
+### `shll check-updates` — is anything outdated? (read-only)
+
+```sh
+shll check-updates                     # human table: installed → latest per tool
+shll check-updates --json              # machine contract (what run-kit's daemon runs)
+shll check-updates --source github     # compare against GitHub release tags instead
+```
+
+The toolkit's single update-*check* surface: for shll itself plus every roster tool, it reports the installed version vs the latest available — and never updates anything (that's `shll update`'s job). One backend, selected by `--source`: `--source released` (the default when the flag is omitted) fetches [shll.ai/versions.json](https://shll.ai/versions.json), the roster + notify-policy authority, once per run; `--source github` reads each tool's latest GitHub release tag instead (no notify policy in that backend). Installed versions come from Homebrew, so brew must be present.
+
+The human output is a `shll version`-style aligned table — `shll  0.1.5 → 0.1.6  update available (notable)`, `wt  0.1.3  up to date`, `idea  not installed`. The `(notable)` marker means the pending bump crosses the tool's notify threshold from the manifest (`patch` = any bump is notable; `minor` = only minor-or-higher bumps; `never` = none).
+
+`--json` emits a stable machine contract — `{"schema": 1, "source": "released", "tools": [{"name", "formula", "installed", "latest", "notify", "update_available", "notable"}]}` — with a row only for tools where both versions resolved (not-installed or unresolvable tools are omitted; `--source github` rows omit `notify`/`notable` since no policy source exists there). The contract evolves additively — consumers tolerate unknown fields. Exit codes: 0 when the check ran (pending updates don't change it — verdicts live in the output), 1 when the check itself failed (manifest unreachable, brew missing), 2 on a usage error; a `--source github` per-tool fetch failure degrades just that tool and still exits 0.
 
 ### `shll changelog` — release notes for the toolkit
 
@@ -258,6 +248,7 @@ shll has no state, no database, and no special knowledge of the tools it wraps. 
 |----------------|------------------------|
 | `shll install` | `brew trust --formula sahil87/tap/<formula>` then `brew install sahil87/tap/<formula>` per missing tool (`--no-trust` skips the trust step) |
 | `shll update` | `brew update --quiet` once, self-upgrade, then each installed tool's own `update` (delegated; `brew upgrade` fallback only when a tool has no `update`) |
+| `shll check-updates` | fetches `shll.ai/versions.json` (or GitHub releases with `--source github`), joins against `brew list --versions`, reports pending updates — read-only |
 | `shll changelog` | fetches each tool's GitHub releases (public API), filters to the requested version range, renders the notes |
 | `shll shell-init zsh` | concatenates the stdout of each installed tool's `<tool> shell-init zsh` |
 | `shll version` | invokes `<tool> --version` per tool, formats as a table |
@@ -269,42 +260,17 @@ shll has no state, no database, and no special knowledge of the tools it wraps. 
 
 Per Constitution Principle IV (Composition, Not Replacement): `hop update`, `wt shell-init`, etc. continue to work standalone. shll's only job is to fan-out, collect output, and degrade gracefully when a tool is missing.
 
-## Troubleshooting
-
-### "Tap sahil87/tap must be trusted" before install
-
-On **Homebrew 6.0+**, trusting `sahil87/tap` is a **hard install requirement**, not an advisory warning. Homebrew now defaults `HOMEBREW_REQUIRE_TAP_TRUST=1`, so `brew install sahil87/tap/<formula>` is **refused** until a real trust record exists. If you skipped the bootstrap step, you'll see brew refuse the install (often as an opaque sandbox build failure rather than a clear "untrusted tap" message).
-
-**Why naming the formula on the command line isn't enough.** Trust is checked in two places:
-
-1. At **formula-load** time, *outside* the sandbox — here naming the fully-qualified formula on the CLI (`sahil87/tap/shll`) is explicitly allowed.
-2. Again during the **sandboxed `install`** — and this re-check sees the formula's *path*, not the qualified name you typed, so the CLI-naming does **not** satisfy it. A persisted trust record is genuinely required.
-
-shll's tap formulae download a binary and run a sandboxed `def install` (they are **not** `bottle do` bottles — a true bottle *pour* runs no sandboxed install), so that second, sandboxed re-check always fires. That's why you must `brew trust` first.
-
-**The fix is the bootstrap + `shll install`:**
-
-```sh
-brew trust --formula sahil87/tap/shll && brew install sahil87/tap/shll   # one-time bootstrap for shll itself
-shll install                                                             # trusts (per-formula) + installs the other 6
-```
-
-`shll install` runs `brew trust --formula sahil87/tap/<formula>` before each install, so once you've bootstrapped `shll` it handles trust for the rest of the roster. `brew trust` is idempotent — re-running is safe.
-
-**Already installed everything but `shll update` / `brew upgrade` now gets refused?** A tool installed *outside* `shll install` (manually, or before this feature) may be untrusted, and Homebrew 6.0+ refuses its next upgrade. Run `shll doctor` — it flags any installed-but-untrusted tool with `WARN` — then re-run `shll install` (idempotent; it trusts and skips the already-installed tools) or `brew trust --formula sahil87/tap/<x>` directly.
-
-**Homebrew version floor.** This requires **Homebrew ≥ 6.0.4**. Homebrew 6.0.0–6.0.3 on Linux had a bubblewrap-sandbox bug that broke trusted installs; it's fixed in 6.0.4. If you're on an earlier 6.0.x, run `brew update` first.
-
-**`--no-trust`.** If you manage tap trust yourself, `shll install --no-trust` skips the per-formula trust step entirely and just runs the installs.
-
 ## Reference
 
-- [docs/site/install.md](docs/site/install.md) — install & shell-wiring guide (brew vs `all`, from-source, `shll shell-setup`, tap-trust)
+- [docs/site/install.md](docs/site/install.md) — install & shell-wiring guide (manual brew bootstrap, from-source, `shll shell-setup`, tap-trust)
 - [docs/site/workflows.md](docs/site/workflows.md) — task-oriented walkthroughs (clean-machine bootstrap, day-to-day `shll update`, version dumps, the composition model)
 - [docs/site/standards/principles.md](docs/site/standards/principles.md) — the ten CLI principles every toolkit tool is built against (agent-native contracts: obligations, failure modes, enforcement receipts)
 - [docs/site/standards/help-dump.md](docs/site/standards/help-dump.md) — producer standard for the machine-readable help contract (`help-dump` JSON every tool must emit)
 - [docs/site/standards/readme-extraction.md](docs/site/standards/readme-extraction.md) — producer standard for README & `docs/site/` structure (what shll.ai pulls and renders per tool)
 - [docs/site/standards/skill.md](docs/site/standards/skill.md) — producer standard for the offline, embedded `<tool> skill` agent bundle (one-page usage briefing, versioned with the binary)
+- [docs/site/standards/update.md](docs/site/standards/update.md) — producer standard for the in-place `update` subcommand (`--skip-brew-update` probe, exit-code semantics, brew-handling safety, naming/release alignment)
+- [docs/site/standards/version.md](docs/site/standards/version.md) — producer standard for the `--version` surface shll probes (2s budget, first-non-empty-line token, binary-name-equals-tool install probe)
+- [docs/site/standards/shell-init.md](docs/site/standards/shell-init.md) — producer standard for the eval-safe `shell-init` output shll concatenates (stdout-only shell source, diagnostics to stderr, fail-non-zero)
 - `shll --help` — full subcommand listing
 - **Command reference at [shll.ai/shll/commands](https://shll.ai/shll/commands/)** — a browsable, always-current command tree. On every release, shll's CI exports its CLI help tree as a machine-readable `help/shll.json` and publishes it to [shll.ai](https://shll.ai), which renders it at that page. The export is produced by a hidden `help-dump` subcommand (internal build tooling, not a user command).
 - Per-tool repos for the wrapped CLIs:

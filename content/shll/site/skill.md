@@ -19,6 +19,7 @@ One line each, keyed to the subcommand:
 
 - `shll install [tool...]` — `brew install` every missing roster tool (trust-then-install); idempotent. `--dry-run` previews; `--no-trust` skips trust.
 - `shll update [tool...]` — `brew update` once, self-upgrade, then delegate to each installed tool's own `update`; ends by re-running `shll agent-setup` when a placement exists. `--dry-run` previews.
+- `shll check-updates` — read-only "is anything outdated?" check: installed vs latest for shll + every tool. `--source released` (default, shll.ai versions manifest with notify policy) or `--source github` (release tags); `--json` for the machine contract. Never updates.
 - `shll uninstall [tool...]` — remove roster tools via brew, reverse order with shll-self last; confirm-gated (`--yes` skips, non-TTY refuses), `--dry-run` previews.
 - `shll changelog [tool[@old..new]...]` — GitHub release notes; no range = installed→latest ("what would an update bring?").
 - `shll shell-init <shell>` — emit one eval-safe shell-init blob composing every installed tool's shell-init. Stdout is meant to be `eval`'d.
@@ -39,7 +40,7 @@ One line each, keyed to the subcommand:
 
 ## Output & exit-code contracts
 
-- stdout is data, stderr is diagnostics. `--json` is available on `list`, `doctor`, and the bare `standards` list.
+- stdout is data, stderr is diagnostics. `--json` is available on `list`, `doctor`, `check-updates`, and the bare `standards` list.
 - Exit codes follow the toolkit convention: `0` success, `1` operational failure, `2` usage error (unknown command/flag, bad args).
 - `shll shell-init` output is always eval-safe — safe to pipe straight into a live shell — regardless of which tools are installed.
 - `shll doctor` is worst-check-wins: any FAIL → exit 1, so it is scriptable in CI.

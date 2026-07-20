@@ -9,14 +9,10 @@ AI agents write code fast. The bottleneck is now your clarity: did you define th
 ## Install
 
 ```sh
-curl -fsSL https://shll.ai/install | sh -s -- fab-kit
-```
-
-Installs fab-kit (plus the shll meta-CLI) via Homebrew, handling tap trust automatically. To install the entire shll toolkit instead:
-
-```sh
 curl -fsSL https://shll.ai/install | sh
 ```
+
+Installs the entire shll toolkit via Homebrew, handling tap trust automatically. fab-kit relies on its sibling tools (`wt` for worktrees, `idea` for the backlog), so the full-toolkit install is the supported path.
 
 ## The 6 Stages
 
@@ -75,7 +71,8 @@ brew install yq jq gh direnv
 
 | Tool | Purpose |
 |------|---------|
-| [fab-kit](https://github.com/sahil87/fab-kit) | The `fab` CLI router, workspace lifecycle (`init`/`upgrade-repo`/`sync`), `wt`, and `idea` |
+| [fab-kit](https://github.com/sahil87/fab-kit) | The `fab` CLI router and workspace lifecycle (`init`/`upgrade-repo`/`sync`) |
+| [wt](https://github.com/sahil87/wt), [idea](https://github.com/sahil87/idea) | Recommended companions (`shll install wt idea` — see [shll.ai](https://shll.ai)) — worktree isolation and the idea backlog; see [Companion tools](#companion-tools) |
 | [yq](https://github.com/mikefarah/yq) | YAML processing for status files and schemas |
 | [jq](https://jqlang.github.io/jq/) | JSON processing for settings merge during sync |
 | [gh](https://cli.github.com/) | GitHub CLI - used for releases and PR workflows |
@@ -492,7 +489,13 @@ Which pipeline stages each command covers. Taller bars = more automation. Read l
 
 ## Companion tools
 
-fab-kit's Homebrew formula declares **wt** and **idea** as dependencies, so `brew install sahil87/tap/fab-kit` installs all four CLIs (`fab`, `fab-kit`, `wt`, `idea`) on PATH transitively. They're independent projects with their own release cadences:
+**wt** and **idea** are independent projects with their own release cadences — install them via [shll.ai](https://shll.ai):
+
+```sh
+shll install wt idea
+```
+
+They are recommended, not required — fab degrades gracefully when they are absent. The worktree flows that need `wt` (`fab batch new`/`switch`, operator agent spawning) stop upfront with an install hint rather than failing mid-run; an absent `idea` costs nothing (`/fab-new` reads `fab/backlog.md` directly).
 
 | Tool | Role in the fab workflow | Repo |
 |------|--------------------------|------|
@@ -507,6 +510,7 @@ See [companions.md](https://github.com/sahil87/fab-kit/blob/main/docs/specs/comp
 - **[Design & Workflow Details](https://github.com/sahil87/fab-kit/blob/main/docs/specs/overview.md)** - principles, detailed stage descriptions, example workflows
 - **[User Flow Diagrams](https://github.com/sahil87/fab-kit/blob/main/docs/specs/user-flow.md)** - visual maps of the full pipeline, shortcuts, rework paths, and state machine
 - **[Full Command Reference](https://github.com/sahil87/fab-kit/blob/main/docs/specs/skills.md)** - detailed behavior for every `/fab-*` skill
+- **[FKF — Fab Knowledge Format](docs/site/fkf.md)** - the standard for the `docs/memory/` knowledge tree: frontmatter, generated indexes and logs, present-truth body style
 - **[SRAD Autonomy Framework](https://github.com/sahil87/fab-kit/blob/main/docs/specs/srad.md)** - how the pipeline handles ambiguity, confidence scoring, and autonomous execution gates
 - **[Glossary](https://github.com/sahil87/fab-kit/blob/main/docs/specs/glossary.md)** - all Fab terminology defined
 - **[Contributing](https://github.com/sahil87/fab-kit/blob/main/CONTRIBUTING.md)** - developing, extending, and releasing Fab Kit

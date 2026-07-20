@@ -30,14 +30,6 @@ brew trust --formula sahil87/tap/shll && brew install sahil87/tap/shll
 
 The `brew trust` is required: shll's tap formula downloads a binary and runs a sandboxed `def install` (not a bottle pour), and that sandboxed step re-checks trust against a real persisted trust record — so naming the formula on the CLI alone is refused on Homebrew 6.0+ (see [Tap-trust troubleshooting](#tap-trust-troubleshooting) for the load-gate vs. sandboxed-install-gate detail). shll can't trust its *own* formula before it exists, which is why this one-time bootstrap uses `brew trust` directly; from there `shll install` owns trust for the other six roster tools.
 
-`shll` is also pulled in transitively by the `all` meta-formula, which installs every roster tool at once (trust it the same way first):
-
-```sh
-brew trust --formula sahil87/tap/all && brew install sahil87/tap/all
-```
-
-Use the single formula when you want just `shll` and intend to bootstrap the rest with `shll install`; use `all` when you want the whole toolkit in one shot.
-
 ## `shll install` — bootstrap the missing roster tools
 
 ```sh

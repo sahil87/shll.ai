@@ -4,16 +4,18 @@
 is `git`. Pick the install path that fits your setup, then wire up the shell
 wrapper so the "Open here" menu option can actually `cd` your shell.
 
-## Homebrew (preferred)
+## Via shll.ai (preferred)
 
 ```bash
-brew install sahil87/tap/wt
+curl -fsSL https://shll.ai/install | sh -s -- wt
 ```
 
-This pulls the latest release from the
-[`sahil87/homebrew-tap`](https://github.com/sahil87/homebrew-tap) formula. To
-upgrade later, `wt update` self-updates via Homebrew (see the
-[workflows reference](./workflows.md#wt-update)).
+Installs wt (plus the shll meta-CLI) via Homebrew, handling tap trust
+automatically. To install the entire [shll toolkit](https://shll.ai) instead,
+drop the `-s -- wt` suffix; if you already have the `shll` meta-CLI,
+`shll install wt` does the same thing. For the full install story, see
+[https://shll.ai](https://shll.ai). To upgrade later, `wt update` self-updates
+via Homebrew (see the [workflows reference](./workflows.md#wt-update)).
 
 ## Manual (requires Go and `just`)
 
@@ -33,17 +35,18 @@ to reinstall via `brew` rather than attempting a self-update.
 
 A child process can't change its parent shell's directory — that's a Unix
 constraint, not a `wt` limitation. To make `wt open`'s "Open here" menu option
-`cd` your current shell, add the wrapper to your shell profile
-(`~/.bashrc` or `~/.zshrc`):
+`cd` your current shell, add the wrapper to your shell profile:
 
 ```bash
-eval "$(wt shell-init)"
+eval "$(wt shell-init zsh)"     # in ~/.zshrc
+eval "$(wt shell-init bash)"    # in ~/.bashrc
 ```
 
-`wt shell-init` prints a bash/zsh wrapper function that reads `WT_CD_FILE` after
-each `wt` invocation and runs `cd` in the parent shell when that file is
-non-empty. Without it, "Open here" falls back to printing a `cd -- '<path>'`
-line you can copy. See the [gotchas](./workflows.md#gotchas) for the full story.
+`wt shell-init <shell>` prints a wrapper function for the named shell (`zsh` or
+`bash`) that reads `WT_CD_FILE` after each `wt` invocation and runs `cd` in the
+parent shell when that file is non-empty. Without it, "Open here" falls back to
+printing a `cd -- '<path>'` line you can copy. See the
+[gotchas](./workflows.md#gotchas) for the full story.
 
 ## Already use other shll tools?
 
