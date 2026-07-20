@@ -1,0 +1,50 @@
+id: h0q6
+name: 260720-h0q6-fix-doubled-h1-docs-site
+created: 2026-07-20T16:04:43Z
+created_by: Sahil Ahuja
+change_type: fix
+issues: []
+progress:
+    intake: done
+    apply: done
+    review: done
+    hydrate: done
+    ship: active
+    review-pr: pending
+plan:
+    generated: true
+    task_count: 4
+    acceptance_count: 11
+    acceptance_completed: 11
+confidence:
+    certain: 6
+    confident: 2
+    tentative: 0
+    unresolved: 0
+    score: 4.8
+    fuzzy: true
+    dimensions:
+        signal: 73.8
+        reversibility: 91.9
+        competence: 86.3
+        disambiguation: 77.5
+stage_metrics:
+    intake: {started_at: "2026-07-20T16:04:43Z", driver: fab-new, iterations: 1, completed_at: "2026-07-20T16:09:44Z"}
+    apply: {started_at: "2026-07-20T16:09:44Z", driver: fab-fff, iterations: 1, completed_at: "2026-07-20T16:15:27Z"}
+    review: {started_at: "2026-07-20T16:15:27Z", driver: fab-fff, iterations: 1, completed_at: "2026-07-20T16:23:58Z"}
+    hydrate: {started_at: "2026-07-20T16:23:58Z", driver: fab-fff, iterations: 1, completed_at: "2026-07-20T16:27:51Z"}
+    ship: {started_at: "2026-07-20T16:27:51Z", driver: fab-fff, iterations: 1}
+prs: []
+true_impact:
+    added: 0
+    deleted: 0
+    net: 0
+    excluding:
+        added: 0
+        deleted: 0
+        net: 0
+    computed_at: "2026-07-20T16:27:51Z"
+    computed_at_stage: hydrate
+summary: Record the render-side first-H1 strip (stripFirstH1, ATX_H1_LINE shared with firstH1) alongside the render-side link-resolution facts in conventions/docs-site-tree
+# true_impact: lazily created on first stage-finish that computes it (no placeholder here).
+last_updated: 2026-07-20T16:27:51Z

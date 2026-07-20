@@ -43,7 +43,7 @@ import { createMarkdownProcessor } from '@astrojs/markdown-remark';
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 import { repoRootFromModuleUrl } from '../../lib/repo-root.ts';
 import { rewriteDocsSiteLinks } from '../../lib/extract-readme.ts';
-import { collectDocsSitePages } from '../../lib/docs-site-tree.ts';
+import { collectDocsSitePages, stripFirstH1 } from '../../lib/docs-site-tree.ts';
 
 export async function getStaticPaths() {
   const repoRoot = repoRootFromModuleUrl(import.meta.url);
@@ -86,16 +86,25 @@ let html: string;
 // so anchors match by construction (same source readme-toc.ts taps).
 let headings: MarkdownHeading[];
 try {
-  // R5: rewrite relative link/image targets to a SITE-ABSOLUTE path
-  // `/<slug>/<resolved>` BEFORE render. Site-absolute (not a relative
-  // `.md`-strip) because pages are served as trailing-slash directories, so a
-  // relative target on this page (`/<slug>/<mountPath>/`) would resolve one
-  // segment too deep. The target is resolved against THIS page's directory within
-  // the docs/site tree (mountPath), so `../install.md` and `./sibling.md` land on
-  // the correct sibling pages. The slice on disk stays a verbatim copy of the
-  // canonical source; the rewrite is render-side.
+  // Two composed render-side transforms; the slice on disk stays a verbatim copy
+  // of the canonical source (§9 verbatim-commit contract) — both edits are
+  // render-side only, applied to `raw` before render:
+  //   1. stripFirstH1: drop the leading `# Title` line the page's title was
+  //      derived from, so it is not rendered TWICE — Starlight already renders it
+  //      as the page H1 from `frontmatter={{ title }}`. A no-op for a page with no
+  //      H1 (whose title fell back to the titleized path tail), so no extra flag
+  //      is threaded through getStaticPaths. Known accepted side effect: the h1
+  //      drops out of `rendered.metadata.headings` — harmless, Starlight's
+  //      right-rail "On this page" TOC starts at h2.
+  //   2. rewriteDocsSiteLinks (R5): rewrite relative link/image targets to a
+  //      SITE-ABSOLUTE path `/<slug>/<resolved>`. Site-absolute (not a relative
+  //      `.md`-strip) because pages are served as trailing-slash directories, so
+  //      a relative target on this page (`/<slug>/<mountPath>/`) would resolve one
+  //      segment too deep. The target is resolved against THIS page's directory
+  //      within the docs/site tree (mountPath), so `../install.md` and
+  //      `./sibling.md` land on the correct sibling pages.
   const rendered = await processor.render(
-    rewriteDocsSiteLinks(raw, slug, mountPath),
+    rewriteDocsSiteLinks(stripFirstH1(raw), slug, mountPath),
   );
   html = rendered.code;
   headings = rendered.metadata.headings;
