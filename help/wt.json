@@ -1,17 +1,20 @@
 {
   "tool": "wt",
-  "version": "v0.1.3",
-  "captured_at": "2026-07-19T09:15:31Z",
+  "version": "v0.1.4",
+  "captured_at": "2026-07-20T10:20:20Z",
   "schema_version": 1,
   "root": {
     "name": "wt",
     "path": "wt",
     "short": "Git worktree management — create, list, open, delete worktrees",
     "usage": "wt [flags]",
-    "text": "Git worktree management — create, list, open, delete worktrees.\n\nShell wrapper (recommended):\n  To enable the \"Open here\" menu option (cd into a worktree in the current\n  shell), add this to your shell profile (~/.bashrc or ~/.zshrc):\n\n    eval \"$(wt shell-init)\"\n\nUsage:\n  wt [command]\n\nAvailable Commands:\n  create      Create a git worktree\n  delete      Delete a git worktree\n  go          Select a worktree of the current repo and navigate there\n  init        Run the init script in the current worktree\n  list        List all git worktrees\n  open        Open a directory or worktree in an application\n  shell-init  Output shell wrapper function for eval\n  skill       Print the agent usage bundle (static markdown)\n  update      Self-update the wt binary via Homebrew\n\nFlags:\n  -h, --help      help for wt\n  -v, --version   version for wt\n\nUse \"wt [command] --help\" for more information about a command.",
+    "text": "Git worktree management — create, list, open, delete worktrees.\n\nShell wrapper (recommended):\n  To enable the \"Open here\" menu option (cd into a worktree in the current\n  shell), add this to your shell profile:\n\n    eval \"$(wt shell-init zsh)\"     # in ~/.zshrc\n    eval \"$(wt shell-init bash)\"    # in ~/.bashrc\n\nUsage:\n  wt [command]\n\nAvailable Commands:\n  create      Create a git worktree\n  delete      Delete a git worktree\n  go          Select a worktree of the current repo and navigate there\n  init        Run the init script in the current worktree\n  list        List all git worktrees\n  open        Open a directory or worktree in an application\n  shell-init  Output shell wrapper function for eval\n  skill       Print the agent usage bundle (static markdown)\n  update      Self-update the wt binary via Homebrew\n\nFlags:\n  -h, --help      help for wt\n  -v, --version   version for wt\n\nUse \"wt [command] --help\" for more information about a command.",
     "commands": [
       {
         "name": "create",
+        "aliases": [
+          "new"
+        ],
         "path": "wt create",
         "short": "Create a git worktree",
         "usage": "wt create [branch] [flags]",
@@ -20,6 +23,9 @@
       },
       {
         "name": "delete",
+        "aliases": [
+          "rm"
+        ],
         "path": "wt delete",
         "short": "Delete a git worktree",
         "usage": "wt delete [worktree-names...] [flags]",
@@ -31,7 +37,7 @@
         "path": "wt go",
         "short": "Select a worktree of the current repo and navigate there",
         "usage": "wt go [name] [flags]",
-        "text": "Select a worktree of the current repository and navigate there.\n\nUnlike \"wt open\", \"wt go\" does not launch any application — it only changes the\nshell's working directory to the selected worktree (open=launcher, go=selector).\n\nWhen called without arguments, shows a worktree-selection menu for the current\nrepo (newest-first, branch shown per entry). The menu is reachable from anywhere\nin the repository — the main repo or inside another worktree.\n\nWhen called with a name, resolves it as a worktree (case-insensitive) and\nnavigates there directly, with no menu.\n\nNavigation reuses the same shell-cd plumbing as the \"Open here\" launcher option:\nthe resolved absolute path is written to WT_CD_FILE (when set) and also printed\nto stdout as the last line, so both the shell wrapper (eval \"$(wt shell-init)\")\nand the scripting form (cd \"$(command wt go some-name)\") work.\n\nRequires a git repository — worktree resolution walks the repo's worktree list.\n\nUsage:\n  wt go [name] [flags]\n\nFlags:\n  -h, --help              help for go\n      --non-interactive   No prompts; require a worktree name",
+        "text": "Select a worktree of the current repository and navigate there.\n\nUnlike \"wt open\", \"wt go\" does not launch any application — it only changes the\nshell's working directory to the selected worktree (open=launcher, go=selector).\n\nWhen called without arguments, shows a worktree-selection menu for the current\nrepo (newest-first, branch shown per entry). The menu is reachable from anywhere\nin the repository — the main repo or inside another worktree.\n\nWhen called with a name, resolves it as a worktree (case-insensitive) and\nnavigates there directly, with no menu.\n\nNavigation reuses the same shell-cd plumbing as the \"Open here\" launcher option:\nthe resolved absolute path is written to WT_CD_FILE (when set) and also printed\nto stdout as the last line, so both the shell wrapper (eval \"$(wt shell-init zsh)\")\nand the scripting form (cd \"$(command wt go some-name)\") work.\n\nRequires a git repository — worktree resolution walks the repo's worktree list.\n\nUsage:\n  wt go [name] [flags]\n\nFlags:\n  -h, --help              help for go\n      --non-interactive   No prompts; require a worktree name",
         "commands": []
       },
       {
@@ -44,6 +50,9 @@
       },
       {
         "name": "list",
+        "aliases": [
+          "ls"
+        ],
         "path": "wt list",
         "short": "List all git worktrees",
         "usage": "wt list [flags]",
@@ -62,8 +71,8 @@
         "name": "shell-init",
         "path": "wt shell-init",
         "short": "Output shell wrapper function for eval",
-        "usage": "wt shell-init [shell] [flags]",
-        "text": "Output a shell wrapper function suitable for eval in your shell profile.\n\nUsage:\n  eval \"$(wt shell-init)\"        # infer shell from $SHELL\n  eval \"$(wt shell-init zsh)\"    # explicit shell name\n\nAdd the above line to your ~/.bashrc or ~/.zshrc to enable the \"Open here\"\nmenu option, which changes the current shell's working directory to the\nselected worktree.\n\nUsage:\n  wt shell-init [shell] [flags]\n\nFlags:\n  -h, --help   help for shell-init",
+        "usage": "wt shell-init <shell> [flags]",
+        "text": "Output a shell wrapper function suitable for eval in your shell profile.\n\nUsage:\n  eval \"$(wt shell-init zsh)\"     # in ~/.zshrc\n  eval \"$(wt shell-init bash)\"    # in ~/.bashrc\n\nAdd the matching line to your shell profile to enable the \"Open here\"\nmenu option, which changes the current shell's working directory to the\nselected worktree.\n\nThe shell argument is required (zsh or bash). Everything on stdout is\neval-safe shell source; a missing or unsupported shell is a usage error\n(exit 2, message on stderr, nothing on stdout).\n\nUsage:\n  wt shell-init <shell> [flags]\n\nFlags:\n  -h, --help   help for shell-init",
         "commands": []
       },
       {
@@ -79,7 +88,7 @@
         "path": "wt update",
         "short": "Self-update the wt binary via Homebrew",
         "usage": "wt update [flags]",
-        "text": "Self-update the wt binary via Homebrew\n\nUsage:\n  wt update [flags]\n\nFlags:\n  -h, --help                         help for update\n      --no-brew-update brew update   skip the internal brew update tap-metadata refresh (version check and upgrade still run)",
+        "text": "Self-update the wt binary via Homebrew\n\nUsage:\n  wt update [flags]\n\nFlags:\n  -h, --help                           help for update\n      --no-brew-update                 alias for --skip-brew-update\n      --skip-brew-update brew update   skip the internal brew update tap-metadata refresh (toolkit contract flag; version check and upgrade still run)",
         "commands": []
       }
     ]
