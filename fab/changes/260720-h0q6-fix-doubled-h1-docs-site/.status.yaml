@@ -9,8 +9,8 @@ progress:
     apply: done
     review: done
     hydrate: done
-    ship: active
-    review-pr: pending
+    ship: done
+    review-pr: active
 plan:
     generated: true
     task_count: 4
@@ -33,18 +33,20 @@ stage_metrics:
     apply: {started_at: "2026-07-20T16:09:44Z", driver: fab-fff, iterations: 1, completed_at: "2026-07-20T16:15:27Z"}
     review: {started_at: "2026-07-20T16:15:27Z", driver: fab-fff, iterations: 1, completed_at: "2026-07-20T16:23:58Z"}
     hydrate: {started_at: "2026-07-20T16:23:58Z", driver: fab-fff, iterations: 1, completed_at: "2026-07-20T16:27:51Z"}
-    ship: {started_at: "2026-07-20T16:27:51Z", driver: fab-fff, iterations: 1}
-prs: []
+    ship: {started_at: "2026-07-20T16:27:51Z", driver: fab-fff, iterations: 1, completed_at: "2026-07-20T16:29:15Z"}
+    review-pr: {started_at: "2026-07-20T16:29:15Z", driver: git-pr, iterations: 1}
+prs:
+    - https://github.com/sahil87/shll.ai/pull/101
 true_impact:
-    added: 0
-    deleted: 0
-    net: 0
+    added: 441
+    deleted: 15
+    net: 426
     excluding:
-        added: 0
-        deleted: 0
-        net: 0
-    computed_at: "2026-07-20T16:27:51Z"
-    computed_at_stage: hydrate
+        added: 129
+        deleted: 11
+        net: 118
+    computed_at: "2026-07-20T16:29:15Z"
+    computed_at_stage: ship
 summary: Record the render-side first-H1 strip (stripFirstH1, ATX_H1_LINE shared with firstH1) alongside the render-side link-resolution facts in conventions/docs-site-tree
 # true_impact: lazily created on first stage-finish that computes it (no placeholder here).
-last_updated: 2026-07-20T16:27:51Z
+last_updated: 2026-07-20T16:29:15Z
