@@ -51,7 +51,7 @@ test('does NOT strip an H2-only document', () => {
   assert.equal(stripFirstH1(md), md);
 });
 
-test('does NOT treat a fenced-code `#` comment line ... only real ATX H1 matches firstH1', () => {
+test('does NOT strip a non-H1 heading (an H3 is left untouched)', () => {
   // firstH1's matcher requires `# ` at line start; an h2/h3 never matches.
   const md = '### Deep heading\n\ntext\n';
   assert.equal(stripFirstH1(md), md);
