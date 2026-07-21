@@ -415,7 +415,13 @@ verifier (§7 command/flag cross-check, a report-only reporter — not Zod-schem
   `ReadmeSlice.astro`, applies the §link-resolution site-absolute transform (passing the page's slug +
   mount path so relative targets resolve to `/<slug>/<resolved>`), and is wrapped in
   Starlight's `<StarlightPage>` so it inherits the sidebar, prose styles, and dark-mode parity
-  (Constitution I/V/VI: build-time, no client JS, no new dependency). This is the FIRST dynamic route
+  (Constitution I/V/VI: build-time, no client JS, no new dependency). **First-H1 strip (change
+  `h0q6`):** before render the route strips the page's leading ATX H1 (via `stripFirstH1`, colocated
+  with title derivation in `docs-site-tree.ts`) — the same line the title was derived from and which
+  `<StarlightPage frontmatter={{ title }}>` already renders as the page H1 — so the heading is not
+  rendered twice; it is a no-op for a page with no H1 (whose title fell back to the titleized path
+  tail). The committed page stays byte-verbatim; the strip is render-side only, exactly like the
+  §link-resolution rewrite. This is the FIRST dynamic route
   in the codebase (all other pages are static MDX stubs) — accepted, as it is the only approach that
   renders a variable, author-controlled page set with no per-page maintenance. **Reserved-slug
   precedence:** a `docs/site/` page MUST NOT be named after a tool's reserved static slug

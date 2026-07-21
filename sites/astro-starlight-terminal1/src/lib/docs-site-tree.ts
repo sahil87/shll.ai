@@ -52,13 +52,43 @@ function walkMarkdown(dir: string, prefix = ''): string[] {
   return out;
 }
 
+/** Matches a single ATX H1 line (`# Title`), capturing its text in group 1.
+ *  Single source of the H1-line shape shared by `firstH1` (title derivation) and
+ *  `stripFirstH1` (render-side de-duplication) so the derived title and the
+ *  stripped line can never diverge. */
+const ATX_H1_LINE = /^#\s+(.+?)\s*#*\s*$/;
+
 /** The first markdown ATX H1 (`# Title`) text, or null if none. */
 function firstH1(markdown: string): string | null {
   for (const line of markdown.split('\n')) {
-    const m = /^#\s+(.+?)\s*#*\s*$/.exec(line);
+    const m = ATX_H1_LINE.exec(line);
     if (m) return m[1].trim();
   }
   return null;
+}
+
+/**
+ * Remove the first ATX H1 line — the exact line `firstH1` derives the title from —
+ * from `markdown`, collapsing a single blank line immediately following it so the
+ * rendered body has no leading gap. Returns the markdown UNCHANGED when no ATX H1
+ * is present (the "title fell back to the titleized path tail — strip nothing"
+ * case, so the strip is inherently conditional on a title having been derived from
+ * an H1). Dependency-free plain string processing.
+ *
+ * Applied render-side by the docs/site dynamic route (`[slug]/[...path].astro`)
+ * to de-duplicate the heading that Starlight already renders as the page title
+ * from the same H1; the committed on-disk page stays byte-verbatim.
+ */
+export function stripFirstH1(markdown: string): string {
+  const lines = markdown.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    if (!ATX_H1_LINE.test(lines[i])) continue;
+    // Drop the H1 line, plus one immediately-following blank line if present.
+    const drop = lines[i + 1] !== undefined && lines[i + 1].trim() === '' ? 2 : 1;
+    lines.splice(i, drop);
+    return lines.join('\n');
+  }
+  return markdown;
 }
 
 /** Titleize a path tail (`advanced/hooks` → `Hooks`) as a fallback title. */

@@ -1,0 +1,16 @@
+{"action":"enter","driver":"fab-new","event":"stage-transition","stage":"intake","ts":"2026-07-20T16:04:43Z"}
+{"args":"Fix doubled H1 heading on all pulled docs/site tree pages: render-side strip of the first H1 in [slug]/[...path].astro before processor.render(), only when the page title was derived from that H1; on-disk pages stay byte-verbatim. Plus spec note in readme-extraction-contract §9 and memory hydrate (conventions/docs-site-tree).","cmd":"fab-new","event":"command","ts":"2026-07-20T16:04:43Z"}
+{"delta":"+0.0","event":"confidence","score":4.8,"trigger":"calc-score","ts":"2026-07-20T16:06:09Z"}
+{"delta":"+0.0","event":"confidence","score":4.8,"trigger":"calc-score","ts":"2026-07-20T16:06:39Z"}
+{"cmd":"fab-switch","event":"command","ts":"2026-07-20T16:07:31Z"}
+{"cmd":"fab-fff","event":"command","ts":"2026-07-20T16:09:27Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"apply","ts":"2026-07-20T16:09:44Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-07-20T16:10:11Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"review","ts":"2026-07-20T16:15:27Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-07-20T16:15:52Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"hydrate","ts":"2026-07-20T16:23:58Z"}
+{"event":"review","result":"passed","ts":"2026-07-20T16:23:58Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-07-20T16:24:18Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"ship","ts":"2026-07-20T16:27:51Z"}
+{"action":"enter","driver":"git-pr","event":"stage-transition","stage":"review-pr","ts":"2026-07-20T16:29:15Z"}
+{"event":"review","result":"passed","ts":"2026-07-20T16:34:46Z"}
