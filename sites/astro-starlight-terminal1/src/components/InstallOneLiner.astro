@@ -2,14 +2,19 @@
 /**
  * InstallOneLiner — the per-tool one-step install one-liner for tool overviews.
  *
- * Renders the toolkit's real one-step installer scoped to a single tool as an
- * Expressive Code terminal block:
+ * Renders the toolkit's real one-step installer as an Expressive Code terminal
+ * block. Most tools get the installer scoped to that single tool:
  *
  *     curl -fsSL https://shll.ai/install | sh -s -- <tool>
  *
+ * while `shll` and the FULL_TOOLKIT tools (see below) render the whole-toolkit
+ * form instead (no `sh -s --` suffix):
+ *
+ *     curl -fsSL https://shll.ai/install | sh
+ *
  * plus one short site-authored sentence pointing at the whole-toolkit story.
  * The `shll.ai/install` script (PR #84) accepts a tool subset via `sh -s --`,
- * so this line is accurate and copy-pasteable per tool.
+ * so the scoped line is accurate and copy-pasteable per tool.
  *
  * COPY BUTTON PARITY: the block is rendered via Starlight's re-exported
  * Expressive Code `<Code>` component — the same engine behind every fenced
@@ -29,6 +34,18 @@
  * install and help/shll.json). For `tool === 'shll'` we render the whole-toolkit
  * one-liner `curl -fsSL https://shll.ai/install | sh` (no `sh -s -- shll`),
  * which is exactly the bootstrap the homepage/install page document.
+ *
+ * FULL-TOOLKIT TOOLS: some tools' canonical READMEs (the constitution's source
+ * of truth — Tool-Page Depth) document the WHOLE-toolkit one-liner as the
+ * supported install path, because the tool relies on its sibling tools and
+ * `sh -s -- <tool>` — while still functional — would yield a degraded setup.
+ * The FULL_TOOLKIT map below carries those slugs with their per-tool reason;
+ * each renders the whole-toolkit one-liner plus a note mirroring the canonical
+ * README wording. Unlike `shll`, these tools do NOT get the follow-on steps
+ * block — the overview install section stays light and the note's link carries
+ * the visitor to the full guide. The sibling dependency is a property of the
+ * tool, not of the page that renders it, which is why the branch lives here
+ * (next to the shll carve-out) and not as a page-authored prop.
  *
  * SINGLE SOURCE: this component is the sole carrier of the per-tool one-liner.
  * It deliberately does NOT add seven hand-copied install blocks. The two
@@ -55,7 +72,7 @@ import { Code } from '@astrojs/starlight/components';
 import { isToolSlug } from '../lib/tool-slugs.ts';
 
 interface Props {
-  /** Tool slug — the install subset passed to `sh -s -- <tool>`. */
+  /** Tool slug — selects the install form (whole-toolkit for shll/full-toolkit tools, else the `sh -s -- <tool>` subset). */
   tool: string;
 }
 
@@ -81,11 +98,25 @@ if (!isToolSlug(tool)) {
 // `sh -s -- shll` would hard-error. Render the whole-toolkit bootstrap instead.
 const isShll = tool === 'shll';
 
+// Tools whose canonical README documents the WHOLE-toolkit install as the
+// supported path — each relies on sibling tools, so `sh -s -- <tool>` would
+// yield a degraded setup. Values are the per-tool reason clause, rendered in
+// the note's shared sentence frame below; wording mirrors the canonical
+// READMEs (the constitution's source of truth for tool docs).
+const FULL_TOOLKIT: Record<string, string> = {
+  'fab-kit': 'relies on its sibling tools (wt for worktrees, idea for the backlog)',
+  'run-kit': 'relies on its sibling tools (wt for the riff worktree flow)',
+};
+const fullToolkitReason = FULL_TOOLKIT[tool];
+
 // The one-liner is built here (not in markdown) so the `--` and the URL
-// never pass through any markdown/remark transform.
-const oneLiner = isShll
-  ? `curl -fsSL https://shll.ai/install | sh`
-  : `curl -fsSL https://shll.ai/install | sh -s -- ${tool}`;
+// never pass through any markdown/remark transform. The whole-toolkit form is
+// single-sourced: the subset form appends `sh`'s args to the same base string.
+const WHOLE_TOOLKIT_ONE_LINER = 'curl -fsSL https://shll.ai/install | sh';
+const oneLiner =
+  isShll || fullToolkitReason
+    ? WHOLE_TOOLKIT_ONE_LINER
+    : `${WHOLE_TOOLKIT_ONE_LINER} -s -- ${tool}`;
 
 // Whole-toolkit follow-on steps (isShll only). Most visitors copy the homepage
 // one-liner and assume they're done — surfacing the post-install steps right
@@ -109,6 +140,13 @@ const followOn = [
           href="/getting-started/install/">full install guide</a>.
       </p>
     </>
+  ) : fullToolkitReason ? (
+    <p class="install-one-liner-note">
+      Installs the entire <code>shll</code> toolkit via Homebrew —
+      <code>{tool}</code> {fullToolkitReason}, so the full-toolkit install is
+      the supported path. See the <a href="/getting-started/install/">full
+      install guide</a>.
+    </p>
   ) : (
     <p class="install-one-liner-note">
       Installs <code>shll</code> + <code>{tool}</code> via Homebrew — or <a
