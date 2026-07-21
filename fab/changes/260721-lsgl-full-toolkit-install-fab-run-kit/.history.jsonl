@@ -1,0 +1,15 @@
+{"action":"enter","driver":"fab-new","event":"stage-transition","stage":"intake","ts":"2026-07-21T18:49:03Z"}
+{"args":"Update InstallOneLiner.astro so fab-kit and run-kit overviews render the whole-toolkit install one-liner (curl -fsSL https://shll.ai/install | sh) per their canonical READMEs' changed stance (sibling-tool dependency), instead of the stale per-tool subset form; component-internal full-toolkit map alongside the shll carve-out, note mirroring README wording, no shll follow-on block; update component doc-comment and tool-page-rubric memory at hydrate.","cmd":"fab-new","event":"command","ts":"2026-07-21T18:49:03Z"}
+{"delta":"+5.0","event":"confidence","score":5,"trigger":"calc-score","ts":"2026-07-21T18:50:57Z"}
+{"delta":"+0.0","event":"confidence","score":5,"trigger":"calc-score","ts":"2026-07-21T18:51:19Z"}
+{"delta":"+0.0","event":"confidence","score":5,"trigger":"calc-score","ts":"2026-07-21T18:51:36Z"}
+{"cmd":"fab-switch","event":"command","ts":"2026-07-21T18:52:38Z"}
+{"cmd":"fab-fff","event":"command","ts":"2026-07-21T18:53:48Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"apply","ts":"2026-07-21T18:54:01Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-07-21T18:54:30Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"review","ts":"2026-07-21T18:59:44Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"hydrate","ts":"2026-07-21T19:05:09Z"}
+{"event":"review","result":"passed","ts":"2026-07-21T19:05:09Z"}
+{"cmd":"fab-continue","event":"command","ts":"2026-07-21T19:05:43Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"ship","ts":"2026-07-21T19:07:40Z"}
+{"cmd":"git-pr","event":"command","ts":"2026-07-21T19:08:15Z"}
