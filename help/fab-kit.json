@@ -1,7 +1,7 @@
 {
   "tool": "fab",
-  "version": "2.16.0",
-  "captured_at": "2026-07-21T09:38:08Z",
+  "version": "2.16.8",
+  "captured_at": "2026-07-22T09:37:35Z",
   "schema_version": 1,
   "root": {
     "name": "fab",
@@ -284,7 +284,7 @@
         "path": "fab memory-index",
         "short": "Deterministically (re)generate docs/memory index files",
         "usage": "fab memory-index [flags]",
-        "text": "Usage:\n  fab memory-index [flags]\n\nFlags:\n      --check            Write nothing; encode index-drift severity in the exit code (0 clean / 1 benign drift / 2 destructive loss). Malformed frontmatter floors the exit at 1 independent of drift\n      --json malformed   With --check, emit the loss report as JSON on stdout (suppresses human-readable text); includes an additive malformed array\n      --rebuild          DESTRUCTIVE: discard the frozen log.md state and re-project every log.md from current git (the pre-freeze behavior, opt-in). Ignored with --check (which never writes)\n",
+        "text": "Usage:\n  fab memory-index [flags]\n\nFlags:\n      --check description:   Write nothing; encode index-drift severity in the exit code (0 clean / 1 benign drift / 2 destructive loss). Blocking source findings (malformed frontmatter, a change-id in description:, or a `description:` over 1000 runes) floor the exit at 1 independent of drift\n      --json malformed       With --check, emit the loss report as JSON on stdout (suppresses human-readable text); includes an additive malformed array (blocking findings) and an additive `warnings` array carrying the advisory kinds — description-length (the 501–1000 nag), narration-density, file-size, unsorted-nonempty, broken-link\n      --rebuild              DESTRUCTIVE: discard the frozen log.md state and re-project every log.md from current git (the pre-freeze behavior, opt-in). Ignored with --check (which never writes)\n",
         "commands": []
       },
       {
