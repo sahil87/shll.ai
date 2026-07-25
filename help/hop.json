@@ -1,7 +1,7 @@
 {
   "tool": "hop",
-  "version": "v0.2.5",
-  "captured_at": "2026-07-24T09:32:06Z",
+  "version": "v0.2.6",
+  "captured_at": "2026-07-25T09:11:25Z",
   "schema_version": 1,
   "root": {
     "name": "hop",
