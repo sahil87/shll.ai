@@ -15,6 +15,15 @@ import InstallOneLiner from '../../../../components/InstallOneLiner.astro';
 
 <InstallOneLiner tool="hop" />
 
+Two more commands finish the setup — hop's headline job (cd-ing your shell) needs the shell shim, and its config is built from your existing clones:
+
+```sh
+shll shell-setup     # wire the shell shim, then open a fresh terminal
+hop add -r ~/code    # walk your code dir, build hop.yaml from git remotes
+```
+
+The **[install guide](/hop/install/)** walks through every step, from-source installs included.
+
 ## How it fits
 
 `hop` is the cross-cutting navigator: it gets you into any repo fast, where you can capture a backlog item with **[idea](/idea/)** or spin up an isolated **[wt](/wt/)** worktree to start a change. It's the layer above individual repos.
