@@ -1,14 +1,14 @@
 {
   "tool": "run-kit",
-  "version": "v3.12.1",
-  "captured_at": "2026-07-29T09:48:04Z",
+  "version": "v3.12.9",
+  "captured_at": "2026-07-31T09:51:34Z",
   "schema_version": 1,
   "root": {
     "name": "run-kit",
     "path": "run-kit",
     "short": "run-kit — tmux session manager with web UI",
     "usage": "run-kit [flags]",
-    "text": "Usage:\n  run-kit [flags]\n  run-kit [command]\n\nAvailable Commands:\n  agent-hook  Report an agent's lifecycle state to run-kit (invoked by installed hooks)\n  agent-setup Install agent-harness hooks that report agent state to run-kit\n  completion  Generate the autocompletion script for the specified shell\n  daemon      Manage the background run-kit daemon (tmux-managed run-kit serve)\n  doctor      Check runtime dependencies\n  help        Help about any command\n  init-conf   Scaffold default tmux.conf and tmux.d/ drop-in directory to ~/.rk/\n  notify      Send a Web Push notification to subscribed devices\n  reaper      Reap leaked test tmux servers and stale sockets by prefix\n  riff        Create a worktree, tmux window, and Claude Code session\n  serve       Start the HTTP server (foreground)\n  shell-init  emit shell integration (completion) for zsh or bash\n  skill       Print run-kit's agent skill bundle (static usage briefing)\n  status      Show tmux session summary\n  update      Update run-kit to the latest version\n  url         Print the run-kit server URL (config-derived)\n\nFlags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit [command] --help\" for more information about a command.\n",
+    "text": "Usage:\n  run-kit [flags]\n  run-kit [command]\n\nAvailable Commands:\n  agent-hook  Report an agent's lifecycle state to run-kit (invoked by installed hooks)\n  agent-setup Install agent-harness hooks that report agent state to run-kit\n  completion  Generate the autocompletion script for the specified shell\n  daemon      Manage the background run-kit daemon (tmux-managed run-kit serve)\n  desktop     Install and update the Run Kit desktop app (macOS)\n  doctor      Check runtime dependencies\n  help        Help about any command\n  init-conf   Scaffold default tmux.conf and tmux.d/ drop-in directory to ~/.rk/\n  notify      Send a Web Push notification to subscribed devices\n  reaper      Reap leaked test tmux servers and stale sockets by prefix\n  riff        Create a worktree, tmux window, and Claude Code session\n  serve       Start the HTTP server (foreground)\n  shell-init  emit shell integration (completion) for zsh or bash\n  skill       Print run-kit's agent skill bundle (static usage briefing)\n  status      Show tmux session summary\n  update      Update the run-kit CLI and desktop app to the latest version\n  url         Print the run-kit server URL (config-derived)\n\nFlags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit [command] --help\" for more information about a command.\n",
     "commands": [
       {
         "name": "agent-hook",
@@ -63,6 +63,39 @@
             "short": "Stop the run-kit daemon",
             "usage": "run-kit daemon stop [flags]",
             "text": "Usage:\n  run-kit daemon stop [flags]\n\nFlags:\n  -f, --force   SIGTERM any non-daemon port holder after stopping\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "commands": []
+          }
+        ]
+      },
+      {
+        "name": "desktop",
+        "path": "run-kit desktop",
+        "short": "Install and update the Run Kit desktop app (macOS)",
+        "usage": "run-kit desktop",
+        "text": "Usage:\n  run-kit desktop [command]\n\nAvailable Commands:\n  install     Download and install the Run Kit desktop app (quarantine-free)\n  status      Show installed vs latest Run Kit desktop app version (read-only)\n  update      Update the Run Kit desktop app when a newer release exists\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit desktop [command] --help\" for more information about a command.\n",
+        "commands": [
+          {
+            "name": "install",
+            "path": "run-kit desktop install",
+            "short": "Download and install the Run Kit desktop app (quarantine-free)",
+            "usage": "run-kit desktop install [flags]",
+            "text": "Usage:\n  run-kit desktop install [flags]\n\nFlags:\n      --force            reinstall even when the requested version is already installed\n      --path string      install directory (default \"/Applications\")\n      --version string   install a specific release tag instead of the latest (e.g. v3.13.0)\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "commands": []
+          },
+          {
+            "name": "status",
+            "path": "run-kit desktop status",
+            "short": "Show installed vs latest Run Kit desktop app version (read-only)",
+            "usage": "run-kit desktop status [flags]",
+            "text": "Usage:\n  run-kit desktop status [flags]\n\nFlags:\n      --path string   install directory (default \"/Applications\")\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "commands": []
+          },
+          {
+            "name": "update",
+            "path": "run-kit desktop update",
+            "short": "Update the Run Kit desktop app when a newer release exists",
+            "usage": "run-kit desktop update [flags]",
+            "text": "Usage:\n  run-kit desktop update [flags]\n\nFlags:\n      --force         reinstall even when already current\n      --path string   install directory (default \"/Applications\")\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
             "commands": []
           }
         ]
@@ -142,7 +175,7 @@
       {
         "name": "update",
         "path": "run-kit update",
-        "short": "Update run-kit to the latest version",
+        "short": "Update the run-kit CLI and desktop app to the latest version",
         "usage": "run-kit update [flags]",
         "text": "Usage:\n  run-kit update [flags]\n\nAliases:\n  update, upgrade\n\nFlags:\n      --skip-brew-update   Skip the internal 'brew update' tap-metadata refresh (still runs brew info/upgrade and restarts the daemon)\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
         "commands": []
