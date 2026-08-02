@@ -1,14 +1,14 @@
 {
   "tool": "run-kit",
-  "version": "v3.12.16",
-  "captured_at": "2026-08-01T09:19:06Z",
+  "version": "v3.12.21",
+  "captured_at": "2026-08-02T09:19:33Z",
   "schema_version": 1,
   "root": {
     "name": "run-kit",
     "path": "run-kit",
     "short": "run-kit — tmux session manager with web UI",
     "usage": "run-kit [flags]",
-    "text": "Usage:\n  run-kit [flags]\n  run-kit [command]\n\nAvailable Commands:\n  agent-hook  Report an agent's lifecycle state to run-kit (invoked by installed hooks)\n  agent-setup Install agent-harness hooks that report agent state to run-kit\n  completion  Generate the autocompletion script for the specified shell\n  daemon      Manage the background run-kit daemon (tmux-managed run-kit serve)\n  desktop     Install and update the Run Kit desktop app (macOS)\n  doctor      Check runtime dependencies\n  help        Help about any command\n  init-conf   Scaffold default tmux.conf and tmux.d/ drop-in directory to ~/.rk/\n  notify      Send a Web Push notification to subscribed devices\n  reaper      Reap leaked test tmux servers and stale sockets by prefix\n  riff        Create a worktree, tmux window, and Claude Code session\n  serve       Start the HTTP server (foreground)\n  shell-init  emit shell integration (completion) for zsh or bash\n  skill       Print run-kit's agent skill bundle (static usage briefing)\n  status      Show tmux session summary\n  update      Update the run-kit CLI and desktop app to the latest version\n  url         Print the run-kit server URL (config-derived)\n\nFlags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit [command] --help\" for more information about a command.\n",
+    "text": "Usage:\n  run-kit [flags]\n  run-kit [command]\n\nAvailable Commands:\n  agent-hook  Report an agent's lifecycle state to run-kit (invoked by installed hooks)\n  agent-setup Install agent-harness hooks that report agent state to run-kit\n  completion  Generate the autocompletion script for the specified shell\n  daemon      Manage the background run-kit daemon (tmux-managed run-kit serve)\n  desktop     Install and update the Run Kit desktop app (macOS)\n  doctor      Check runtime dependencies\n  help        Help about any command\n  init-conf   Scaffold default tmux.conf and tmux.d/ drop-in directory to ~/.rk/\n  notify      Send a Web Push notification to subscribed devices\n  reaper      Reap leaked test tmux servers and stale sockets by prefix\n  remote      Use SSH-only machines as run-kit hosts (bootstrap, tunnel, connect)\n  riff        Create a worktree, tmux window, and Claude Code session\n  serve       Start the HTTP server (foreground)\n  shell-init  emit shell integration (completion) for zsh or bash\n  skill       Print run-kit's agent skill bundle (static usage briefing)\n  status      Show tmux session summary\n  update      Update the run-kit CLI and desktop app to the latest version\n  url         Print the run-kit server URL (config-derived)\n\nFlags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit [command] --help\" for more information about a command.\n",
     "commands": [
       {
         "name": "agent-hook",
@@ -131,6 +131,63 @@
         "usage": "run-kit reaper [flags]",
         "text": "Usage:\n  run-kit reaper [flags]\n\nFlags:\n      --all             print the full list instead of the default 10-entry-per-list cap (display-only)\n      --dry-run         explicit alias for the default preview-only behavior\n      --force           act, and bypass the dangerous-prefix guard (empty or ≤3-char prefix)\n      --prefix string   socket-name prefix to match (bare reaper ≡ --prefix rk-test) (default \"rk-test\")\n      --yes             actually reap matched servers/sockets (default is dry-run preview)\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
         "commands": []
+      },
+      {
+        "name": "remote",
+        "path": "run-kit remote",
+        "short": "Use SSH-only machines as run-kit hosts (bootstrap, tunnel, connect)",
+        "usage": "run-kit remote",
+        "text": "Usage:\n  run-kit remote [command]\n\nAvailable Commands:\n  add         Register a remote and assign its stable local port\n  connect     Bootstrap if needed, start the remote daemon, open the tunnel\n  disconnect  Close the tunnel window (the remote daemon keeps running)\n  list        All remotes with derived tunnel + remote daemon state\n  remove      Disconnect and drop the registration (remote install untouched)\n  status      Single-remote detail, including version skew\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit remote [command] --help\" for more information about a command.\n",
+        "commands": [
+          {
+            "name": "add",
+            "path": "run-kit remote add",
+            "short": "Register a remote and assign its stable local port",
+            "usage": "run-kit remote add <target> [flags]",
+            "text": "Usage:\n  run-kit remote add <target> [flags]\n\nFlags:\n      --local-port int   local tunnel port from the reserved 3100-3199 range (default: lowest free)\n      --name string      remote name (default: derived from the target's host token)\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "commands": []
+          },
+          {
+            "name": "connect",
+            "path": "run-kit remote connect",
+            "short": "Bootstrap if needed, start the remote daemon, open the tunnel",
+            "usage": "run-kit remote connect <name|target>",
+            "text": "Usage:\n  run-kit remote connect <name|target> [flags]\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "commands": []
+          },
+          {
+            "name": "disconnect",
+            "path": "run-kit remote disconnect",
+            "short": "Close the tunnel window (the remote daemon keeps running)",
+            "usage": "run-kit remote disconnect <name>",
+            "text": "Usage:\n  run-kit remote disconnect <name> [flags]\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "commands": []
+          },
+          {
+            "name": "list",
+            "path": "run-kit remote list",
+            "short": "All remotes with derived tunnel + remote daemon state",
+            "usage": "run-kit remote list",
+            "text": "Usage:\n  run-kit remote list [flags]\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "commands": []
+          },
+          {
+            "name": "remove",
+            "path": "run-kit remote remove",
+            "short": "Disconnect and drop the registration (remote install untouched)",
+            "usage": "run-kit remote remove <name>",
+            "text": "Usage:\n  run-kit remote remove <name> [flags]\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "commands": []
+          },
+          {
+            "name": "status",
+            "path": "run-kit remote status",
+            "short": "Single-remote detail, including version skew",
+            "usage": "run-kit remote status <name>",
+            "text": "Usage:\n  run-kit remote status <name> [flags]\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "commands": []
+          }
+        ]
       },
       {
         "name": "riff",
