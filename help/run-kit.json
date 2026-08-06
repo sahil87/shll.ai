@@ -1,14 +1,14 @@
 {
   "tool": "run-kit",
-  "version": "v3.13.0",
-  "captured_at": "2026-08-05T09:47:24Z",
+  "version": "v3.14.1",
+  "captured_at": "2026-08-06T09:49:35Z",
   "schema_version": 1,
   "root": {
     "name": "run-kit",
     "path": "run-kit",
     "short": "run-kit — tmux session manager with web UI",
     "usage": "run-kit [flags]",
-    "text": "Usage:\n  run-kit [flags]\n  run-kit [command]\n\nAvailable Commands:\n  agent-hook  Report an agent's lifecycle state to run-kit (invoked by installed hooks)\n  agent-setup Install agent-harness hooks that report agent state to run-kit\n  completion  Generate the autocompletion script for the specified shell\n  daemon      Manage the background run-kit daemon (tmux-managed run-kit serve)\n  desktop     Install and update the Run Kit desktop app (macOS)\n  doctor      Check runtime dependencies\n  help        Help about any command\n  init-conf   Scaffold default tmux.conf and tmux.d/ drop-in directory to ~/.rk/\n  notify      Send a Web Push notification to subscribed devices\n  reaper      Reap leaked test tmux servers and stale sockets by prefix\n  remote      Use SSH-only machines as run-kit hosts (bootstrap, tunnel, connect)\n  riff        Create a worktree, tmux window, and Claude Code session\n  serve       Start the HTTP server (foreground)\n  shell-init  emit shell integration (completion) for zsh or bash\n  skill       Print run-kit's agent skill bundle (static usage briefing)\n  status      Show tmux session summary\n  update      Update the run-kit CLI and desktop app to the latest version\n  url         Print the run-kit server URL (config-derived)\n\nFlags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit [command] --help\" for more information about a command.\n",
+    "text": "Usage:\n  run-kit [flags]\n  run-kit [command]\n\nAvailable Commands:\n  agent-hook  Report an agent's lifecycle state to run-kit (invoked by installed hooks)\n  agent-setup Install agent-harness hooks that report agent state to run-kit\n  completion  Generate the autocompletion script for the specified shell\n  daemon      Manage the background run-kit daemon (tmux-managed run-kit serve)\n  desktop     Install and update the Run Kit desktop app (macOS)\n  doctor      Check runtime dependencies\n  help        Help about any command\n  init-conf   Scaffold default tmux.conf and tmux.d/ drop-in directory to ~/.rk/\n  notify      Send a Web Push notification to subscribed devices\n  reaper      Reap leaked test tmux servers and stale sockets by prefix\n  remote      Use SSH-only machines as run-kit hosts (bootstrap, tunnel, connect)\n  riff        Create a worktree, tmux window, and Claude Code session\n  serve       Start the HTTP server (foreground)\n  shell-init  emit shell integration (completion) for zsh or bash\n  skill       Print run-kit's agent skill bundle (static usage briefing)\n  snapshot    Inspect and restore tmux server layout snapshots\n  status      Show tmux session summary\n  tmux-guard  Front the real tmux binary, blocking bare kill-server\n  update      Update the run-kit CLI and desktop app to the latest version\n  url         Print the run-kit server URL (config-derived)\n\nFlags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit [command] --help\" for more information about a command.\n",
     "commands": [
       {
         "name": "agent-hook",
@@ -222,11 +222,52 @@
         "commands": []
       },
       {
+        "name": "snapshot",
+        "path": "run-kit snapshot",
+        "short": "Inspect and restore tmux server layout snapshots",
+        "usage": "run-kit snapshot",
+        "text": "Usage:\n  run-kit snapshot [command]\n\nAvailable Commands:\n  list        List available layout snapshots (live + died)\n  restore     Recreate a dead server's layout from its snapshot\n  show        Print a stored layout (sessions → windows → pane cwds) without acting\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit snapshot [command] --help\" for more information about a command.\n",
+        "commands": [
+          {
+            "name": "list",
+            "path": "run-kit snapshot list",
+            "short": "List available layout snapshots (live + died)",
+            "usage": "run-kit snapshot list [<server>] [flags]",
+            "text": "Usage:\n  run-kit snapshot list [<server>] [flags]\n\nFlags:\n      --all   print the full list instead of the default 10-row cap (display-only)\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "commands": []
+          },
+          {
+            "name": "restore",
+            "path": "run-kit snapshot restore",
+            "short": "Recreate a dead server's layout from its snapshot",
+            "usage": "run-kit snapshot restore <server> [flags]",
+            "text": "Usage:\n  run-kit snapshot restore <server> [flags]\n\nFlags:\n      --at int   restore a history/tombstone entry by its unix timestamp (default: latest)\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "commands": []
+          },
+          {
+            "name": "show",
+            "path": "run-kit snapshot show",
+            "short": "Print a stored layout (sessions → windows → pane cwds) without acting",
+            "usage": "run-kit snapshot show <server> [flags]",
+            "text": "Usage:\n  run-kit snapshot show <server> [flags]\n\nFlags:\n      --at int   select a history/tombstone entry by its unix timestamp (default: latest)\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "commands": []
+          }
+        ]
+      },
+      {
         "name": "status",
         "path": "run-kit status",
         "short": "Show tmux session summary",
         "usage": "run-kit status [flags]",
         "text": "Usage:\n  run-kit status [flags]\n\nFlags:\n      --json   Emit the session summary as JSON to stdout\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+        "commands": []
+      },
+      {
+        "name": "tmux-guard",
+        "path": "run-kit tmux-guard",
+        "short": "Front the real tmux binary, blocking bare kill-server",
+        "usage": "run-kit tmux-guard [tmux args...]",
+        "text": "Usage:\n  run-kit tmux-guard [tmux args...] [flags]\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
         "commands": []
       },
       {
