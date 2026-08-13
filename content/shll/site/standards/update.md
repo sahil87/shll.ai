@@ -6,7 +6,7 @@ This page is the **producer-facing standard**: what your tool's `update` must do
 
 Scope is the **six roster tools** — `wt`, `idea`, `tu`, `run-kit`, `hop`, `fab-kit`. `shll` itself is out of producer scope: inside the delegation loop it self-upgrades with a direct `brew upgrade sahil87/tap/shll` rather than calling an `update` subcommand on itself — shll is the *consumer* here, delegating to the tools below.
 
-This standard implements principle №7 of the [toolkit CLI principles](principles.md) (compose, don't reinvent — `shll update` delegates to your `update` instead of reaching into your keg), and its brew-handling clause serves principle №6 (stateless, therefore retry-safe — a corrupted mid-swap keg is the antithesis of retry-safe).
+This standard implements principle №7 of the [toolkit CLI principles](principles.md) (compose, don't reinvent — `shll update` delegates to your `update` instead of reaching into your keg), its brew-handling clause serves principle №6 (stateless, therefore retry-safe — a corrupted mid-swap keg is the antithesis of retry-safe), and its prompt-free clause tightens principle №1 (non-interactive by default) for this one subcommand.
 
 ## Invocation contract
 
@@ -14,6 +14,18 @@ This standard implements principle №7 of the [toolkit CLI principles](principl
 
 - **MUST expose an `update` subcommand** that upgrades the tool **in place** and runs the tool's own post-upgrade side effects (e.g. run-kit restarts its daemon). This is why `shll update` delegates to you instead of running `brew upgrade` directly — only your `update` knows what has to happen after the binary is swapped.
 - **MUST continue to work standalone.** `shll update` composes per-tool `update`; it never deprecates the direct invocation.
+
+## Prompt-free, unconditionally
+
+`shll update` delegates to each installed tool's `update` with **inherited stdio**, in the user's own terminal — so mid-compose, stdin typically *is* a TTY. That makes this clause deliberately **stricter than principle №1** of the [toolkit CLI principles](principles.md): №1's reconciliation blesses `Proceed? [y/N]` when a TTY is present (reference implementation: `shll uninstall`), but that reconciliation does not survive composition — a №1-conformant prompt stalls the delegation loop at tool *k* of 6. A watching user can answer it, but the composed run has silently acquired an interaction requirement it never advertised, and it blocks indefinitely whenever nobody is watching — a walked-away `shll update`, an agent-driven pane.
+
+So:
+
+- **MUST run to completion without any interactive prompt, in every environment — including when stdin is a TTY.** No confirmation question, no pager, no "press enter to continue".
+- **The obligation covers wrapped subprocesses too.** An `update` almost always wraps `brew` — the wrapped call MUST be invoked non-interactively; a prompt surfacing from a subprocess stalls the compose exactly like one from your own code.
+- **There is nothing to confirm.** An in-place upgrade is not a destructive write in the №5 sense — invoking `update` *is* the consent. A tool that wants a guard can offer `--dry-run`, never a prompt.
+
+**Failure mode.** An `update` that prompts only when a TTY is present is conformant to №1 and to every other rule on this page — yet it breaks the compose in both directions. On a real TTY with no human watching — an agent driving `shll update` in a tmux/run-kit pane — the prompt hangs invisibly until the harness times out. And when stdin is not a TTY, the tool refuses fast exactly as №1 requires — but `shll update`'s delegated argv is fixed (`<tool> update [--skip-brew-update]`; there is no way to thread `--yes` through), so the compose hard-fails with no recourse for the caller.
 
 ## Advertise and honor `--skip-brew-update`
 
@@ -60,6 +72,7 @@ The update path is where a tool's brew/formula identity is load-bearing, so the 
 Before shipping a change that touches `update`:
 
 - `<tool> update` exits `0` on success, **including when already up to date**; non-zero only on a genuine failure.
+- `<tool> update` runs to completion with **no interactive prompt in any environment, TTY included** — no code path reads stdin for a confirmation.
 - `<tool> update --help` output contains the literal substring `--skip-brew-update`, and passing the flag skips the tool's internal `brew update`.
 - No code path sends `SIGKILL` to `brew`, and no short hard timeout caps `brew upgrade` (any bound is generous and terminates via `SIGTERM` + grace).
 - If the tool self-updates via brew, it gates on a `/Cellar/`-resolved executable path and degrades with a clear message off-brew.

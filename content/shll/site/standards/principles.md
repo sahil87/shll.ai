@@ -6,7 +6,7 @@ Each principle is a testable contract: an **obligation** (MUST/SHOULD, in the [R
 
 The set builds on [anc.dev](https://anc.dev)'s eight principles for agent-native CLIs, adapted where the toolkit's experience disagreed — most notably the confirmation/automation reconciliation in №1 and №5, and idempotency in №6.
 
-Seven companion standards make these principles concrete for every tool repo. Three cover documentation and help: [help-dump](help-dump.md) (the machine-readable help contract), [readme-extraction](readme-extraction.md) (README and `docs/site/` structure), and [skill](skill.md) (the offline, embedded `<tool> skill` agent bundle). Four cover how `shll` composes the toolkit: [update](update.md) (the in-place upgrade contract, with the brew-handling safety rules), [version](version.md) (the `--version` shape shll probes), [shell-init](shell-init.md) (the eval-safe `shell-init` output shll concatenates), and [install-composition](install-composition.md) (no inter-tool formula dependencies, probed runtime siblings, install docs centralized on shll.ai).
+Seven companion standards make these principles concrete for every tool repo. Three cover documentation and help: [help-dump](help-dump.md) (the machine-readable help contract), [readme-extraction](readme-extraction.md) (README and `docs/site/` structure), and [skill](skill.md) (the offline, embedded `<tool> skill` agent bundle). Four cover how `shll` composes the toolkit: [update](update.md) (the in-place upgrade contract — prompt-free unconditionally, with the brew-handling safety rules), [version](version.md) (the `--version` shape shll probes), [shell-init](shell-init.md) (the eval-safe `shell-init` output shll concatenates), and [install-composition](install-composition.md) (no inter-tool formula dependencies, probed runtime siblings, install docs centralized on shll.ai).
 
 | # | Principle | Obligation |
 |---|-----------|------------|
@@ -30,7 +30,7 @@ The set is two-tiered. This page is the **foundation** — the principles every 
 | [help-dump](help-dump.md) | №3 | binary | The JSON command tree every tool emits from `help-dump` |
 | [readme-extraction](readme-extraction.md) | №10 | repo | README + `docs/site/` structure shll.ai pulls and renders |
 | [skill](skill.md) | №3, №10 | binary + repo | The offline, embedded `<tool> skill` agent usage bundle |
-| [update](update.md) | №7, №6 | binary | The in-place `update` upgrade contract, `--skip-brew-update` probe, and brew-handling safety rules |
+| [update](update.md) | №7, №6, №1 | binary | The in-place `update` upgrade contract — prompt-free unconditionally (tightening №1 for this subcommand), the `--skip-brew-update` probe, and brew-handling safety rules |
 | [version](version.md) | №4, №2 | binary | The `--version` shape shll probes — 2s budget, first-line token, name-equals-tool install probe |
 | [shell-init](shell-init.md) | №2, №4 | binary | The eval-safe `shell-init` output shll concatenates into every shell |
 | [install-composition](install-composition.md) | №7, №8 | binary + repo | No sibling `depends_on` between toolkit formulas; probed runtime siblings with install hints; install docs centralized on shll.ai |
