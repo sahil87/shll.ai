@@ -1,14 +1,14 @@
 {
   "tool": "run-kit",
-  "version": "v3.15.1",
-  "captured_at": "2026-08-11T08:14:36Z",
+  "version": "v3.16.17",
+  "captured_at": "2026-08-14T08:36:29Z",
   "schema_version": 1,
   "root": {
     "name": "run-kit",
     "path": "run-kit",
     "short": "run-kit — tmux session manager with web UI",
     "usage": "run-kit [flags]",
-    "text": "Usage:\n  run-kit [flags]\n  run-kit [command]\n\nAvailable Commands:\n  agent-hook  Report an agent's lifecycle state to run-kit (invoked by installed hooks)\n  agent-setup Install agent-harness hooks that report agent state to run-kit\n  completion  Generate the autocompletion script for the specified shell\n  daemon      Manage the background run-kit daemon (tmux-managed run-kit serve)\n  desktop     Install and update the Run Kit desktop app (macOS)\n  doctor      Check runtime dependencies\n  help        Help about any command\n  init-conf   Scaffold default tmux.conf and tmux.d/ drop-in directory to ~/.rk/\n  notify      Send a Web Push notification to subscribed devices\n  reaper      Reap leaked test tmux servers and stale sockets by prefix\n  remote      Use SSH-only machines as run-kit hosts (bootstrap, tunnel, connect)\n  riff        Create a worktree, tmux window, and Claude Code session\n  serve       Start the HTTP server (foreground)\n  shell-init  emit shell integration (completion) for zsh or bash\n  skill       Print run-kit's agent skill bundle (static usage briefing)\n  snapshot    Inspect and restore tmux server layout snapshots\n  status      Show tmux session summary\n  tmux-guard  Front the real tmux binary, blocking bare kill-server\n  update      Update the run-kit CLI and desktop app to the latest version\n  url         Print the run-kit server URL (config-derived)\n\nFlags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit [command] --help\" for more information about a command.\n",
+    "text": "Usage:\n  run-kit [flags]\n  run-kit [command]\n\nAvailable Commands:\n  agent-hook  Report an agent's lifecycle state to run-kit (invoked by installed hooks)\n  agent-setup Install agent-harness hooks that report agent state to run-kit\n  code-server Manage the rk-owned code-server install (the /code lens editor)\n  completion  Generate the autocompletion script for the specified shell\n  daemon      Manage the background run-kit daemon (tmux-managed run-kit serve)\n  desktop     Install and update the Run Kit desktop app (macOS)\n  doctor      Check runtime dependencies\n  help        Help about any command\n  init-conf   Scaffold default tmux.conf and tmux.d/ drop-in directory to ~/.rk/\n  notify      Send a Web Push notification to subscribed devices\n  present     Show a file, directory, port, or URL to the user as a web tile\n  reaper      Reap leaked test tmux servers and stale sockets by prefix\n  remote      Use SSH-only machines as run-kit hosts (bootstrap, tunnel, connect)\n  riff        Create a worktree, tmux window, and Claude Code session\n  role        Mark or unmark the current window as the server's operator\n  serve       Start the HTTP server (foreground)\n  shell-init  emit shell integration (completion) for zsh or bash\n  skill       Print run-kit's agent skill bundle (static usage briefing)\n  snapshot    Inspect and restore tmux server layout snapshots\n  status      Show tmux session summary\n  tmux-guard  Front the real tmux binary, blocking bare kill-server\n  update      Update the run-kit CLI and desktop app to the latest version\n  url         Print the run-kit server URL (config-derived)\n\nFlags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit [command] --help\" for more information about a command.\n",
     "commands": [
       {
         "name": "agent-hook",
@@ -27,11 +27,44 @@
         "commands": []
       },
       {
+        "name": "code-server",
+        "path": "run-kit code-server",
+        "short": "Manage the rk-owned code-server install (the /code lens editor)",
+        "usage": "run-kit code-server",
+        "text": "Usage:\n  run-kit code-server [command]\n\nAvailable Commands:\n  install     Download the latest code-server release and activate it\n  start       Start the daemon-managed code-server session now\n  update      Update the managed code-server to the latest release\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit code-server [command] --help\" for more information about a command.\n",
+        "commands": [
+          {
+            "name": "install",
+            "path": "run-kit code-server install",
+            "short": "Download the latest code-server release and activate it",
+            "usage": "run-kit code-server install",
+            "text": "Usage:\n  run-kit code-server install [flags]\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "commands": []
+          },
+          {
+            "name": "start",
+            "path": "run-kit code-server start",
+            "short": "Start the daemon-managed code-server session now",
+            "usage": "run-kit code-server start",
+            "text": "Usage:\n  run-kit code-server start [flags]\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "commands": []
+          },
+          {
+            "name": "update",
+            "path": "run-kit code-server update",
+            "short": "Update the managed code-server to the latest release",
+            "usage": "run-kit code-server update",
+            "text": "Usage:\n  run-kit code-server update [flags]\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "commands": []
+          }
+        ]
+      },
+      {
         "name": "daemon",
         "path": "run-kit daemon",
         "short": "Manage the background run-kit daemon (tmux-managed run-kit serve)",
         "usage": "run-kit daemon",
-        "text": "Usage:\n  run-kit daemon [command]\n\nAvailable Commands:\n  restart     Restart the run-kit daemon\n  start       Start the run-kit daemon\n  status      Show run-kit daemon state and current port owner\n  stop        Stop the run-kit daemon\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit daemon [command] --help\" for more information about a command.\n",
+        "text": "Usage:\n  run-kit daemon [command]\n\nAvailable Commands:\n  restart     Restart the run-kit daemon\n  run         Run a command in a managed job window on the daemon's tmux server\n  start       Start the run-kit daemon\n  status      Show run-kit daemon state and current port owner\n  stop        Stop the run-kit daemon\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit daemon [command] --help\" for more information about a command.\n",
         "commands": [
           {
             "name": "restart",
@@ -39,6 +72,14 @@
             "short": "Restart the run-kit daemon",
             "usage": "run-kit daemon restart [flags]",
             "text": "Usage:\n  run-kit daemon restart [flags]\n\nFlags:\n  -f, --force   SIGTERM a non-daemon port holder between stop and start\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "commands": []
+          },
+          {
+            "name": "run",
+            "path": "run-kit daemon run",
+            "short": "Run a command in a managed job window on the daemon's tmux server",
+            "usage": "run-kit daemon run --window <name> -- <cmd> [args...] [flags]",
+            "text": "Usage:\n  run-kit daemon run --window <name> -- <cmd> [args...] [flags]\n\nFlags:\n      --window string   job window name in the rk-jobs session (required)\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
             "commands": []
           },
           {
@@ -125,6 +166,14 @@
         "commands": []
       },
       {
+        "name": "present",
+        "path": "run-kit present",
+        "short": "Show a file, directory, port, or URL to the user as a web tile",
+        "usage": "run-kit present <target> [--window[=name]] [--notify[=msg]] [flags]",
+        "text": "Usage:\n  run-kit present <target> [--window[=name]] [--notify[=msg]] [flags]\n\nFlags:\n      --notify string[=\"          auto\"]\u0000Send a Web Push after attaching (optional message; defaults to \"presenting <basename>\")\n      --window string[=\"          auto\"]\u0000Spawn a standalone iframe window instead of attaching to this window (optional name; defaults from the target)\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+        "commands": []
+      },
+      {
         "name": "reaper",
         "path": "run-kit reaper",
         "short": "Reap leaked test tmux servers and stale sockets by prefix",
@@ -195,6 +244,14 @@
         "short": "Create a worktree, tmux window, and Claude Code session",
         "usage": "run-kit riff [preset] [--skill <skill>...] [--cmd <cmd>...] [--layout <name>] [--count <N>] [--preset <name>] [--list-presets] [-- <wt-flags>...] [flags]",
         "text": "Usage:\n  run-kit riff [preset] [--skill <skill>...] [--cmd <cmd>...] [--layout <name>] [--count <N>] [--preset <name>] [--list-presets] [-- <wt-flags>...] [flags]\n\nFlags:\n      --cmd cmd[=__rk_riff_pane_bare__]       Shell command for a pane (repeatable; bare form drops into $SHELL)\n  -N, --count int                             Spawn N worktree/window pairs in parallel (N >= 1) (default 1)\n      --layout string                         Pane layout (default \"auto\"). layout name (canonical + shortform):\n                                                a, auto             — pane-count-based:\n                                                                      1 pane = no layout\n                                                                      2 panes = even-horizontal\n                                                                      3+ panes = tiled\n                                                t, tiled            — grid\n                                                                      ┌───┬───┐\n                                                                      │ 0 │ 1 │\n                                                                      ├───┼───┤\n                                                                      │ 2 │ 3 │\n                                                                      └───┴───┘\n                                                h, even-horizontal  — side-by-side\n                                                                      ┌───┬───┬───┐\n                                                                      │ 0 │ 1 │ 2 │\n                                                                      └───┴───┴───┘\n                                                v, even-vertical    — stacked\n                                                                      ┌───────────┐\n                                                                      │     0     │\n                                                                      ├───────────┤\n                                                                      │     1     │\n                                                                      ├───────────┤\n                                                                      │     2     │\n                                                                      └───────────┘\n                                                deck-h, main-horizontal — main on top, deck below\n                                                                      ┌───────────┐\n                                                                      │     0     │\n                                                                      ├───┬───┬───┤\n                                                                      │ 1 │ 2 │ 3 │\n                                                                      └───┴───┴───┘\n                                                deck-v, main-vertical   — main on left, deck right\n                                                                      ┌───────┬───┐\n                                                                      │       │ 1 │\n                                                                      │   0   ├───┤\n                                                                      │       │ 2 │\n                                                                      │       ├───┤\n                                                                      │       │ 3 │\n                                                                      └───────┴───┘\n                                               (default \"auto\")\n      --list-presets                          List defined presets and exit\n      --preset string                         Named preset from fab/project/config.yaml (riff.presets.<name>)\n      --skill skill[=__rk_riff_pane_bare__]   Claude Code skill/slash-command for a pane (repeatable; bare form launches a blank Claude session)\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+        "commands": []
+      },
+      {
+        "name": "role",
+        "path": "run-kit role",
+        "short": "Mark or unmark the current window as the server's operator",
+        "usage": "run-kit role <operator|clear>",
+        "text": "Usage:\n  run-kit role <operator|clear> [flags]\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
         "commands": []
       },
       {
