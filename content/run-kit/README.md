@@ -1,6 +1,6 @@
 **Your tmux, in the browser and on your phone.** run-kit is a remote console for the machine you actually work on — every tmux session and pane as a live terminal, in a sidebar, from your desk or your couch. It's the modern, terminal-native answer to the old server web-console: nothing to configure, no database, state read straight from tmux.
 
-What makes it sing in 2026 is what you tend to run in those panes: **AI coding agents, many at once.** `rk riff` spawns each one in its own [git worktree](https://github.com/sahil87/wt), and the dashboard lets you watch the whole fleet. But run-kit never wraps the agent — a pane is just a pane. It's equally a build, a REPL, an ssh session, `htop`. **The agent is one of the things you run, not the thing run-kit is.** That's the point: when the agent tooling churns underneath you (and it does, monthly), the terminal layer stays put.
+What makes it so good right now is that what tend to run in those panes: **AI coding agents, many at once.** `rk riff` spawns each one in its own [git worktree](https://github.com/sahil87/wt), and the dashboard lets you watch the whole fleet. But run-kit never wraps the agent — a pane is just a pane. It's equally a build, a REPL, an ssh session, `htop`. **The agent is one of the things you run, not the thing run-kit is.** That's the point: when the agent tooling churns underneath you (and it does, monthly), the terminal layer stays put.
 
 ## Install
 
@@ -143,7 +143,7 @@ run-kit daemon status                        # show daemon state and port owner
 
 The daemon runs in its own dedicated tmux server (`rk-daemon`), completely separate from your sessions. Restart the daemon and everything you're running keeps running — the console reconnects automatically.
 
-The daemon also starts a managed **code-server** beside it (its own `rk-code-server` tmux session on the same socket), powering the dashboard's `code` lens and CODE panel surface — a full editor at the window's git root, served same-origin behind the stable `/code/` route. It binds loopback-only on `RK_PORT+2`; set `RK_CODE_SERVER_PORT` only to point rk at an externally managed instance instead. `run-kit daemon stop` deliberately leaves code-server running; `run-kit doctor` reports its presence and reachability.
+The daemon also starts a managed **code-server** beside it (its own `rk-code-server` tmux session on the same socket), powering the dashboard's `code` lens and CODE panel surface — a full editor at the window's git root, served same-origin behind the stable `/code/` route. rk owns the install: on first daemon start with no code-server anywhere, a `code-server-install` window in the `rk-jobs` session downloads the latest digest-verified standalone release into `~/.rk/code-server-bin/` (manual equivalent: `rk code-server install`; `rk code-server update` upgrades, and `rk update` runs that leg automatically); a code-server you installed yourself on PATH is respected and never touched. It binds loopback-only on `RK_PORT+2`; set `RK_CODE_SERVER_PORT` only to point rk at an externally managed instance instead. `run-kit daemon stop` deliberately leaves code-server running; `run-kit doctor` reports its presence and reachability.
 
 ## Status dots — read every window at a glance
 
@@ -198,8 +198,9 @@ Pin state lives in tmux (via the `@rk_board` window option) so it follows the wi
 Some browser features (clipboard, secure context) require HTTPS. Accessing run-kit from another machine on your tailnet also requires HTTPS:
 
 1. Enable HTTPS at [DNS > HTTPS Certificates](https://login.tailscale.com/admin/dns).
-2. Run `tailscale serve --bg http://localhost:3000`.
-3. Open `https://<machine>.<tailnet>.ts.net` on your phone or another laptop.
+2. Run `sudo tailscale set --operator=$USER` (one-time — lets `tailscale serve` run without sudo).
+3. Run `tailscale serve --bg http://localhost:3000`.
+4. Open `https://<machine>.<tailnet>.ts.net` on your phone or another laptop.
 
 For a stable custom hostname or public access via Funnel, see the [Tailscale guide](docs/site/install.md).
 
@@ -289,6 +290,7 @@ Supports `zsh`, `bash`, `fish`, and `powershell`. Completion-only — run-kit ha
 | `run-kit url` | Print the run-kit server URL (config-derived from `RK_HOST`/`RK_PORT`, default `http://127.0.0.1:3000`) — a heuristic for AI agents, not a liveness probe. |
 | `run-kit skill` | Print the agent skill bundle — a static usage briefing for agents operating run-kit (canonical source `docs/site/skill.md`); `run-kit skill display` prints the visual-display topic page. |
 | `run-kit notify` | Send a Web Push notification to your subscribed devices (see [Push notifications](#push-notifications)). Fail-silent. |
+| `run-kit present` | Show a file, directory, `:port`, localhost URL, or external URL to the user as a web tile attached to the current window (`--window` spawns a standalone iframe window, `--notify` pushes). Prints the resolved URL. |
 | `run-kit doctor` | Check runtime dependencies. Run this first when something breaks. |
 | `run-kit agent-setup` | Install agent-harness hooks (v1: Claude Code) so panes report busy/waiting/idle state (see [Agent state](#agent-state--run-kit-agent-setup)), plus the tmux guard shim that blocks `tmux kill-server` without an explicit `-L`/`-S` socket. Once per machine; `--uninstall` reverses both. |
 | `run-kit init-conf` | Scaffold default `tmux.conf` and `tmux.d/` drop-in directory to `~/.rk/`. Optional. |
