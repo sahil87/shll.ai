@@ -67,11 +67,11 @@ Phased, per-repo — like help-dump's rollout was. This standard is the contract
 
 ## Landed design: `shll agent-setup`
 
-`shll agent-setup` wires a machine's agent harnesses to the toolkit, graduating that responsibility up from `run-kit agent-setup`. It ships today, and it is recorded here because it is why bundles must stay small and static. It landed as **skills placement plus a runtime two-step**, not as context aggregation:
+`shll agent-setup` wires a machine's agent harnesses to the toolkit, graduating that responsibility up from `run-kit agent setup`. It ships today, and it is recorded here because it is why bundles must stay small and static. It landed as **skills placement plus a runtime two-step**, not as context aggregation:
 
 - **Skills placement, not context aggregation.** `shll agent-setup` places one thin bootstrap Agent Skill (`shll-toolkit`) into the harnesses' global skills directories (`~/.agents/skills/` and `~/.claude/skills/`). The skill's description is roster-driven — it front-loads the tool names as trigger words so the skill activates when an agent is about to reach for a toolkit tool — and its body teaches the runtime two-step below. Aggregating every tool's bundle into the agent's context, and placing per-tool bundles as their own skill files, were both **rejected**: placed copies go stale between updates, and per-tool skills multiply listing lines.
 - **The runtime two-step.** Bare `shll skill` prints an installed-only glossary — one line per tool. `shll skill <tool>` then streams that tool's core bundle on demand, byte-identical from the installed binary, so bundle content stays version-locked by construction and is fetched only when an agent actually needs it.
-- **Hook-wiring delegation.** `shll agent-setup` **delegates run-kit's dashboard-hook wiring to `run-kit agent-setup`**, which is hook-only — its context-injection responsibility was removed as designed, leaving it to do only hook wiring.
+- **Hook-wiring delegation.** `shll agent-setup` **delegates run-kit's dashboard-hook wiring to `run-kit agent setup`**, which is hook-only — its context-injection responsibility was removed as designed, leaving it to do only hook wiring.
 
 The mechanism changed from the original sketch, but the budget and static-only motive survives it: every `shll skill <tool>` call pulls the core bundle into a paying context, and the glossary lists every installed tool — so a bloated bundle still taxes every conversation that pulls it, which is the whole reason for the static-only rule and the ≤150-line budget above.
 

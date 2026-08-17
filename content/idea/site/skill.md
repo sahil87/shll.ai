@@ -24,13 +24,14 @@ selectors below and the persistent `-f/--file` override.
 |---------|------|
 | `idea add <text>` | Append a new idea (generated 4-char ID + today's date). `--id`/`--date` override. |
 | `idea <text>` | Bare-text shorthand for `add` — any first word that is not a subcommand/alias. |
-| `idea list` / `ls` | List ideas (open by default; `--all/-a`, `--done`, `[id...]` filter, `--sort`, `--reverse`, `--full`, `--json`). |
+| `idea list` / `ls` | List ideas (open by default; `--all/-a`, `--done`, `[id...]` filter, `--sort`, `--reverse`, `--full`, `--json`, `--stale N[d]` for open ideas older than N days). |
 | `idea show <query>` | Show one matching idea (`--json` for the record). |
 | `idea done <query>` | Mark a matching open idea done. |
 | `idea reopen <query>` | Re-open a matching done idea. |
 | `idea edit <query> [new-text]` | Replace text inline, or open `$VISUAL`/`$EDITOR`/`vi` when text is omitted. `--id`/`--date` too. |
 | `idea rm <query>` | Delete one idea. Needs consent: `--yes/-y` (or `--force`). `--dry-run` previews, writes nothing. |
 | `idea prune` | Bulk-remove all done ideas. Bare run is a dry run; `--yes/-y`/`--force` confirms. |
+| `idea promote <query>` | Move an idea to the main worktree's backlog (ID/date/status preserved; refuses on ID collision). `--main`/`--system` are rejected — promote picks its own roots. |
 | `idea fmt` | Rewrite the backlog into canonical form (and adopt bare `- [ ]` checkboxes). `--check` gates without writing. |
 | `idea update` | Self-update the binary via Homebrew. |
 
@@ -69,10 +70,12 @@ change. Keep IDs stable — external scripts and `/fab-new` key on them.
 - **`--json`** exists on `list` and `show` **only**. Schema per record: `{id, date, status, text}`
   with `status: "open"|"done"` (never a boolean). `list --json` is an array; an empty/absent backlog
   yields `[]`.
-- **Exit codes (actual behavior today): `0` on success, `1` for every error including usage/arg
-  errors. Only `shell-init` exits `2`** (missing/unsupported shell arg). The toolkit's `0`/`1`/`2`
-  usage-error convention is **not yet implemented** here (deferred, backlog `[xvsj]`) — branch on
-  `0` vs non-zero, not on `2` meaning "usage error".
+- **Exit codes follow the toolkit convention: `0` success, `1` operational failure, `2` usage
+  error.** Malformed invocations exit `2` — unknown flags, wrong argument counts, a missing or
+  unsupported `shell-init` shell, and the `--system`+`--main` conflict. Well-formed invocations
+  that fail exit `1` — consent refusals (`rm`/`prune` without `--yes`), no-match or ambiguous
+  queries, `fmt --check` on a non-canonical file, and I/O failures. Branching on `2` to detect
+  usage errors is supported.
 
 ## Gotchas
 

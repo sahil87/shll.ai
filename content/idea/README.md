@@ -82,12 +82,13 @@ Queries (the `<id>` arg on `show`, `done`, `reopen`, `edit`, `rm`) match against
 |---------|---------|
 | `idea "text"` | Add a new idea (shorthand for `idea add`). |
 | `idea add "text"` | Add a new idea to the backlog. |
-| `idea list` | List open ideas. `--all` includes done items, `--done` only done, `--json` for scripting, `--sort id\|date`, `--reverse`. |
+| `idea list` | List open ideas. `--all` includes done items, `--done` only done, `--json` for scripting, `--sort id\|date`, `--reverse`, `--stale 90d` filters to open ideas older than N days. |
 | `idea show <query>` | Show a single idea matching the query (by ID or substring). |
 | `idea done <query>` | Mark an idea as done. |
 | `idea reopen <query>` | Reopen a completed idea. |
 | `idea edit <query> "text"` | Replace an idea's description. |
 | `idea rm <query> --yes` | Delete an idea (requires `--yes`/`-y` — or the equivalent `--force` — to confirm; `--dry-run` previews the match without deleting). |
+| `idea promote <query>` | Move an idea to the main worktree's backlog (ID, date, and status preserved; refuses on ID collision). |
 | `idea update` | Self-update via Homebrew. |
 
 Run `idea <command> --help` for inline flag details, browse the [full command reference](https://shll.ai/idea/commands/) on shll.ai, or see [`docs/specs/overview.md`](https://github.com/sahil87/idea/blob/main/docs/specs/overview.md) for the full CLI reference and [`docs/specs/backlog-format.md`](https://github.com/sahil87/idea/blob/main/docs/specs/backlog-format.md) for the file format contract.
