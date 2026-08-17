@@ -1,7 +1,7 @@
 {
   "tool": "shll",
-  "version": "v0.1.19",
-  "captured_at": "2026-08-16T07:43:32Z",
+  "version": "v0.1.20",
+  "captured_at": "2026-08-17T07:59:01Z",
   "schema_version": 1,
   "root": {
     "name": "shll",
@@ -15,7 +15,7 @@
         "path": "shll agent-setup",
         "short": "place the shll toolkit skill for agent harnesses",
         "usage": "shll agent-setup [flags]",
-        "text": "Mechanically place one thin Agent Skill — the shll toolkit bootstrap — into the\nagent harnesses' global skills directories, then delegate run-kit's dashboard-hook\nwiring to `run-kit agent-setup`. The skill teaches an agent to load `shll skill` before\ndriving a toolkit tool.\n\nThe skill is written to exactly two global locations (covering all four harnesses):\n  ~/.agents/skills/shll-toolkit/SKILL.md   Codex (USER scope), Cursor + OpenCode\n  ~/.claude/skills/shll-toolkit/SKILL.md   Claude Code\n\nThe skill directories are shll-owned, so placement is idempotent by construction —\ninstall writes them, a re-run overwrites them, and there is no merge, prompt, or\nsentinel machinery. A per-path written/updated/unchanged summary is printed.\n\nModes:\n  shll agent-setup             place the skill at both locations (overwrites; idempotent)\n  shll agent-setup --print     print the SKILL.md content and both target paths, write nothing\n  shll agent-setup --uninstall remove both placed skill directories\n\nPass `--yes` (or `-y`) to forward `--yes` to the run-kit delegation so its own\nconfirmation prompt is skipped — for unattended runs (shll's skill placement itself\nnever prompts). With `--print` the flag is a no-op (print never delegates).\n\nUsage:\n  shll agent-setup [flags]\n\nFlags:\n  -h, --help        help for agent-setup\n      --print       print the SKILL.md content and target paths, do not write any file\n      --uninstall   remove both placed shll-toolkit skill directories\n  -y, --yes         pass --yes to the run-kit agent-setup delegation (assume yes — for unattended runs)\n",
+        "text": "Mechanically place one thin Agent Skill — the shll toolkit bootstrap — into the\nagent harnesses' global skills directories, then delegate run-kit's dashboard-hook\nwiring to `run-kit agent setup`. The skill teaches an agent to load `shll skill` before\ndriving a toolkit tool.\n\nThe skill is written to exactly two global locations (covering all four harnesses):\n  ~/.agents/skills/shll-toolkit/SKILL.md   Codex (USER scope), Cursor + OpenCode\n  ~/.claude/skills/shll-toolkit/SKILL.md   Claude Code\n\nThe skill directories are shll-owned, so placement is idempotent by construction —\ninstall writes them, a re-run overwrites them, and there is no merge, prompt, or\nsentinel machinery. A per-path written/updated/unchanged summary is printed.\n\nModes:\n  shll agent-setup             place the skill at both locations (overwrites; idempotent)\n  shll agent-setup --print     print the SKILL.md content and both target paths, write nothing\n  shll agent-setup --uninstall remove both placed skill directories\n\nPass `--yes` (or `-y`) to forward `--yes` to the run-kit delegation so its own\nconfirmation prompt is skipped — for unattended runs (shll's skill placement itself\nnever prompts). With `--print` the flag is a no-op (print never delegates).\n\nUsage:\n  shll agent-setup [flags]\n\nFlags:\n  -h, --help        help for agent-setup\n      --print       print the SKILL.md content and target paths, do not write any file\n      --uninstall   remove both placed shll-toolkit skill directories\n  -y, --yes         pass --yes to the run-kit agent setup delegation (assume yes — for unattended runs)\n",
         "commands": []
       },
       {

@@ -1,14 +1,14 @@
 {
   "tool": "run-kit",
-  "version": "v3.16.25",
-  "captured_at": "2026-08-16T07:43:32Z",
+  "version": "v3.17.7",
+  "captured_at": "2026-08-17T07:59:01Z",
   "schema_version": 1,
   "root": {
     "name": "run-kit",
     "path": "run-kit",
     "short": "run-kit — tmux session manager with web UI",
     "usage": "run-kit [flags]",
-    "text": "Usage:\n  run-kit [flags]\n  run-kit [command]\n\nAvailable Commands:\n  agent       Agent instrumentation (state hooks setup and reporting)\n  code-server Manage the rk-owned code-server install (the /code lens editor)\n  completion  Generate the autocompletion script for the specified shell\n  daemon      Manage the background run-kit daemon (tmux-managed run-kit serve)\n  desktop     Install and update the Run Kit desktop app (macOS)\n  doctor      Check runtime dependencies\n  help        Help about any command\n  mux         Tmux substrate operations (messaging, janitor, recovery, config scaffold, tmux guard)\n  notify      Send a Web Push notification to subscribed devices\n  present     Show a file, directory, port, or URL to the user as a web tile\n  remote      Use SSH-only machines as run-kit hosts (bootstrap, tunnel, connect)\n  riff        Create a worktree, tmux window, and Claude Code session\n  role        Mark or unmark the current window as the server's operator\n  serve       Start the HTTP server (foreground)\n  skill       Print run-kit's agent skill bundle (static usage briefing)\n  status      Show tmux session summary\n  update      Update the run-kit CLI and desktop app to the latest version\n  url         Print the run-kit server URL (env → tmux option → default)\n\nFlags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit [command] --help\" for more information about a command.\n",
+    "text": "Usage:\n  run-kit [flags]\n  run-kit [command]\n\nAvailable Commands:\n  agent       Agent instrumentation (state hooks setup and reporting)\n  code-server Manage the rk-owned code-server install (the /code lens editor)\n  completion  Generate the autocompletion script for the specified shell\n  daemon      Manage the background run-kit daemon (tmux-managed run-kit serve)\n  desktop     Install and update the Run Kit desktop app (macOS)\n  doctor      Check runtime dependencies\n  help        Help about any command\n  mux         Tmux substrate operations (messaging, pane capture/kill/process, janitor, recovery, config scaffold, tmux guard)\n  notify      Send a Web Push notification to subscribed devices\n  present     Show a file, directory, port, or URL to the user as a web tile\n  remote      Use SSH-only machines as run-kit hosts (bootstrap, tunnel, connect)\n  riff        Create a worktree, tmux window, and Claude Code session\n  role        Mark or unmark the current window as the server's operator\n  serve       Start the HTTP server (foreground)\n  skill       Print run-kit's agent skill bundle (static usage briefing)\n  status      Show tmux session summary\n  update      Update the run-kit CLI and desktop app to the latest version\n  url         Print the run-kit server URL (env → tmux option → default)\n\nFlags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit [command] --help\" for more information about a command.\n",
     "commands": [
       {
         "name": "agent",
@@ -161,16 +161,24 @@
       {
         "name": "mux",
         "path": "run-kit mux",
-        "short": "Tmux substrate operations (messaging, janitor, recovery, config scaffold, tmux guard)",
+        "short": "Tmux substrate operations (messaging, pane capture/kill/process, janitor, recovery, config scaffold, tmux guard)",
         "usage": "run-kit mux",
-        "text": "Usage:\n  run-kit mux [command]\n\nAvailable Commands:\n  await       Block until an agent pane reaches a state (or a file appears)\n  guard       Front the real tmux binary, blocking bare kill-server\n  init-conf   Scaffold default tmux.conf and tmux.d/ drop-in directory to ~/.rk/\n  reap        Reap leaked test tmux servers and stale sockets by prefix\n  send        Deliver a message into an agent's pane, gated on its agent state\n  snapshot    Inspect and restore tmux server layout snapshots\n\nFlags:\n  -L, --server string   tmux server name (messaging verbs only; default: the caller's own server from $TMUX, else the default server)\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit mux [command] --help\" for more information about a command.\n",
+        "text": "Usage:\n  run-kit mux [command]\n\nAvailable Commands:\n  await       Block until an agent pane reaches a state (or a file appears)\n  capture     Capture a pane's scrollback with substrate context\n  guard       Front the real tmux binary, blocking bare kill-server\n  init-conf   Scaffold default tmux.conf and tmux.d/ drop-in directory to ~/.rk/\n  kill        Kill a pane, gated on its agent state\n  process     Show the process tree running in a pane\n  reap        Reap leaked test tmux servers and stale sockets by prefix\n  send        Deliver a message into an agent's pane, gated on its agent state\n  snapshot    Inspect and restore tmux server layout snapshots\n\nFlags:\n  -L, --server string   tmux server name (pane-scoped verbs: send/await/capture/kill/process; default: the caller's own server from $TMUX, else the default server)\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit mux [command] --help\" for more information about a command.\n",
         "commands": [
           {
             "name": "await",
             "path": "run-kit mux await",
             "short": "Block until an agent pane reaches a state (or a file appears)",
             "usage": "run-kit mux await <target> [--until <state>[,<state>]] [--file <path>] [--after-active] [--timeout <secs>] [--notify[=msg]] [flags]",
-            "text": "Usage:\n  run-kit mux await <target> [--until <state>[,<state>]] [--file <path>] [--after-active] [--timeout <secs>] [--notify[=msg]] [flags]\n\nFlags:\n      --after-active              Require observing the active state before an --until state counts\n      --file string               Also wake when this path appears (OR-composed with the state signal)\n      --notify string[=\"          auto\"]\u0000Send a Web Push when the signal fires (optional message; default \"agent <target> is <report>\")\n      --timeout running           Seconds before reporting running (0 = wait indefinitely) (default 300)\n      --until string              Comma-separated agent states to wake on (active|waiting|idle) (default \"idle\")\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (messaging verbs only; default: the caller's own server from $TMUX, else the default server)\n",
+            "text": "Usage:\n  run-kit mux await <target> [--until <state>[,<state>]] [--file <path>] [--after-active] [--timeout <secs>] [--notify[=msg]] [flags]\n\nFlags:\n      --after-active              Require observing the active state before an --until state counts\n      --file string               Also wake when this path appears (OR-composed with the state signal)\n      --notify string[=\"          auto\"]\u0000Send a Web Push when the signal fires (optional message; default \"agent <target> is <report>\")\n      --timeout running           Seconds before reporting running (0 = wait indefinitely) (default 300)\n      --until string              Comma-separated agent states to wake on (active|waiting|idle) (default \"idle\")\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (pane-scoped verbs: send/await/capture/kill/process; default: the caller's own server from $TMUX, else the default server)\n",
+            "commands": []
+          },
+          {
+            "name": "capture",
+            "path": "run-kit mux capture",
+            "short": "Capture a pane's scrollback with substrate context",
+            "usage": "run-kit mux capture <target> [-l <lines>] [--json | --raw] [flags]",
+            "text": "Usage:\n  run-kit mux capture <target> [-l <lines>] [--json | --raw] [flags]\n\nExamples:\n  rk mux capture %5\n  rk mux capture @3 --lines 200\n  rk mux capture %5 --raw\n  rk mux capture %5 --json\n\nFlags:\n      --json        Output as JSON with metadata\n  -l, --lines int   Number of scrollback lines to capture (default 50)\n      --raw         Output the captured text only, byte-identical to tmux's output\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (pane-scoped verbs: send/await/capture/kill/process; default: the caller's own server from $TMUX, else the default server)\n",
             "commands": []
           },
           {
@@ -178,7 +186,7 @@
             "path": "run-kit mux guard",
             "short": "Front the real tmux binary, blocking bare kill-server",
             "usage": "run-kit mux guard [tmux args...]",
-            "text": "Usage:\n  run-kit mux guard [tmux args...] [flags]\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (messaging verbs only; default: the caller's own server from $TMUX, else the default server)\n",
+            "text": "Usage:\n  run-kit mux guard [tmux args...] [flags]\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (pane-scoped verbs: send/await/capture/kill/process; default: the caller's own server from $TMUX, else the default server)\n",
             "commands": []
           },
           {
@@ -186,7 +194,23 @@
             "path": "run-kit mux init-conf",
             "short": "Scaffold default tmux.conf and tmux.d/ drop-in directory to ~/.rk/",
             "usage": "run-kit mux init-conf [flags]",
-            "text": "Usage:\n  run-kit mux init-conf [flags]\n\nFlags:\n      --force   Overwrite existing config\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (messaging verbs only; default: the caller's own server from $TMUX, else the default server)\n",
+            "text": "Usage:\n  run-kit mux init-conf [flags]\n\nFlags:\n      --force   Overwrite existing config\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (pane-scoped verbs: send/await/capture/kill/process; default: the caller's own server from $TMUX, else the default server)\n",
+            "commands": []
+          },
+          {
+            "name": "kill",
+            "path": "run-kit mux kill",
+            "short": "Kill a pane, gated on its agent state",
+            "usage": "run-kit mux kill <target> [--force] [flags]",
+            "text": "Usage:\n  run-kit mux kill <target> [--force] [flags]\n\nExamples:\n  rk mux kill %12\n  rk mux kill %12 --force\n  rk mux kill @3\n\nFlags:\n      --force   Skip the agent-state gate (the target must still exist)\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (pane-scoped verbs: send/await/capture/kill/process; default: the caller's own server from $TMUX, else the default server)\n",
+            "commands": []
+          },
+          {
+            "name": "process",
+            "path": "run-kit mux process",
+            "short": "Show the process tree running in a pane",
+            "usage": "run-kit mux process <target> [--json] [flags]",
+            "text": "Usage:\n  run-kit mux process <target> [--json] [flags]\n\nExamples:\n  rk mux process %5\n  rk mux process %5 --json\n\nFlags:\n      --json   Output as JSON\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (pane-scoped verbs: send/await/capture/kill/process; default: the caller's own server from $TMUX, else the default server)\n",
             "commands": []
           },
           {
@@ -194,7 +218,7 @@
             "path": "run-kit mux reap",
             "short": "Reap leaked test tmux servers and stale sockets by prefix",
             "usage": "run-kit mux reap [flags]",
-            "text": "Usage:\n  run-kit mux reap [flags]\n\nFlags:\n      --all             print the full list instead of the default 10-entry-per-list cap (display-only)\n      --dry-run         explicit alias for the default preview-only behavior\n      --force           act, and bypass the dangerous-prefix guard (empty or ≤3-char prefix)\n      --prefix string   socket-name prefix to match (bare reap ≡ --prefix rk-test) (default \"rk-test\")\n      --yes             actually reap matched servers/sockets (default is dry-run preview)\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (messaging verbs only; default: the caller's own server from $TMUX, else the default server)\n",
+            "text": "Usage:\n  run-kit mux reap [flags]\n\nFlags:\n      --all             print the full list instead of the default 10-entry-per-list cap (display-only)\n      --dry-run         explicit alias for the default preview-only behavior\n      --force           act, and bypass the dangerous-prefix guard (empty or ≤3-char prefix)\n      --prefix string   socket-name prefix to match (bare reap ≡ --prefix rk-test) (default \"rk-test\")\n      --yes             actually reap matched servers/sockets (default is dry-run preview)\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (pane-scoped verbs: send/await/capture/kill/process; default: the caller's own server from $TMUX, else the default server)\n",
             "commands": []
           },
           {
@@ -202,7 +226,7 @@
             "path": "run-kit mux send",
             "short": "Deliver a message into an agent's pane, gated on its agent state",
             "usage": "run-kit mux send <target> [<message> | -] [--key <key>]... [--answer | --force] [--no-enter] [--await[=<states>]] [--timeout <secs>] [flags]",
-            "text": "Usage:\n  run-kit mux send <target> [<message> | -] [--key <key>]... [--answer | --force] [--no-enter] [--await[=<states>]] [--timeout <secs>] [flags]\n\nFlags:\n      --answer                   This send answers the target's pending question (a waiting pane accepts it)\n      --await string[=\"          auto\"]\u0000After submitting, block until the peer reaches one of these states (optional set; default idle,waiting)\n      --force                    Skip the agent-state gate (the target must still exist)\n      --key stringArray          Send a tmux key name instead of text (repeatable; e.g. --key Enter, --key C-c)\n      --no-enter                 Stage the text in the input box without submitting (no Enter)\n      --timeout running          Seconds the --await phase may run before reporting running (0 = indefinite) (default 300)\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (messaging verbs only; default: the caller's own server from $TMUX, else the default server)\n",
+            "text": "Usage:\n  run-kit mux send <target> [<message> | -] [--key <key>]... [--answer | --force] [--no-enter] [--await[=<states>]] [--timeout <secs>] [flags]\n\nFlags:\n      --answer                   This send answers the target's pending question (a waiting pane accepts it)\n      --await string[=\"          auto\"]\u0000After submitting, block until the peer reaches one of these states (optional set; default idle,waiting)\n      --force                    Skip the agent-state gate (the target must still exist)\n      --key stringArray          Send a tmux key name instead of text (repeatable; e.g. --key Enter, --key C-c)\n      --no-enter                 Stage the text in the input box without submitting (no Enter)\n      --timeout running          Seconds the --await phase may run before reporting running (0 = indefinite) (default 300)\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (pane-scoped verbs: send/await/capture/kill/process; default: the caller's own server from $TMUX, else the default server)\n",
             "commands": []
           },
           {
@@ -210,14 +234,14 @@
             "path": "run-kit mux snapshot",
             "short": "Inspect and restore tmux server layout snapshots",
             "usage": "run-kit mux snapshot",
-            "text": "Usage:\n  run-kit mux snapshot [command]\n\nAvailable Commands:\n  list        List available layout snapshots (live + died)\n  restore     Recreate a dead server's layout from its snapshot\n  show        Print a stored layout (sessions → windows → pane cwds) without acting\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (messaging verbs only; default: the caller's own server from $TMUX, else the default server)\n\nUse \"run-kit mux snapshot [command] --help\" for more information about a command.\n",
+            "text": "Usage:\n  run-kit mux snapshot [command]\n\nAvailable Commands:\n  list        List available layout snapshots (live + died)\n  restore     Recreate a dead server's layout from its snapshot\n  show        Print a stored layout (sessions → windows → pane cwds) without acting\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (pane-scoped verbs: send/await/capture/kill/process; default: the caller's own server from $TMUX, else the default server)\n\nUse \"run-kit mux snapshot [command] --help\" for more information about a command.\n",
             "commands": [
               {
                 "name": "list",
                 "path": "run-kit mux snapshot list",
                 "short": "List available layout snapshots (live + died)",
                 "usage": "run-kit mux snapshot list [<server>] [flags]",
-                "text": "Usage:\n  run-kit mux snapshot list [<server>] [flags]\n\nFlags:\n      --all   print the full list instead of the default 10-row cap (display-only)\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (messaging verbs only; default: the caller's own server from $TMUX, else the default server)\n",
+                "text": "Usage:\n  run-kit mux snapshot list [<server>] [flags]\n\nFlags:\n      --all   print the full list instead of the default 10-row cap (display-only)\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (pane-scoped verbs: send/await/capture/kill/process; default: the caller's own server from $TMUX, else the default server)\n",
                 "commands": []
               },
               {
@@ -225,7 +249,7 @@
                 "path": "run-kit mux snapshot restore",
                 "short": "Recreate a dead server's layout from its snapshot",
                 "usage": "run-kit mux snapshot restore <server> [flags]",
-                "text": "Usage:\n  run-kit mux snapshot restore <server> [flags]\n\nFlags:\n      --at int   restore a history/tombstone entry by its unix timestamp (default: latest)\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (messaging verbs only; default: the caller's own server from $TMUX, else the default server)\n",
+                "text": "Usage:\n  run-kit mux snapshot restore <server> [flags]\n\nFlags:\n      --at int   restore a history/tombstone entry by its unix timestamp (default: latest)\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (pane-scoped verbs: send/await/capture/kill/process; default: the caller's own server from $TMUX, else the default server)\n",
                 "commands": []
               },
               {
@@ -233,7 +257,7 @@
                 "path": "run-kit mux snapshot show",
                 "short": "Print a stored layout (sessions → windows → pane cwds) without acting",
                 "usage": "run-kit mux snapshot show <server> [flags]",
-                "text": "Usage:\n  run-kit mux snapshot show <server> [flags]\n\nFlags:\n      --at int   select a history/tombstone entry by its unix timestamp (default: latest)\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (messaging verbs only; default: the caller's own server from $TMUX, else the default server)\n",
+                "text": "Usage:\n  run-kit mux snapshot show <server> [flags]\n\nFlags:\n      --at int   select a history/tombstone entry by its unix timestamp (default: latest)\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (pane-scoped verbs: send/await/capture/kill/process; default: the caller's own server from $TMUX, else the default server)\n",
                 "commands": []
               }
             ]
