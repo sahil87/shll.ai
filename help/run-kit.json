@@ -1,7 +1,7 @@
 {
   "tool": "run-kit",
-  "version": "v3.17.7",
-  "captured_at": "2026-08-17T07:59:01Z",
+  "version": "v3.17.11",
+  "captured_at": "2026-08-18T07:51:36Z",
   "schema_version": 1,
   "root": {
     "name": "run-kit",
@@ -80,7 +80,7 @@
             "path": "run-kit daemon restart",
             "short": "Restart the run-kit daemon",
             "usage": "run-kit daemon restart [flags]",
-            "text": "Usage:\n  run-kit daemon restart [flags]\n\nFlags:\n  -f, --force   SIGTERM a non-daemon port holder between stop and start\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "text": "Usage:\n  run-kit daemon restart [flags]\n\nFlags:\n  -f, --force   SIGTERM a non-daemon port holder between stop and start\n      --full    Kill the whole rk-daemon tmux server (sibling sessions included) for a fresh server, reconnecting previously-up remote tunnels\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
             "commands": []
           },
           {
