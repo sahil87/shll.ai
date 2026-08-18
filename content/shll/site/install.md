@@ -8,7 +8,7 @@ The deep guide to getting `shll` and the rest of the [shll toolkit](https://shll
 
 ## Bootstrap via Homebrew
 
-The recommended path is the one-liner — it bootstraps `shll` itself, then hands off to `shll install` for the rest of the roster:
+The recommended path is the one-liner — it bootstraps `shll` itself, then hands off to `shll install` for the rest of the roster. It needs curl to download: minimal Ubuntu/Debian images ship without it, so there run `sudo apt-get install -y curl` first.
 
 ```sh
 curl -fsSL https://shll.ai/install | sh
@@ -20,7 +20,19 @@ Install a subset by naming tools after `sh -s --`:
 curl -fsSL https://shll.ai/install | sh -s -- hop wt
 ```
 
-It requires Homebrew (it exits with a pointer to https://brew.sh if `brew` is absent, and never auto-installs it) and is idempotent — safe to re-run.
+The script preflights the machine before touching Homebrew — it probes git (on macOS via `xcode-select -p`, the real Command Line Tools check; the `/usr/bin/git` shim false-positives when the CLT is absent), curl, and tmux, then reports every miss at once with its per-platform fix command. Missing curl (or missing git on Linux without Homebrew) is fatal; missing tmux is a warning with its install hint, never a block.
+
+When Homebrew is absent the script **bootstraps it headlessly** — the official installer with `NONINTERACTIVE=1` (on macOS this also installs the Command Line Tools via `softwareupdate`; on Linux the preflight has already guaranteed git). A fresh Homebrew isn't on `PATH` in the current shell, so the script evals `brew shellenv` itself before handing off, and prints the rc line for your future shells — keep it (`shll shell-setup` below wires shll's own shell integration, not brew's):
+
+```sh
+eval "$(/opt/homebrew/bin/brew shellenv)"   # Apple Silicon; /usr/local/bin/brew on Intel, /home/linuxbrew/.linuxbrew/bin/brew on Linux
+```
+
+An existing Homebrew is used as-is (≥ 6.0.4 — on 6.0.0–6.0.3, run `brew update` first), and the script is idempotent — safe to re-run.
+
+> **A failed download exits 0.** If the download itself fails, `curl -fsSL … | sh` still **exits 0 silently** — `sh` reads the empty input and succeeds — so an `&&`-chained next step proceeds as if the install worked. Curl's error does appear on stderr (that's the `-S`), but the pipeline's exit code cannot be trusted. (The script's `main()` wrapper protects against *partial* execution of a truncated download, not against a *failed* one.) After a run that seemed to do nothing, check `command -v shll` — or re-read stderr — before chaining on.
+
+> **Always tap-qualify formula names.** homebrew/core now carries an **unrelated** `run-kit` formula — a bare `brew install run-kit` installs someone else's software. Every toolkit formula is `sahil87/tap/<formula>` (`sahil87/tap/run-kit`, `sahil87/tap/shll`, …).
 
 If you'd rather bootstrap by hand, the manual equivalent is trust-then-install for `shll` itself:
 
