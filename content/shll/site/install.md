@@ -30,6 +30,8 @@ eval "$(/opt/homebrew/bin/brew shellenv)"   # Apple Silicon; /usr/local/bin/brew
 
 An existing Homebrew is used as-is (≥ 6.0.4 — on 6.0.0–6.0.3, run `brew update` first), and the script is idempotent — safe to re-run.
 
+Because the script ends in `exec shll install "$@"`, the shell integration and agent-harness steps below run automatically at the end of every bootstrap — **best-effort**: a step that fails warns and prints its manual nudge instead, never failing the install — and the opt-out flags ride the same argument passthrough (`curl -fsSL https://shll.ai/install | sh -s -- --no-agent-setup`).
+
 > **A failed download exits 0.** If the download itself fails, `curl -fsSL … | sh` still **exits 0 silently** — `sh` reads the empty input and succeeds — so an `&&`-chained next step proceeds as if the install worked. Curl's error does appear on stderr (that's the `-S`), but the pipeline's exit code cannot be trusted. (The script's `main()` wrapper protects against *partial* execution of a truncated download, not against a *failed* one.) After a run that seemed to do nothing, check `command -v shll` — or re-read stderr — before chaining on.
 
 > **Always tap-qualify formula names.** homebrew/core now carries an **unrelated** `run-kit` formula — a bare `brew install run-kit` installs someone else's software. Every toolkit formula is `sahil87/tap/<formula>` (`sahil87/tap/run-kit`, `sahil87/tap/shll`, …).
@@ -57,6 +59,18 @@ shll install --no-trust    # skip the per-formula trust step (manage trust yours
 ```
 
 If your Homebrew is too old to ship `brew trust` (pre-6.0, where trust isn't required anyway), the trust step is skipped gracefully and the install proceeds.
+
+When the installs finish (or there was nothing to do), `shll install` **wires the machine automatically** — no nudges to ignore, no prompts:
+
+1. **Shell integration** — the equivalent of [`shll shell-setup`](#shll-shell-setup--wire-the-rc-file-recommended): the `eval "$(shll shell-init <shell>)"` block is appended to your rc file (sentinel-managed and idempotent, so a re-run is a no-op), followed by an `exec $SHELL` reminder. Already-wired, unresolvable-`$SHELL`, and corrupt-block states skip quietly.
+2. **Agent harnesses** — the equivalent of `shll agent-setup --yes`: the `shll-toolkit` skill is placed at the two global skill paths and run-kit's dashboard hooks are delegated, with `--yes` forwarded so run-kit's hook-wiring confirmation can't hang an unattended (`curl | sh`) run.
+
+Both steps are best-effort: a failure warns on stderr and prints that step's manual nudge as a fallback, and never changes the install's exit code. Neither step runs under `--dry-run`. Opt out with `--no-shell-setup` (dotfile-manager users) and/or `--no-agent-setup`:
+
+```sh
+shll install --no-shell-setup   # skip the rc-file wiring (wire it yourself)
+shll install --no-agent-setup   # skip the agent-harness wiring
+```
 
 `shll install` does **not** upgrade — it only installs what's missing. Use [`shll update`](workflows.md#day-to-day-shll-update) for upgrades. It also runs no `brew update --quiet` first: `brew install` resolves the formula via the tap directly, so the metadata refresh that `shll update` performs is intentionally absent here.
 

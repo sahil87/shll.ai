@@ -5,9 +5,7 @@ One command to install, update, and shell-wire every tool in the [shll toolkit](
 From a clean machine to a fully wired toolkit:
 
 ```sh
-curl -fsSL https://shll.ai/install | sh          # install shll + the whole roster
-shll shell-setup                                 # wire shell integration into your rc file
-shll agent-setup                                 # optional, once per machine: place the toolkit skill for agent harnesses
+curl -fsSL https://shll.ai/install | sh          # install shll + the whole roster, then auto-wire shell + agent harnesses
 exec $SHELL                                      # reload so the shell integration takes effect
 ```
 
@@ -21,7 +19,7 @@ The script preflights what the install needs — git (the Xcode Command Line Too
 
 One pitfall worth knowing: if the download itself fails, `curl -fsSL … | sh` still **exits 0** — `sh` runs the empty input happily — so an `&&`-chained next step proceeds as if the install worked. Check curl's stderr, or `command -v shll` after; details in the [install guide](docs/site/install.md).
 
-The `shll agent-setup` line is optional and once per machine — it places one thin `shll-toolkit` Agent Skill at the harnesses' global skill paths so an agent driving this machine knows to load `shll skill` before reaching for a tool, and delegates dashboard hooks to [run-kit](https://github.com/sahil87/run-kit)'s `agent-setup`. Skip it if you don't drive this machine with agents.
+`shll install` ends by wiring the machine automatically: it runs the equivalent of `shll shell-setup` (the rc-file eval line, sentinel-managed and idempotent) and `shll agent-setup --yes` (one thin `shll-toolkit` Agent Skill at the harnesses' global skill paths, plus run-kit's dashboard hooks). Both steps are best-effort — a failure warns and prints the step's manual nudge, and never fails the install. Opt out with `--no-shell-setup` (dotfile-manager users) and/or `--no-agent-setup` (no agent wiring), which ride the bootstrap's argument passthrough: `curl -fsSL https://shll.ai/install | sh -s -- --no-agent-setup`.
 
 Everything else — the manual brew bootstrap, from-source builds, shell-wiring detail, and tap-trust troubleshooting — lives in the [install guide](docs/site/install.md) on [https://shll.ai](https://shll.ai).
 
@@ -41,13 +39,17 @@ Per-tool CLIs continue to work standalone — `shll` wraps them, it does not rep
 ### `shll install` — bootstrap missing tools
 
 ```sh
-shll install                 # trust + install every missing roster tool
+shll install                 # trust + install every missing roster tool, then wire shell + agent harnesses
 shll install hop wt          # install only a named subset
 shll install --no-trust      # skip the per-formula trust step
+shll install --no-shell-setup  # skip the automatic rc-file wiring
+shll install --no-agent-setup  # skip the automatic agent-harness wiring
 shll install --dry-run       # preview the brew install plan, change nothing
 ```
 
 Iterates the roster in leaves-first order (`wt`, `idea`, `tu`, `run-kit`, `hop`, `fab-kit`) and, for each one that's missing, records per-formula Homebrew trust (`brew trust --formula sahil87/tap/<formula>`) **before** running `brew install sahil87/tap/<formula>`. Homebrew 6.0 makes tap-trust a hard install requirement, so this is what lets the install proceed; `brew trust` is idempotent, so re-runs stay clean. Already-installed tools are skipped silently. Does NOT upgrade — use `shll update` for that.
+
+After the install outcome, `shll install` wires the machine automatically. It runs the equivalent of [`shll shell-setup`](#shll-shell-setup--wire-the-rc-file-recommended) (appends the `eval "$(shll shell-init <shell>)"` block to your rc file — sentinel-managed and idempotent, so re-runs are no-ops), then [`shll agent-setup --yes`](#shll-agent-setup--wire-agent-harnesses) (places the `shll-toolkit` agent skill and delegates run-kit's dashboard hooks, forwarding `--yes` so run-kit's hook prompt can't hang an unattended run). Both steps are best-effort: a failure warns and prints that step's manual nudge, and never changes the install's exit code. Neither runs under `--dry-run`. Opt out with `--no-shell-setup` and/or `--no-agent-setup`; after a fresh wire, restart your shell or run `exec $SHELL`.
 
 Pass `--no-trust` to skip the trust step entirely (for users who manage trust themselves). If your Homebrew is too old to ship `brew trust` (pre-6.0, where trust isn't required anyway), the trust step is skipped gracefully and the install proceeds.
 
@@ -248,7 +250,7 @@ shll has no state, no database, and no special knowledge of the tools it wraps. 
 
 | `shll` command | What it actually runs |
 |----------------|------------------------|
-| `shll install` | `brew trust --formula sahil87/tap/<formula>` then `brew install sahil87/tap/<formula>` per missing tool (`--no-trust` skips the trust step) |
+| `shll install` | `brew trust --formula sahil87/tap/<formula>` then `brew install sahil87/tap/<formula>` per missing tool (`--no-trust` skips the trust step), then the automatic shell-wiring and agent-wiring steps (`--no-shell-setup` / `--no-agent-setup` opt out) |
 | `shll update` | `brew update --quiet` once, self-upgrade, then each installed tool's own `update` (delegated; `brew upgrade` fallback only when a tool has no `update`) |
 | `shll check-updates` | fetches `shll.ai/versions.json` (or GitHub releases with `--source github`), joins against `brew list --versions`, reports pending updates — read-only |
 | `shll changelog` | fetches each tool's GitHub releases (public API), filters to the requested version range, renders the notes |
