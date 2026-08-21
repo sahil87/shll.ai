@@ -50,3 +50,5 @@ pnpm-debug.log*
 .status.yaml.lock
 
 !fab/.fab-version
+
+/.kimi
