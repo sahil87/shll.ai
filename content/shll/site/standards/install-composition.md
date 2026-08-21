@@ -31,6 +31,19 @@ wt is not installed. Install it: brew install sahil87/tap/wt
 - **Per-tool READMEs and the tap README MUST NOT carry per-formula `brew install` instructions.** They link to [https://shll.ai](https://shll.ai) for install steps — the curl bootstrap or `shll install`.
 - **The supported-vs-unsupported line.** Individual formula installs remain **supported**: `brew install sahil87/tap/<tool>` works, and `shll install` accepts a subset. What is unsupported is **documenting** them per-repo — seven copies of the install dance drift, and every change to the install story (a tap-trust requirement, a bootstrap change) has to be chased across every repo plus the tap.
 
+## Install runs the machine wiring in-process (the shll half)
+
+`shll install` does not stop at brew: it ends by running the machine setup **in-process** (Go function calls into the same internals the CLI faces wrap — no subprocesses) at the end of every non-`--dry-run` install:
+
+1. **The shell half** — the `eval "$(shll shell-init <shell>)"` block is appended to the rc file (sentinel-managed, idempotent).
+2. **The agent half** — the `shll-toolkit` Agent Skill is placed at the harnesses' global skill paths, and run-kit's dashboard-hook wiring is delegated to `run-kit agent setup --yes` (`--yes` forwarded so nothing can prompt on an unattended `curl | sh` bootstrap).
+
+Both steps are **best-effort**: a failure warns on stderr and prints the step's manual nudge, and never changes the install's exit code — a setup failure must not fail an install. Opt-outs: `--no-shell-setup` (dotfile-manager users) and `--no-agent-setup`.
+
+**`shll setup` is the consolidated, re-runnable entry point** — the recovery path when a shell or an agent harness is added later, without re-running a brew-touching install. Bare `shll setup` runs both halves (both always run; the exit code is the worst of the two — unlike install's warn-and-continue), and `shll setup shell [shell]` / `shll setup agent` run one half each with the halves' full flag surfaces. All three are thin faces over the same internals `shll install` calls in-process. The pre-consolidation spellings `shll shell-setup` (alias `shll shell-install`) and `shll agent-setup` remain registered — hidden and silent — for one release cycle, because an older binary's end-of-`shll update` agent-skill refresh executes `shll agent-setup --yes` against the freshly upgraded binary across the release boundary.
+
+This half documents shll's own behavior as the manager; it imposes no obligation on the six roster tools.
+
 ## Verifying conformance
 
 Before shipping a change that touches your tap formula, a sibling invocation, or a README install section:

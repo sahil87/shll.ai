@@ -1,6 +1,6 @@
 # shll skill
 
-The agent skill bundle for **shll** — the meta-CLI that installs, updates, wires, and inspects the [shll toolkit](https://shll.ai) (`wt`, `idea`, `tu`, `run-kit`, `hop`, `fab-kit`). shll is stateless and composes each tool's own CLI; it never replaces them.
+The agent skill bundle for **shll** — the meta-CLI that installs, updates, wires, and inspects the [shll toolkit](https://shll.ai) (`run-kit`, `rk-desktop`, `fab-kit`, `wt`, `idea`, `tu`, `hop`). shll is stateless and composes each tool's own CLI; it never replaces them.
 
 ## When to use shll
 
@@ -17,14 +17,15 @@ For a single tool's own operations (`wt` worktrees, `hop` jumping, `fab` workflo
 
 One line each, keyed to the subcommand:
 
-- `shll install [tool...]` — `brew install` every missing roster tool (trust-then-install); idempotent. `--dry-run` previews; `--no-trust` skips trust.
-- `shll update [tool...]` — `brew update` once, self-upgrade, then delegate to each installed tool's own `update`; ends by re-running `shll agent-setup` when a placement exists. `--dry-run` previews.
+- `shll install [tool...]` — `brew install` every missing brew-managed roster tool (trust-then-install); rk-desktop delegates to `rk desktop install` (skipped with a note when `rk` is absent or the platform refuses — never a failure). Idempotent. `--dry-run` previews; `--no-trust` skips trust.
+- `shll update [tool...]` — `brew update` once, self-upgrade, then delegate to each installed tool's own `update` (`rk desktop update` for rk-desktop); ends by re-running `shll setup agent` when a placement exists. `--dry-run` previews.
 - `shll check-updates` — read-only "is anything outdated?" check: installed vs latest for shll + every tool. `--source released` (default, shll.ai versions manifest with notify policy) or `--source github` (release tags); `--json` for the machine contract. Never updates.
-- `shll uninstall [tool...]` — remove roster tools via brew, reverse order with shll-self last; confirm-gated (`--yes` skips, non-TTY refuses), `--dry-run` previews.
+- `shll uninstall [tool...]` — remove brew-managed roster tools via brew, reverse order with shll-self last (rk-desktop is non-brew: skipped with a note); confirm-gated (`--yes` skips, non-TTY refuses), `--dry-run` previews.
 - `shll changelog [tool[@old..new]...]` — GitHub release notes; no range = installed→latest ("what would an update bring?").
 - `shll shell-init <shell>` — emit one eval-safe shell-init blob composing every installed tool's shell-init. Stdout is meant to be `eval`'d.
-- `shll shell-setup [shell]` — append the `eval "$(shll shell-init …)"` line to your rc file (idempotent, sentinel-wrapped). `--print` / `--uninstall`.
-- `shll agent-setup` — place the `shll-toolkit` Agent Skill at two global skill paths (`~/.agents/skills/` for Codex/Cursor/OpenCode, `~/.claude/skills/` for Claude Code), then delegate run-kit's dashboard hooks to `run-kit agent setup`. Idempotent (overwrite). `--print` / `--uninstall`.
+- `shll setup` — wire this machine: both halves (shell integration, then agent harnesses), idempotent. `--yes` forwards to the run-kit delegation.
+- `shll setup shell [shell]` — append the `eval "$(shll shell-init …)"` line to your rc file (idempotent, sentinel-wrapped). `--print` / `--uninstall`.
+- `shll setup agent` — place the `shll-toolkit` Agent Skill at two global skill paths (`~/.agents/skills/` for Codex/Cursor/OpenCode, `~/.claude/skills/` for Claude Code), then delegate run-kit's dashboard hooks to `run-kit agent setup`. Idempotent (overwrite). `--print` / `--uninstall`.
 - `shll skill [tool] [topic]` — bare: one-line glossary of installed tools. `shll skill <tool>`: that tool's full agent skill bundle (this page is `shll skill shll`). `shll skill <tool> <topic>`: one of that tool's topic pages, delegated to `<tool> skill <topic>` byte-for-byte.
 - `shll version` — one paste-friendly version row per tool (for bug reports).
 - `shll list` — the roster with install status, descriptions, repo links (`--json`).
@@ -35,7 +36,7 @@ One line each, keyed to the subcommand:
 
 - shll shells out to each tool's own CLI — it has no per-tool logic of its own. `shll update` calls `<tool> update`; `shll shell-init` concatenates `<tool> shell-init`; `shll skill <tool>` passes through `<tool> skill` byte-for-byte.
 - shll shells out to `brew` for install/upgrade/trust, and to the public GitHub API (unauthenticated) for changelog notes.
-- `shll agent-setup` delegates run-kit's hook wiring to `run-kit agent setup`; the per-tool CLIs keep working standalone.
+- `shll setup agent` delegates run-kit's hook wiring to `run-kit agent setup`; the per-tool CLIs keep working standalone.
 - Missing tools are skipped, never errors — every command degrades gracefully.
 
 ## Output & exit-code contracts

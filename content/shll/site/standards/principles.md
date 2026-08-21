@@ -85,7 +85,7 @@ The set is two-tiered. This page is the **foundation** — the principles every 
 
 **Failure mode.** A cached state file goes stale and every subsequent run acts on a world that no longer exists; a non-idempotent command applied twice corrupts what it managed.
 
-**Enforced by.** shll's constitution makes statelessness non-negotiable (no database, no state files; versions come from `brew list`, shell-init from the sub-tools, at every invocation). `shll install` and `shll shell-setup` are idempotent by contract — re-running installs only what's missing, the rc-file block is sentinel-wrapped and written once.
+**Enforced by.** shll's constitution makes statelessness non-negotiable (no database, no state files; versions come from `brew list`, shell-init from the sub-tools, at every invocation). `shll install` and `shll setup` are idempotent by contract — re-running installs only what's missing, the rc-file block is sentinel-wrapped and written once.
 
 ## 7. Compose, don't reinvent
 

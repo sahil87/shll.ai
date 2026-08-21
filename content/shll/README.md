@@ -1,4 +1,4 @@
-One command to install, update, and shell-wire every tool in the [shll toolkit](https://shll.ai) (`wt`, `idea`, `tu`, `run-kit`, `hop`, `fab-kit`). `shll` doesn't replace the per-tool CLIs — it composes them.
+One command to install, update, and shell-wire every tool in the [shll toolkit](https://shll.ai) (`run-kit`, `rk-desktop`, `fab-kit`, `wt`, `idea`, `tu`, `hop`). `shll` doesn't replace the per-tool CLIs — it composes them.
 
 ## Install
 
@@ -19,14 +19,14 @@ The script preflights what the install needs — git (the Xcode Command Line Too
 
 One pitfall worth knowing: if the download itself fails, `curl -fsSL … | sh` still **exits 0** — `sh` runs the empty input happily — so an `&&`-chained next step proceeds as if the install worked. Check curl's stderr, or `command -v shll` after; details in the [install guide](docs/site/install.md).
 
-`shll install` ends by wiring the machine automatically: it runs the equivalent of `shll shell-setup` (the rc-file eval line, sentinel-managed and idempotent) and `shll agent-setup --yes` (one thin `shll-toolkit` Agent Skill at the harnesses' global skill paths, plus run-kit's dashboard hooks). Both steps are best-effort — a failure warns and prints the step's manual nudge, and never fails the install. Opt out with `--no-shell-setup` (dotfile-manager users) and/or `--no-agent-setup` (no agent wiring), which ride the bootstrap's argument passthrough: `curl -fsSL https://shll.ai/install | sh -s -- --no-agent-setup`.
+`shll install` ends by wiring the machine automatically: it runs the equivalent of `shll setup shell` (the rc-file eval line, sentinel-managed and idempotent) and `shll setup agent --yes` (one thin `shll-toolkit` Agent Skill at the harnesses' global skill paths, plus run-kit's dashboard hooks). Both steps are best-effort — a failure warns and prints the step's manual nudge, and never fails the install. Opt out with `--no-shell-setup` (dotfile-manager users) and/or `--no-agent-setup` (no agent wiring), which ride the bootstrap's argument passthrough: `curl -fsSL https://shll.ai/install | sh -s -- --no-agent-setup`.
 
 Everything else — the manual brew bootstrap, from-source builds, shell-wiring detail, and tap-trust troubleshooting — lives in the [install guide](docs/site/install.md) on [https://shll.ai](https://shll.ai).
 
 ## Why shll?
 
 - **One-shot install** — `shll install` records per-formula Homebrew trust and then runs `brew install sahil87/tap/<formula>` for every roster tool you don't already have. Idempotent and safe to re-run.
-- **One-line shell integration** — `shll shell-setup` appends a single eval line to your rc file that wires up `hop`, `wt`, and any future toolkit shell-init in one block. No more managing four eval lines.
+- **One-line shell integration** — `shll setup shell` appends a single eval line to your rc file that wires up `hop`, `wt`, and any future toolkit shell-init in one block. No more managing four eval lines.
 - **One update for everything** — `shll update` runs `brew update` once, then upgrades every installed roster tool in sequence. Skips ones you don't have. Skips itself if it wasn't installed via brew.
 - **Paste-friendly version dump** — `shll version` prints one row per tool, ideal for bug reports.
 - **At-a-glance roster** — `shll list` shows every managed tool with its install status, a one-line description, and its repo (plus `--json` for scripting).
@@ -47,9 +47,9 @@ shll install --no-agent-setup  # skip the automatic agent-harness wiring
 shll install --dry-run       # preview the brew install plan, change nothing
 ```
 
-Iterates the roster in leaves-first order (`wt`, `idea`, `tu`, `run-kit`, `hop`, `fab-kit`) and, for each one that's missing, records per-formula Homebrew trust (`brew trust --formula sahil87/tap/<formula>`) **before** running `brew install sahil87/tap/<formula>`. Homebrew 6.0 makes tap-trust a hard install requirement, so this is what lets the install proceed; `brew trust` is idempotent, so re-runs stay clean. Already-installed tools are skipped silently. Does NOT upgrade — use `shll update` for that.
+Iterates the roster (`run-kit`, `rk-desktop`, `fab-kit`, `wt`, `idea`, `tu`, `hop`) and, for each brew-managed one that's missing, records per-formula Homebrew trust (`brew trust --formula sahil87/tap/<formula>`) **before** running `brew install sahil87/tap/<formula>`. Homebrew 6.0 makes tap-trust a hard install requirement, so this is what lets the install proceed; `brew trust` is idempotent, so re-runs stay clean. Already-installed tools are skipped silently. `rk-desktop` is the one non-brew entry — it delegates to `rk desktop install` (skipped with a note when `rk` is missing or the platform is unsupported). Does NOT upgrade — use `shll update` for that.
 
-After the install outcome, `shll install` wires the machine automatically. It runs the equivalent of [`shll shell-setup`](#shll-shell-setup--wire-the-rc-file-recommended) (appends the `eval "$(shll shell-init <shell>)"` block to your rc file — sentinel-managed and idempotent, so re-runs are no-ops), then [`shll agent-setup --yes`](#shll-agent-setup--wire-agent-harnesses) (places the `shll-toolkit` agent skill and delegates run-kit's dashboard hooks, forwarding `--yes` so run-kit's hook prompt can't hang an unattended run). Both steps are best-effort: a failure warns and prints that step's manual nudge, and never changes the install's exit code. Neither runs under `--dry-run`. Opt out with `--no-shell-setup` and/or `--no-agent-setup`; after a fresh wire, restart your shell or run `exec $SHELL`.
+After the install outcome, `shll install` wires the machine automatically. It runs the equivalent of [`shll setup shell`](#shll-setup-shell--wire-the-rc-file-recommended) (appends the `eval "$(shll shell-init <shell>)"` block to your rc file — sentinel-managed and idempotent, so re-runs are no-ops), then [`shll setup agent --yes`](#shll-setup-agent--wire-agent-harnesses) (places the `shll-toolkit` agent skill and delegates run-kit's dashboard hooks, forwarding `--yes` so run-kit's hook prompt can't hang an unattended run). Both steps are best-effort: a failure warns and prints that step's manual nudge, and never changes the install's exit code. Neither runs under `--dry-run`. Opt out with `--no-shell-setup` and/or `--no-agent-setup`; after a fresh wire, restart your shell or run `exec $SHELL`.
 
 Pass `--no-trust` to skip the trust step entirely (for users who manage trust themselves). If your Homebrew is too old to ship `brew trust` (pre-6.0, where trust isn't required anyway), the trust step is skipped gracefully and the install proceeds.
 
@@ -68,7 +68,7 @@ shll update --dry-run        # preview the upgrade plan, change nothing
 
 Runs `brew update --quiet` once, then `brew upgrade sahil87/tap/shll` (when shll itself was installed via brew), then delegates to each installed roster tool's **own `update` subcommand** (passing `--skip-brew-update` when the tool advertises it) so each tool's post-upgrade side effects — e.g. `run-kit`'s daemon restart — are preserved. A roster tool that exposes no `update` subcommand falls back to `brew upgrade sahil87/tap/<formula>`. Uninstalled tools are skipped silently, and the loop is best-effort — one tool's failure doesn't abort the rest. Brew and per-tool progress stream directly to your terminal.
 
-When agent skills were previously placed via [`shll agent-setup`](#shll-agent-setup--wire-agent-harnesses), the run ends by re-running `shll agent-setup` (as a subprocess, so the freshly upgraded binary places its own skill content) — the placed skills track the toolkit they describe without a manual follow-up. The refresh is placement-gated (a machine that never opted in gets no writes), best-effort (it never changes the run's exit code), and previewed by `--dry-run`.
+When agent skills were previously placed via [`shll setup agent`](#shll-setup-agent--wire-agent-harnesses), the run ends by re-running `shll setup agent` (as a subprocess, so the freshly upgraded binary places its own skill content) — the placed skills track the toolkit they describe without a manual follow-up. The refresh is placement-gated (a machine that never opted in gets no writes), best-effort (it never changes the run's exit code), and previewed by `--dry-run`.
 
 > **Legacy `rk` keg exception.** On a pre-rename machine still holding the old `rk` keg, `shll update` migrates `run-kit` **brew-direct** (`brew upgrade sahil87/tap/rk`, which resolves the rename) rather than delegating to `run-kit update`. Because that path skips `run-kit update`'s post-upgrade side effect, the daemon is **not** restarted automatically — shll prints a note suggesting `run-kit serve --restart` instead (Constitution III — shll never reimplements a tool's own logic). This is transitional; once legacy kegs are gone, updates always take the normal delegated path above.
 
@@ -103,18 +103,27 @@ Fetches each tool's GitHub release notes (unauthenticated, via the public API) a
 
 Valid targets are the roster names plus `shll` itself. A no-range form needs Homebrew to read the installed version; an explicit range skips brew entirely. If a fetch fails (rate limit, network), that tool degrades to a `Full Changelog` compare URL and the command still exits 0 (Constitution V — graceful degradation). Output is capped at the 10 most recent releases per tool, with a compare URL for the overflow.
 
-### `shll shell-setup` — wire the rc file (recommended)
-
-> Still works under the legacy alias `shll shell-install` — same command, unchanged behavior.
+### `shll setup` — wire this machine (shell + agent harnesses)
 
 ```sh
-shll shell-setup              # auto-detect shell, append eval block to your rc file
-shll shell-setup --print      # dry-run: print the block to stdout, modify nothing
-shll shell-setup --uninstall  # clean removal of the block
-shll shell-setup --rc-file ~/.zshrc.local   # override the target path
+shll setup                  # both halves: shell integration, then agent-harness wiring
+shll setup --yes            # unattended run (forwards --yes to the run-kit hook delegation)
 ```
 
-`shell-setup` is **pure rc-wiring** — it maintains only the eval line and touches no Homebrew state. (Tap trust lives in `shll install`, which trusts each formula it installs; there is no `--trust-tap` flag.) The appended block is sentinel-wrapped and idempotent — re-running is a no-op when the line is already present:
+The consolidated, re-runnable entry point for machine wiring — the same two steps `shll install` runs automatically at the end of an install. Both halves are idempotent, so re-running is safe (e.g. after installing a new shell or a new agent harness). Both halves always run; the exit code is the worst of the two. The halves are also runnable individually as [`shll setup shell`](#shll-setup-shell--wire-the-rc-file-recommended) and [`shll setup agent`](#shll-setup-agent--wire-agent-harnesses) below.
+
+### `shll setup shell` — wire the rc file (recommended)
+
+> Renamed from `shll shell-setup`: the old spelling (and its `shll shell-install` alias) still works — hidden, silent, for one release cycle — then it will be removed.
+
+```sh
+shll setup shell              # auto-detect shell, append eval block to your rc file
+shll setup shell --print      # dry-run: print the block to stdout, modify nothing
+shll setup shell --uninstall  # clean removal of the block
+shll setup shell --rc-file ~/.zshrc.local   # override the target path
+```
+
+`shll setup shell` is **pure rc-wiring** — it maintains only the eval line and touches no Homebrew state. (Tap trust lives in `shll install`, which trusts each formula it installs; there is no `--trust-tap` flag.) The appended block is sentinel-wrapped and idempotent — re-running is a no-op when the line is already present:
 
 ```sh
 # >>> shll >>>
@@ -124,11 +133,11 @@ eval "$(shll shell-init zsh)"
 
 The rc file is opened with plain `O_APPEND`, so dotfile-manager symlinks (chezmoi, dotbot, stow, yadm) are preserved. Default targets: `${ZDOTDIR:-$HOME}/.zshrc` for zsh, `$HOME/.bash_profile` (macOS) or `$HOME/.bashrc` (Linux) for bash.
 
-> **Upgrading from an older shll?** If a previous `shll shell-setup --trust-tap` left an `export HOMEBREW_REQUIRE_TAP_TRUST=1` line in your block, the next `shll shell-setup` run cleans it out automatically (the block is rewritten to the eval line only). That export merely re-set Homebrew 6.0's default and was never what unblocked installs — the `brew trust` record is. `--uninstall` removes the whole block as before.
+> **Upgrading from an older shll?** If a previous `shll shell-setup --trust-tap` left an `export HOMEBREW_REQUIRE_TAP_TRUST=1` line in your block, the next `shll setup shell` run cleans it out automatically (the block is rewritten to the eval line only). That export merely re-set Homebrew 6.0's default and was never what unblocked installs — the `brew trust` record is. `--uninstall` removes the whole block as before.
 
 ### `shll shell-init <shell>` — composed shell-init
 
-If you'd rather wire the eval line by hand, this is what `shll shell-setup` writes to your rc file:
+If you'd rather wire the eval line by hand, this is what `shll setup shell` writes to your rc file:
 
 ```sh
 eval "$(shll shell-init zsh)"   # in ~/.zshrc
@@ -197,7 +206,7 @@ hop      OK  v0.1.16  wired
 fab-kit  OK  v2.1.1
 ```
 
-`shll` leads with its own row (it's the running binary; version from the build, no wiring or trust check — but it does verify any agent skill placed by [`shll agent-setup`](#shll-agent-setup--wire-agent-harnesses): a placement whose content is stale, typically from an older shll, is `WARN` with a refresh pointer; no placement means no check). Then for every roster tool `doctor` checks that (1) the binary is on `PATH`, (2) it reports a version (so a half-installed or stale brew link is caught), (3) its Homebrew formula is **trusted** (so a future `brew upgrade` won't be refused on Homebrew 6.0+), and (4) — for the tools that ship shell integration (`wt`, `tu`, `hop`) — shll's composed eval block is present in your rc file. Each tool gets one line with an `OK` / `WARN` / `FAIL` marker, and every non-OK line carries an actionable suggestion (e.g. `run 'brew install …'`; `formula not trusted — run 'shll install' …`; or `not wired — run 'shll shell-setup' then 'exec $SHELL'`). The `shll` row can at worst `WARN`, so it never affects the exit code.
+`shll` leads with its own row (it's the running binary; version from the build, no wiring or trust check — but it does verify any agent skill placed by [`shll setup agent`](#shll-setup-agent--wire-agent-harnesses): a placement whose content is stale, typically from an older shll, is `WARN` with a refresh pointer; no placement means no check). Then for every roster tool `doctor` checks that (1) the binary is on `PATH`, (2) it reports a version (so a half-installed or stale brew link is caught), (3) its Homebrew formula is **trusted** (so a future `brew upgrade` won't be refused on Homebrew 6.0+), and (4) — for the tools that ship shell integration (`wt`, `tu`, `hop`) — shll's composed eval block is present in your rc file. Each tool gets one line with an `OK` / `WARN` / `FAIL` marker, and every non-OK line carries an actionable suggestion (e.g. `run 'brew install …'`; `formula not trusted — run 'shll install' …`; or `not wired — run 'shll setup shell' then 'exec $SHELL'`). The `shll` row can at worst `WARN`, so it never affects the exit code.
 
 A missing or non-running binary is `FAIL`; an installed-but-untrusted or installed-but-unwired tool is `WARN` (it still works when invoked directly — but an untrusted tool's next upgrade will be refused). The trust sub-check queries `brew trust --json=v1` read-only (it never reads `~/.homebrew/trust.json` directly) and is skipped silently when your Homebrew is too old to ship `brew trust`. `doctor` is strictly **read-only** — it never installs, upgrades, trusts, or edits your rc file — and it **exits non-zero if any tool is FAIL**, so it's scriptable in CI. Pass `--json` for a machine-readable array (one object per tool) under the same checks and exit contract.
 
@@ -232,17 +241,19 @@ $ shll skill shll             # shll's own bundle (served from the embedded copy
 
 The agent-facing reader for each tool's offline skill bundle — the one-page usage briefing an agent loads before driving the tool (per the toolkit's [`skill` standard](docs/site/standards/skill.md)). The bare form is a **glossary**, not a dump of every bundle: it lists the installed tools one line each (shll first, then the roster, PATH probe only — no brew calls), never concatenating bundles, so an agent picks the one it needs and asks for it by name. `shll skill <tool>` streams that tool's own `<tool> skill` output **byte-for-byte** (`shll skill shll` serves shll's own bundle from an embedded copy, drift-guarded against [docs/site/skill.md](docs/site/skill.md)). A tool that isn't installed, or whose version predates its `skill` subcommand, prints a one-line notice to stderr and exits 1; an unknown tool name is a usage error (exit 2).
 
-### `shll agent-setup` — wire agent harnesses
+### `shll setup agent` — wire agent harnesses
+
+> Renamed from `shll agent-setup`: the old spelling still works — hidden, silent, for one release cycle — then it will be removed.
 
 ```sh
-shll agent-setup              # place the shll-toolkit skill at both locations (idempotent)
-shll agent-setup --print      # print the SKILL.md content and both target paths, write nothing
-shll agent-setup --uninstall  # remove both placed skill directories
+shll setup agent              # place the shll-toolkit skill at both locations (idempotent)
+shll setup agent --print      # print the SKILL.md content and both target paths, write nothing
+shll setup agent --uninstall  # remove both placed skill directories
 ```
 
 Mechanically places one thin `shll-toolkit` Agent Skill into the harnesses' global skills directories — `~/.agents/skills/shll-toolkit/SKILL.md` (the [agentskills.io](https://agentskills.io) open-standard path, read by Codex and compat-read by Cursor and OpenCode) and `~/.claude/skills/shll-toolkit/SKILL.md` (Claude Code, which doesn't read `~/.agents/`) — so an agent driving this machine learns to load `shll skill` before reaching for a tool. The skill directories are shll-owned, so placement is idempotent by construction: install writes them, a re-run overwrites them, `--uninstall` deletes them — no merge, no prompt, no sentinel machinery. A per-path written/updated/unchanged summary is printed. Then it delegates run-kit's dashboard-hook wiring to `run-kit agent setup` (skipped silently when run-kit isn't installed; `--uninstall` delegates `run-kit agent setup --uninstall`; `--print` never delegates). This graduates the toolkit's harness wiring from `run-kit agent setup`, where it was mis-homed on a leaf tool, up to the manager.
 
-Once placed, the skill maintains itself: [`shll update`](#shll-update--upgrade-everything) ends each run by re-running `agent-setup` (so the placed content tracks the upgraded binaries), and [`shll doctor`](#shll-doctor--verify-install--wiring) flags a stale placement with a `WARN`. The skill's frontmatter description is generated from the tool roster — each tool contributes its name and a task-domain phrase ("git worktrees", "backlog ideas") so agents match on the task, not just the tool name, and run-kit additionally contributes an agent-proactive sentence (show visual content in a browser window, push notifications) so agents reach for those capabilities unprompted.
+Once placed, the skill maintains itself: [`shll update`](#shll-update--upgrade-everything) ends each run by re-running `shll setup agent` (so the placed content tracks the upgraded binaries), and [`shll doctor`](#shll-doctor--verify-install--wiring) flags a stale placement with a `WARN`. The skill's frontmatter description is generated from the tool roster — each tool contributes its name and a task-domain phrase ("git worktrees", "backlog ideas") so agents match on the task, not just the tool name, and run-kit additionally contributes an agent-proactive sentence (show visual content in a browser window, push notifications) so agents reach for those capabilities unprompted.
 
 ## How composition works
 
@@ -260,13 +271,13 @@ shll has no state, no database, and no special knowledge of the tools it wraps. 
 | `shll doctor` | probes `<tool> --version` + reads your rc file, reports install + wiring health |
 | `shll standards` | prints build-time-embedded copies of the canonical `docs/site/` standards (no subprocess, no network) |
 | `shll skill <tool>` | passes through the tool's own `<tool> skill` output byte-for-byte (`shll skill shll` serves an embedded copy) |
-| `shll agent-setup` | places the `shll-toolkit` skill at the two global skill paths, then delegates `run-kit agent setup` for run-kit's hooks |
+| `shll setup agent` | places the `shll-toolkit` skill at the two global skill paths, then delegates `run-kit agent setup` for run-kit's hooks |
 
 Per Constitution Principle IV (Composition, Not Replacement): `hop update`, `wt shell-init`, etc. continue to work standalone. shll's only job is to fan-out, collect output, and degrade gracefully when a tool is missing.
 
 ## Reference
 
-- [docs/site/install.md](docs/site/install.md) — install & shell-wiring guide (manual brew bootstrap, from-source, `shll shell-setup`, tap-trust)
+- [docs/site/install.md](docs/site/install.md) — install & shell-wiring guide (manual brew bootstrap, from-source, `shll setup shell`, tap-trust)
 - [docs/site/workflows.md](docs/site/workflows.md) — task-oriented walkthroughs (clean-machine bootstrap, day-to-day `shll update`, version dumps, the composition model)
 - [docs/site/standards/principles.md](docs/site/standards/principles.md) — the ten CLI principles every toolkit tool is built against (agent-native contracts: obligations, failure modes, enforcement receipts)
 - [docs/site/standards/help-dump.md](docs/site/standards/help-dump.md) — producer standard for the machine-readable help contract (`help-dump` JSON every tool must emit)

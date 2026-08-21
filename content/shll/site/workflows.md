@@ -8,7 +8,7 @@ From a fresh machine to a fully wired toolkit:
 
 ```sh
 curl -fsSL https://shll.ai/install | sh                                  # bootstrap: trust + install shll, then install the roster
-shll shell-setup                                                         # pure rc wiring — no trust flag
+shll setup shell                                                         # pure rc wiring — no trust flag
 exec $SHELL                                                              # reload so the shell integration takes effect
 ```
 
@@ -17,8 +17,8 @@ The one-liner runs a preflight and a Homebrew bootstrap before expanding to the 
 1. **Preflight.** The script probes git (on macOS via `xcode-select -p` — the `/usr/bin/git` CLT shim false-positives), curl, and tmux, reporting every miss at once with its per-platform fix command. Missing curl (or git on a Linux machine without Homebrew) is fatal; missing tmux only warns, with its install hint.
 2. **Homebrew bootstrap (only when brew is absent).** The official installer runs headlessly with `NONINTERACTIVE=1` — on macOS this installs the Command Line Tools via `softwareupdate`; on Linux the preflight has already guaranteed git. The script then uses the absolute brew path, evals `brew shellenv` in-process, and prints the rc line to keep for future shells. An existing Homebrew (≥ 6.0.4; on 6.0.0–6.0.3, `brew update` first) is used as-is and no bootstrap runs.
 3. **`brew trust --formula sahil87/tap/shll && brew install sahil87/tap/shll`** puts the `shll` binary on `PATH`. The `brew trust` is required on Homebrew 6.0+ (which makes tap-trust a hard install requirement) — shll's formula runs a sandboxed install that needs a real trust record. shll can't trust its own formula before it exists, so this one-time bootstrap uses `brew trust` directly.
-4. **`shll install`** walks the roster (leaves-first: `wt`, `idea`, `tu`, `rk`, `hop`, `fab-kit`) and, for each tool you don't already have, runs `brew trust --formula sahil87/tap/<formula>` then `brew install` — so it owns trust for the other six. Idempotent — re-running installs only what's still missing. Pass `--no-trust` to skip the trust step if you manage trust yourself; see the [tap-trust troubleshooting](install.md#tap-trust-troubleshooting). (Formula names are always tap-qualified `sahil87/tap/<formula>` — homebrew/core carries an **unrelated** `run-kit`, so a bare `brew install run-kit` installs the wrong software.)
-5. **`shll shell-setup`** appends a single sentinel-wrapped eval block to your rc file. It is pure rc-wiring — trust is `shll install`'s job, not shell-setup's (there is no `--trust-tap` flag).
+4. **`shll install`** walks the roster (`run-kit`, `rk-desktop`, `fab-kit`, `wt`, `idea`, `tu`, `hop`) and, for each brew-managed tool you don't already have, runs `brew trust --formula sahil87/tap/<formula>` then `brew install` — so it owns trust for the six brew tools. rk-desktop is not a brew formula: it delegates to `rk desktop install` (and skips with a note when `rk` is absent or the platform is unsupported — never a failure). Idempotent — re-running installs only what's still missing. Pass `--no-trust` to skip the trust step if you manage trust yourself; see the [tap-trust troubleshooting](install.md#tap-trust-troubleshooting). (Formula names are always tap-qualified `sahil87/tap/<formula>` — homebrew/core carries an **unrelated** `run-kit`, so a bare `brew install run-kit` installs the wrong software.)
+5. **`shll setup shell`** appends a single sentinel-wrapped eval block to your rc file. It is pure rc-wiring — trust is `shll install`'s job, not the shell half's (there is no `--trust-tap` flag).
 6. **`exec $SHELL`** reloads the shell so the eval line takes effect; `hop`, `wt`, and the rest are now live.
 
 ## Day-to-day: `shll update`
@@ -31,7 +31,7 @@ One command to upgrade everything you have installed. The sequence:
 
 1. **`brew update --quiet`, exactly once.** A single metadata refresh for the whole run — `shll` tells each delegated per-tool update that *advertises* `--skip-brew-update` to skip its own internal `brew update`, so there's no redundant refresh. (A tool predating that flag runs its own `brew update`, costing one extra refresh for that tool — see [`shll update`](install.md).)
 2. **Self-upgrade.** If `shll` itself was installed via brew, it runs `brew upgrade sahil87/tap/shll` first. A from-source `shll` is skipped here (no formula to upgrade).
-3. **Per-tool upgrade, by delegation.** For each *installed* roster tool, `shll update` invokes that tool's **own `update` subcommand** (with `--skip-brew-update` when the tool advertises it) rather than calling `brew upgrade` directly. This preserves each tool's post-upgrade side effects — e.g. `rk`'s daemon restart — that a bare `brew upgrade` would silently drop. A tool that exposes no `update` subcommand falls back to `brew upgrade`.
+3. **Per-tool upgrade, by delegation.** For each *installed* roster tool, `shll update` invokes that tool's **own `update` subcommand** (with `--skip-brew-update` when the tool advertises it) rather than calling `brew upgrade` directly. This preserves each tool's post-upgrade side effects — e.g. `rk`'s daemon restart — that a bare `brew upgrade` would silently drop. rk-desktop delegates to `rk desktop update` (it has no brew formula). A brew-managed tool that exposes no `update` subcommand falls back to `brew upgrade`.
 
 Uninstalled tools are skipped (graceful degradation), and the loop is best-effort: a single tool's failure doesn't abort the rest. `brew`'s progress streams straight to your terminal.
 
@@ -53,7 +53,7 @@ You can also scope a run to specific tools: `shll update hop wt` upgrades just t
 eval "$(shll shell-init zsh)"
 ```
 
-`shll shell-init <shell>` concatenates the `shell-init` output of every installed shll tool, in roster order, into a single blob — replacing what would otherwise be one eval line per tool. (You normally don't run this by hand; [`shll shell-setup`](install.md#shll-shell-setup--wire-the-rc-file-recommended) writes the eval line for you.)
+`shll shell-init <shell>` concatenates the `shell-init` output of every installed shll tool, in roster order, into a single blob — replacing what would otherwise be one eval line per tool. (You normally don't run this by hand; [`shll setup shell`](install.md#shll-setup-shell--wire-the-rc-file-recommended) writes the eval line for you.)
 
 The composition is **eval-safe by construction**, which matters because the output is fed straight to `eval`:
 
@@ -67,16 +67,17 @@ So `eval "$(shll shell-init zsh)"` is safe even when `shll` exits non-zero or a 
 
 ```sh
 $ shll version
-shll     v0.0.5
-wt       v0.0.5
-idea     v0.0.2
-tu       v0.4.13
-rk       v1.5.3
-hop      v0.1.5
-fab-kit  v1.9.4
+shll        v0.0.5
+run-kit     v1.5.3
+rk-desktop  not installed
+fab-kit     v1.9.4
+wt          v0.0.5
+idea        v0.0.2
+tu          v0.4.13
+hop         v0.1.5
 ```
 
-One column-aligned row for `shll` itself plus each roster tool — plain text, no colors, designed to paste cleanly into a Slack thread or GitHub issue. An uninstalled tool renders as `not installed`. Each tool's `--version` invocation has a 2-second timeout, so one hung tool can't block the dump (a timeout also shows as `not installed`); worst case the whole table finishes in well under 15 seconds even if every tool hangs.
+One column-aligned row for `shll` itself plus each roster tool — plain text, no colors, designed to paste cleanly into a Slack thread or GitHub issue. An uninstalled tool renders as `not installed`. Each tool's version probe has a 2-second timeout (`<tool> --version`; rk-desktop probes `rk desktop status` instead), so one hung tool can't block the dump (a timeout also shows as `not installed`); worst case the whole table finishes in well under 15 seconds even if every tool hangs.
 
 ## The composition model
 
@@ -84,14 +85,14 @@ One column-aligned row for `shll` itself plus each roster tool — plain text, n
 
 | `shll` command | What it actually runs |
 |----------------|------------------------|
-| `shll install` | `brew trust --formula sahil87/tap/<formula>` then `brew install sahil87/tap/<formula>` per missing tool (`--no-trust` skips the trust step) |
-| `shll update` | `brew update --quiet` once, self-upgrade, then each installed tool's own `update` (delegated; `brew upgrade` fallback only when a tool has no `update`) |
+| `shll install` | `brew trust --formula sahil87/tap/<formula>` then `brew install sahil87/tap/<formula>` per missing brew-managed tool (`--no-trust` skips the trust step); `rk desktop install` for rk-desktop |
+| `shll update` | `brew update --quiet` once, self-upgrade, then each installed tool's own `update` (delegated; `rk desktop update` for rk-desktop; `brew upgrade` fallback only when a brew-managed tool has no `update`) |
 | `shll shell-init zsh` | concatenates the stdout of each installed tool's `<tool> shell-init zsh` |
-| `shll version` | invokes `<tool> --version` per tool, formats as a table |
+| `shll version` | invokes `<tool> --version` per tool (`rk desktop status` for rk-desktop), formats as a table |
 
 This is Constitution Principle IV — **Composition, Not Replacement**: `hop update`, `wt shell-init`, etc. continue to work standalone. `shll`'s only job is to fan out, collect output, and degrade gracefully when a tool is missing.
 
 ## See also
 
-- [Install & shell wiring](install.md) — every install path and the full `shll shell-setup` rc-wiring contract.
+- [Install & shell wiring](install.md) — every install path and the full `shll setup shell` rc-wiring contract.
 - [shll.ai](https://shll.ai) — the always-current command reference.
