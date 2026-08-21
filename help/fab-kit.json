@@ -1,21 +1,21 @@
 {
   "tool": "fab",
-  "version": "2.16.8",
-  "captured_at": "2026-08-20T07:54:44Z",
+  "version": "2.20.8",
+  "captured_at": "2026-08-21T07:54:59Z",
   "schema_version": 1,
   "root": {
     "name": "fab",
     "path": "fab",
     "short": "Fab workflow engine — single binary replacement for kit shell scripts",
     "usage": "fab",
-    "text": "Usage:\n  fab [command]\n\nAvailable Commands:\n  agent         Launch (or --print) the resolved agent session command in the current shell\n  batch         Multi-target batch operations\n  change        Change lifecycle management\n  completion    Generate the autocompletion script for the specified shell\n  config        Inspect fab project configuration\n  dispatch      Headless process manager for CLI-dispatched pipeline stages\n  fab-help      Show fab workflow overview and available commands\n  help          Help about any command\n  impact        Compute git diff line counts (added/deleted/net) between two refs\n  kit-path      Print the resolved kit directory path\n  log           Append-only JSON logging to .history.jsonl\n  memory-index  Deterministically (re)generate docs/memory index files\n  operator      Launch operator in a dedicated tmux tab (singleton)\n  pane          Tmux pane operations\n  pr-meta       Render the `## Meta` block of a fab-generated PR as final markdown\n  preflight     Validate project state and output structured YAML\n  resolve       Resolve a change reference to a canonical output\n  resolve-agent Resolve a pipeline stage (or role tier) to its {provider, model, effort} agent profile\n  score         Compute confidence score from Assumptions table\n  shell-init    Emit shell completion script for sourcing (alias for 'completion <shell>')\n  skill         Print the fab agent skill bundle (offline, embedded, static)\n  status        Manage workflow stages, states, and .status.yaml\n\nUse \"fab [command] --help\" for more information about a command.\n",
+    "text": "Usage:\n  fab [command]\n\nAvailable Commands:\n  agent         Launch (or --print) the resolved agent session command in the current shell\n  batch         Multi-target batch operations\n  change        Change lifecycle management\n  completion    Generate the autocompletion script for the specified shell\n  config        Inspect, modify, and maintain fab configuration\n  dispatch      Process manager for CLI-dispatched pipeline stages (headless or tmux-pane worker)\n  fab-help      Show fab workflow overview and available commands\n  help          Help about any command\n  impact        Compute git diff line counts (added/deleted/net) between two refs\n  kit-path      Print the resolved kit directory path\n  log           Append-only JSON logging to .history.jsonl\n  memory-index  Deterministically (re)generate docs/memory index files\n  operator      Launch operator in a dedicated tmux tab (singleton)\n  pane          Tmux pane operations\n  pr-meta       Render the `## Meta` block of a fab-generated PR as final markdown\n  preflight     Validate project state and output structured YAML\n  resolve       Resolve a change reference to a canonical output\n  resolve-agent Resolve a pipeline stage (or agent role) to its {provider, model, effort} agent profile\n  score         Compute confidence score from Assumptions table\n  setup         Set up and diagnose the fab environment\n  shell-init    Emit shell completion script for sourcing (alias for 'completion <shell>')\n  skill         Print the fab agent skill bundle (offline, embedded, static)\n  status        Manage workflow stages, states, and .status.yaml\n\nUse \"fab [command] --help\" for more information about a command.\n",
     "commands": [
       {
         "name": "agent",
         "path": "fab agent",
         "short": "Launch (or --print) the resolved agent session command in the current shell",
-        "usage": "fab agent [tier] [flags]",
-        "text": "Usage:\n  fab agent [tier] [flags]\n\nFlags:\n      --print         print the fully-resolved command instead of executing it\n      --repo string   repo root to read the config from (default: current repo)\n",
+        "usage": "fab agent [role] [flags]",
+        "text": "Usage:\n  fab agent [role] [flags]\n\nFlags:\n      --effort string     reasoning effort for the --provider form (empty: the effort token is dropped)\n      --model string      model id for the --provider form (empty: the provider command's model token is dropped, so its CLI default applies)\n      --print             print the fully-resolved command instead of executing it\n      --provider string   address a provider directly (bypasses role resolution); mutually exclusive with the [role] positional\n      --repo string       repo root to read the config from (default: current repo)\n      --workers string    set FAB_AGENT_WORKERS for the launched agent session\n",
         "commands": []
       },
       {
@@ -38,7 +38,7 @@
             "path": "fab batch new",
             "short": "Create worktree tabs from backlog items",
             "usage": "fab batch new [backlog-id...] [flags]",
-            "text": "Usage:\n  fab batch new [backlog-id...] [flags]\n\nFlags:\n      --all    Open tabs for all pending backlog items\n      --list   Show pending backlog items and their IDs\n",
+            "text": "Usage:\n  fab batch new [backlog-id...] [flags]\n\nFlags:\n      --all              Open tabs for all pending backlog items\n      --list             Show pending backlog items and their IDs\n      --workers string   set FAB_AGENT_WORKERS in each launched tab\n",
             "commands": []
           },
           {
@@ -46,7 +46,7 @@
             "path": "fab batch switch",
             "short": "Open tmux tabs in worktrees for one or more changes",
             "usage": "fab batch switch [change...] [flags]",
-            "text": "Usage:\n  fab batch switch [change...] [flags]\n\nExamples:\n  # Show available changes\n  fab batch switch --list\n\n  # Open tmux tabs in worktrees for two changes\n  fab batch switch b91h ptwh\n\n  # Open tabs for all changes\n  fab batch switch --all\n\nFlags:\n      --all     Open tabs for all changes\n      --list    Show available changes\n  -q, --quiet   Suppress per-change progress output\n",
+            "text": "Usage:\n  fab batch switch [change...] [flags]\n\nExamples:\n  # Show available changes\n  fab batch switch --list\n\n  # Open tmux tabs in worktrees for two changes\n  fab batch switch b91h ptwh\n\n  # Open tabs for all changes\n  fab batch switch --all\n\nFlags:\n      --all              Open tabs for all changes\n      --list             Show available changes\n  -q, --quiet            Suppress per-change progress output\n      --workers string   set FAB_AGENT_WORKERS in each launched tab\n",
             "commands": []
           }
         ]
@@ -127,40 +127,56 @@
       {
         "name": "config",
         "path": "fab config",
-        "short": "Inspect fab project configuration",
+        "short": "Inspect, modify, and maintain fab configuration",
         "usage": "fab config",
-        "text": "Usage:\n  fab config [command]\n\nAvailable Commands:\n  init        Write a system scaffold (--system) or generate a project config from the registry (--project)\n  reference   Print the fully-commented reference config.yaml (all available options)\n  show        Print the effective (post-cascade) config, optionally with per-field provenance\n  upgrade     Reconcile fab/project/config.yaml against the current field registry\n\nUse \"fab config [command] --help\" for more information about a command.\n",
+        "text": "Usage:\n  fab config [command]\n\nInspect Commands:\n  explain     Explain available config keys\n  show        Print the effective (post-cascade) config, optionally with per-field provenance\n\nModify Commands:\n  set         Set one config override without rewriting comments\n  unset       Remove one override and restore inheritance\n\nLifecycle Commands:\n  init        Generate a project config, or a system scaffold with --system\n  upgrade     Reconcile fab/project/config.yaml against the current field registry\n\nUse \"fab config [command] --help\" for more information about a command.\n",
         "commands": [
           {
-            "name": "init",
-            "path": "fab config init",
-            "short": "Write a system scaffold (--system) or generate a project config from the registry (--project)",
-            "usage": "fab config init (--system | --project) [flags]",
-            "text": "Usage:\n  fab config init (--system | --project) [flags]\n\nExamples:\n  # Write the ~/.fab-kit/config.yaml system-layer scaffold\n  fab config init --system\n\n  # Generate fab/project/config.yaml from the field registry\n  fab config init --project --name my-app --description \"My application\"\n\n  # Seed source/test paths (repeatable flags)\n  fab config init --project --name my-app --source-path src/ --test-path '**/*_test.go'\n\nFlags:\n      --description string        Project description (--project seed)\n      --name string               Project name (--project seed)\n      --project                   Generate fab/project/config.yaml from the registry (identity fields + fence)\n      --source-path stringArray   Source path (--project seed; repeatable)\n      --system                    Write the ~/.fab-kit/config.yaml system-layer scaffold\n      --test-path stringArray     Test path pattern (--project seed; repeatable)\n",
+            "name": "explain",
+            "path": "fab config explain",
+            "short": "Explain available config keys",
+            "usage": "fab config explain [key] [flags]",
+            "text": "Usage:\n  fab config explain [key] [flags]\n\nAliases:\n  explain, reference\n\nExamples:\n  fab config explain\n  fab config explain agent.workers\n  fab config explain providers.codex.interactive_command --json\n\nFlags:\n      --json   Emit the field metadata table as a JSON array (instead of commented YAML)\n",
             "commands": []
           },
           {
-            "name": "reference",
-            "path": "fab config reference",
-            "short": "Print the fully-commented reference config.yaml (all available options)",
-            "usage": "fab config reference [flags]",
-            "text": "Usage:\n  fab config reference [flags]\n\nFlags:\n      --json   Emit the field metadata table as a JSON array (instead of commented YAML)\n",
+            "name": "init",
+            "path": "fab config init",
+            "short": "Generate a project config, or a system scaffold with --system",
+            "usage": "fab config init [--system] [flags]",
+            "text": "Usage:\n  fab config init [--system] [flags]\n\nExamples:\n  # Write the ~/.fab-kit/config.yaml system-layer scaffold\n  fab config init --system\n\n  # Generate fab/project/config.yaml from the field registry\n  fab config init --project --name my-app --description \"My application\"\n\n  # Seed source/test paths (repeatable flags)\n  fab config init --project --name my-app --source-path src/ --test-path '**/*_test.go'\n\nFlags:\n      --description string        Project description (--project seed)\n      --force                     Overwrite an existing target file (refused by default)\n      --name string               Project name (--project seed)\n      --print                     Print the exact file init would write to stdout without writing anything (never blocked by an existing file)\n      --project                   Generate fab/project/config.yaml from the registry (identity fields + fence)\n      --source-path stringArray   Source path (--project seed; repeatable)\n      --system                    Write the ~/.fab-kit/config.yaml system-layer scaffold\n      --test-path stringArray     Test path pattern (--project seed; repeatable)\n",
+            "commands": []
+          },
+          {
+            "name": "set",
+            "path": "fab config set",
+            "short": "Set one config override without rewriting comments",
+            "usage": "fab config set <key> <value> [flags]",
+            "text": "Usage:\n  fab config set <key> <value> [flags]\n\nExamples:\n  fab config set agent.workers codex\n  fab config set dispatch.column_width 42\n  fab config set agent.session codex --system\n\nFlags:\n      --system   Write ~/.fab-kit/config.yaml instead of the project config\n",
             "commands": []
           },
           {
             "name": "show",
             "path": "fab config show",
             "short": "Print the effective (post-cascade) config, optionally with per-field provenance",
-            "usage": "fab config show [flags]",
-            "text": "Usage:\n  fab config show [flags]\n\nExamples:\n  # Print the effective (post-cascade) config\n  fab config show\n\n  # Annotate each field with its provenance (project / system / default)\n  fab config show --origin\n\nFlags:\n      --origin   Annotate each field with its provenance (project path / system path / default)\n",
+            "usage": "fab config show [key] [flags]",
+            "text": "Usage:\n  fab config show [key] [flags]\n\nExamples:\n  # Print the fully composed effective config (built-in defaults included)\n  fab config show\n\n  # Annotate each field with its provenance (environment / system / project / default)\n  fab config show --origin\n\n  # Inspect one effective value\n  fab config show agent.workers\n\n  # List every tier that defines one key, winner first\n  fab config show agent.workers --origin\n\nFlags:\n      --origin   Annotate each field with its provenance; with a key, list every tier that defines it\n",
+            "commands": []
+          },
+          {
+            "name": "unset",
+            "path": "fab config unset",
+            "short": "Remove one override and restore inheritance",
+            "usage": "fab config unset <key> [flags]",
+            "text": "Usage:\n  fab config unset <key> [flags]\n\nExamples:\n  fab config unset agent.workers\n  fab config unset agent.session --system\n\nFlags:\n      --system   Write ~/.fab-kit/config.yaml instead of the project config\n",
             "commands": []
           },
           {
             "name": "upgrade",
             "path": "fab config upgrade",
             "short": "Reconcile fab/project/config.yaml against the current field registry",
-            "usage": "fab config upgrade",
-            "text": "Usage:\n  fab config upgrade\n",
+            "usage": "fab config upgrade [flags]",
+            "text": "Usage:\n  fab config upgrade [flags]\n\nFlags:\n      --check   Report what an upgrade would change without writing; exit non-zero when the file has drifted\n",
             "commands": []
           }
         ]
@@ -168,9 +184,9 @@
       {
         "name": "dispatch",
         "path": "fab dispatch",
-        "short": "Headless process manager for CLI-dispatched pipeline stages",
+        "short": "Process manager for CLI-dispatched pipeline stages (headless or tmux-pane worker)",
         "usage": "fab dispatch",
-        "text": "Usage:\n  fab dispatch [command]\n\nAvailable Commands:\n  clean       Remove dispatch state dirs — named change, all, or orphaned (--orphans)\n  kill        Kill the dispatch's process group (idempotent)\n  logs        Print the dispatch log (combined stdout+stderr)\n  start       Launch a stage's resolved spawn command detached, reading the prompt on stdin\n  status      Report the dispatch state: running / done / failed / failed (no-result) / orphaned\n\nUse \"fab dispatch [command] --help\" for more information about a command.\n",
+        "text": "Usage:\n  fab dispatch [command]\n\nAvailable Commands:\n  clean       Remove dispatch state dirs — named change, all, or orphaned (--orphans)\n  deliver     Hand an opened pane worker its prompt, verifying every step\n  kill        Kill the dispatch — the process group (headless) or the tmux pane (pane dispatch); idempotent\n  logs        Print the dispatch log (combined stdout+stderr)\n  open        Spawn a pane-mode stage worker WITHOUT delivering its prompt (pane mode's entry)\n  ready       Probe whether an opened pane worker can accept typed input (ready / booting / parked)\n  reap        Reclaim a DONE pane worker's tmux pane; a reported no-op for every other dispatch\n  restart     Relaunch a non-running dispatch from its persisted prompt using start's dispatch.mode descent ladder\n  start       Launch a HEADLESS stage worker (pane mode's entry is `fab dispatch open`)\n  status      Report the dispatch state: running / done / failed / failed (no-result) / orphaned\n  wait        Block until the dispatch leaves `running`, then report its state\n\nUse \"fab dispatch [command] --help\" for more information about a command.\n",
         "commands": [
           {
             "name": "clean",
@@ -181,9 +197,17 @@
             "commands": []
           },
           {
+            "name": "deliver",
+            "path": "fab dispatch deliver",
+            "short": "Hand an opened pane worker its prompt, verifying every step",
+            "usage": "fab dispatch deliver <change> <stage> [flags]",
+            "text": "Usage:\n  fab dispatch deliver <change> <stage> [flags]\n\nExamples:\n  # Initial delivery, after the readiness gate reports ready\n  fab dispatch deliver b91h apply\n\n  # Rework-cycle continuation into the same live pane\n  fab dispatch deliver b91h apply --prompt-file .fab-dispatch/b91h/apply-continuation.md\n\nFlags:\n      --prompt-file string   Deliver a pointer to this prompt file instead of the stage's own {stage}-prompt.md (the rework-cycle continuation path)\n",
+            "commands": []
+          },
+          {
             "name": "kill",
             "path": "fab dispatch kill",
-            "short": "Kill the dispatch's process group (idempotent)",
+            "short": "Kill the dispatch — the process group (headless) or the tmux pane (pane dispatch); idempotent",
             "usage": "fab dispatch kill <change> <stage>",
             "text": "Usage:\n  fab dispatch kill <change> <stage>\n",
             "commands": []
@@ -197,11 +221,43 @@
             "commands": []
           },
           {
+            "name": "open",
+            "path": "fab dispatch open",
+            "short": "Spawn a pane-mode stage worker WITHOUT delivering its prompt (pane mode's entry)",
+            "usage": "fab dispatch open <change> <stage> [flags]",
+            "text": "Usage:\n  fab dispatch open <change> <stage> [flags]\n\nExamples:\n  # Open the worker, gate it, then deliver its prompt\n  fab dispatch open b91h apply < prompt.md\n  fab dispatch ready b91h apply\n  fab dispatch deliver b91h apply\n\n  # Target a specific tmux socket (works from outside tmux)\n  fab dispatch open b91h review --server work < prompt.md\n\nFlags:\n  -L, --server string   Target tmux socket label (passed as 'tmux -L <name>'). Defaults to $TMUX / tmux default socket\n",
+            "commands": []
+          },
+          {
+            "name": "ready",
+            "path": "fab dispatch ready",
+            "short": "Probe whether an opened pane worker can accept typed input (ready / booting / parked)",
+            "usage": "fab dispatch ready <change> <stage>",
+            "text": "Usage:\n  fab dispatch ready <change> <stage>\n\nExamples:\n  fab dispatch ready b91h apply\n",
+            "commands": []
+          },
+          {
+            "name": "reap",
+            "path": "fab dispatch reap",
+            "short": "Reclaim a DONE pane worker's tmux pane; a reported no-op for every other dispatch",
+            "usage": "fab dispatch reap <change> <stage>",
+            "text": "Usage:\n  fab dispatch reap <change> <stage>\n",
+            "commands": []
+          },
+          {
+            "name": "restart",
+            "path": "fab dispatch restart",
+            "short": "Relaunch a non-running dispatch from its persisted prompt using start's dispatch.mode descent ladder",
+            "usage": "fab dispatch restart <change> <stage> [flags]",
+            "text": "Usage:\n  fab dispatch restart <change> <stage> [flags]\n\nExamples:\n  # Recover an orphaned dispatch (mode re-resolves from config and environment)\n  fab dispatch restart b91h apply\n\n  # Force the relaunched worker headless even inside tmux\n  fab dispatch restart b91h apply --headless\n\n  # Relaunch into a watchable tmux pane\n  fab dispatch restart b91h review --pane\n\nFlags:\n      --headless                 Force a detached headless worker, overriding dispatch.mode for this launch\n      --pane                     Force an interactive tmux worker — a pane split into your own window, or a new window when you are not in one (requires a reachable tmux server)\n  -L, --server string            Target tmux socket label (passed as 'tmux -L <name>'); implies pane mode. Defaults to $TMUX / tmux default socket; ignored in headless mode\n      --timeout timeout <secs>   Enforce a POSIX timeout <secs> inside the launch wrapper (0 = none); implies --headless\n",
+            "commands": []
+          },
+          {
             "name": "start",
             "path": "fab dispatch start",
-            "short": "Launch a stage's resolved spawn command detached, reading the prompt on stdin",
+            "short": "Launch a HEADLESS stage worker (pane mode's entry is `fab dispatch open`)",
             "usage": "fab dispatch start <change> <stage> [flags]",
-            "text": "Usage:\n  fab dispatch start <change> <stage> [flags]\n\nExamples:\n  # Launch the apply stage's dispatch command, prompt on stdin\n  fab dispatch start b91h apply < prompt.md\n\n  # Enforce a 30-minute POSIX timeout inside the launch wrapper\n  fab dispatch start --timeout 1800 b91h apply < prompt.md\n\nFlags:\n      --timeout timeout <secs>   Enforce a POSIX timeout <secs> inside the launch wrapper (0 = none)\n",
+            "text": "Usage:\n  fab dispatch start <change> <stage> [flags]\n\nExamples:\n  # Resolve automatically from dispatch.mode and provider capability\n  fab dispatch start b91h apply < prompt.md\n\n  # Force headless for an unattended run that happens to live inside a tmux tab\n  fab dispatch start b91h apply --headless < prompt.md\n\n  # Enforce a 30-minute POSIX timeout (implies headless)\n  fab dispatch start --timeout 1800 b91h apply < prompt.md\n\nFlags:\n      --headless                 Force a detached headless worker, overriding dispatch.mode for this launch\n      --timeout timeout <secs>   Enforce a POSIX timeout <secs> inside the launch wrapper (0 = none); implies --headless\n",
             "commands": []
           },
           {
@@ -210,6 +266,14 @@
             "short": "Report the dispatch state: running / done / failed / failed (no-result) / orphaned",
             "usage": "fab dispatch status <change> <stage> [flags]",
             "text": "Usage:\n  fab dispatch status <change> <stage> [flags]\n\nFlags:\n      --json   Output as JSON\n",
+            "commands": []
+          },
+          {
+            "name": "wait",
+            "path": "fab dispatch wait",
+            "short": "Block until the dispatch leaves `running`, then report its state",
+            "usage": "fab dispatch wait <change> <stage> [flags]",
+            "text": "Usage:\n  fab dispatch wait <change> <stage> [flags]\n\nFlags:\n      --json          Output as JSON\n      --timeout int   Upper bound in seconds; on expiry print the current state and exit 0 (0 = wait indefinitely)\n",
             "commands": []
           }
         ]
@@ -291,9 +355,99 @@
         "name": "operator",
         "path": "fab operator",
         "short": "Launch operator in a dedicated tmux tab (singleton)",
-        "usage": "fab operator",
-        "text": "Usage:\n  fab operator\n  fab operator [command]\n\nAvailable Commands:\n  tick-start  Increment tick_count and record last_tick_at in the server-keyed operator state file\n  time        Print current time and optionally next-tick time\n\nUse \"fab operator [command] --help\" for more information about a command.\n",
+        "usage": "fab operator [flags]",
+        "text": "Usage:\n  fab operator [flags]\n  fab operator [command]\n\nAvailable Commands:\n  autopilot   Manage the operator autopilot queue\n  branch-map  Manage the operator state file's branch_map\n  enroll      Create (or replace) a monitored entry and record its branch_map pair\n  remove      Remove a monitored entry (its branch_map entry is retained)\n  state       Print the operator state file (creates the empty skeleton when missing)\n  tick-start  Increment tick_count and record last_tick_at in the server-keyed operator state file\n  time        Print current time and optionally next-tick time\n  update      Mutate per-tick observed fields of a monitored entry\n  watch       Manage watches in the operator state file\n\nFlags:\n      --workers string   set FAB_AGENT_WORKERS in the launched operator tab\n\nUse \"fab operator [command] --help\" for more information about a command.\n",
         "commands": [
+          {
+            "name": "autopilot",
+            "path": "fab operator autopilot",
+            "short": "Manage the operator autopilot queue",
+            "usage": "fab operator autopilot",
+            "text": "Usage:\n  fab operator autopilot [command]\n\nAvailable Commands:\n  advance     Complete (or --skip) the current change and promote the next queue entry\n  pause       Pause the active autopilot queue\n  resume      Resume a paused autopilot queue\n  start       Start an autopilot queue (--queue id,id,...)\n  stop        Clear the autopilot block entirely\n\nUse \"fab operator autopilot [command] --help\" for more information about a command.\n",
+            "commands": [
+              {
+                "name": "advance",
+                "path": "fab operator autopilot advance",
+                "short": "Complete (or --skip) the current change and promote the next queue entry",
+                "usage": "fab operator autopilot advance [flags]",
+                "text": "Usage:\n  fab operator autopilot advance [flags]\n\nFlags:\n      --skip   drop the current change without recording it as completed\n",
+                "commands": []
+              },
+              {
+                "name": "pause",
+                "path": "fab operator autopilot pause",
+                "short": "Pause the active autopilot queue",
+                "usage": "fab operator autopilot pause",
+                "text": "Usage:\n  fab operator autopilot pause\n",
+                "commands": []
+              },
+              {
+                "name": "resume",
+                "path": "fab operator autopilot resume",
+                "short": "Resume a paused autopilot queue",
+                "usage": "fab operator autopilot resume",
+                "text": "Usage:\n  fab operator autopilot resume\n",
+                "commands": []
+              },
+              {
+                "name": "start",
+                "path": "fab operator autopilot start",
+                "short": "Start an autopilot queue (--queue id,id,...)",
+                "usage": "fab operator autopilot start [flags]",
+                "text": "Usage:\n  fab operator autopilot start [flags]\n\nFlags:\n      --mode string     merge mode: cherry-pick-ladder | merge-auto | stacked-prs (default \"cherry-pick-ladder\")\n      --queue strings   comma-separated change IDs, in order (required)\n",
+                "commands": []
+              },
+              {
+                "name": "stop",
+                "path": "fab operator autopilot stop",
+                "short": "Clear the autopilot block entirely",
+                "usage": "fab operator autopilot stop",
+                "text": "Usage:\n  fab operator autopilot stop\n",
+                "commands": []
+              }
+            ]
+          },
+          {
+            "name": "branch-map",
+            "path": "fab operator branch-map",
+            "short": "Manage the operator state file's branch_map",
+            "usage": "fab operator branch-map",
+            "text": "Usage:\n  fab operator branch-map [command]\n\nAvailable Commands:\n  rm          Remove a branch_map entry (or all with --all)\n\nUse \"fab operator branch-map [command] --help\" for more information about a command.\n",
+            "commands": [
+              {
+                "name": "rm",
+                "path": "fab operator branch-map rm",
+                "short": "Remove a branch_map entry (or all with --all)",
+                "usage": "fab operator branch-map rm [<change-id>] [flags]",
+                "text": "Usage:\n  fab operator branch-map rm [<change-id>] [flags]\n\nFlags:\n      --all   clear the entire branch_map\n",
+                "commands": []
+              }
+            ]
+          },
+          {
+            "name": "enroll",
+            "path": "fab operator enroll",
+            "short": "Create (or replace) a monitored entry and record its branch_map pair",
+            "usage": "fab operator enroll <change-id> [flags]",
+            "text": "Usage:\n  fab operator enroll <change-id> [flags]\n\nFlags:\n      --agent string         last-known agent state (passed through verbatim)\n      --branch string        the change's branch name (required)\n      --depends-on strings   comma-separated change IDs this change depends on\n      --pane string          pane ID the agent runs in (required)\n      --repo string          absolute main-worktree root of the agent's repo (required)\n      --session string       tmux session the agent's window lives in (required)\n      --spawned-by string    watch name if spawned by a watch\n      --stage string         current pipeline stage\n      --stop-stage string    stage to park at (default: full pipeline)\n",
+            "commands": []
+          },
+          {
+            "name": "remove",
+            "path": "fab operator remove",
+            "short": "Remove a monitored entry (its branch_map entry is retained)",
+            "usage": "fab operator remove <change-id>",
+            "text": "Usage:\n  fab operator remove <change-id>\n",
+            "commands": []
+          },
+          {
+            "name": "state",
+            "path": "fab operator state",
+            "short": "Print the operator state file (creates the empty skeleton when missing)",
+            "usage": "fab operator state [flags]",
+            "text": "Usage:\n  fab operator state [flags]\n\nFlags:\n      --json   print the state as JSON instead of YAML\n",
+            "commands": []
+          },
           {
             "name": "tick-start",
             "path": "fab operator tick-start",
@@ -309,6 +463,79 @@
             "usage": "fab operator time [flags]",
             "text": "Usage:\n  fab operator time [flags]\n\nFlags:\n      --interval string   Duration until next tick (e.g. 3m). If given, outputs next: HH:MM\n",
             "commands": []
+          },
+          {
+            "name": "update",
+            "path": "fab operator update",
+            "short": "Mutate per-tick observed fields of a monitored entry",
+            "usage": "fab operator update <change-id> [flags]",
+            "text": "Usage:\n  fab operator update <change-id> [flags]\n\nFlags:\n      --agent string        last-known agent state (passed through verbatim)\n      --stage string        current pipeline stage\n      --stop-stage string   stage to park at (empty string clears)\n",
+            "commands": []
+          },
+          {
+            "name": "watch",
+            "path": "fab operator watch",
+            "short": "Manage watches in the operator state file",
+            "usage": "fab operator watch",
+            "text": "Usage:\n  fab operator watch [command]\n\nAvailable Commands:\n  add         Create a watch (enabled, empty known/completed, null bookkeeping)\n  checked     Record a watch check: last_checked = now; set --error or clear it when absent\n  complete    Move an item from a watch's known list to completed\n  rm          Delete a watch\n  seen        Append an item to a watch's known list (idempotent; 200-cap, oldest pruned first)\n  toggle      Flip (or force with --on/--off) a watch's enabled flag\n  update      Mutate a watch's target-repo, stop-stage, instructions, or query\n\nUse \"fab operator watch [command] --help\" for more information about a command.\n",
+            "commands": [
+              {
+                "name": "add",
+                "path": "fab operator watch add",
+                "short": "Create a watch (enabled, empty known/completed, null bookkeeping)",
+                "usage": "fab operator watch add <name> [flags]",
+                "text": "Usage:\n  fab operator watch add <name> [flags]\n\nFlags:\n      --instructions string   free-form spawn instructions\n      --query string          query as a JSON object string (stored as the YAML query map)\n      --source string         watch source: linear|slack (required)\n      --stop-stage string     stage a spawned change parks at\n      --target-repo string    absolute path of the repo spawned changes land in (required)\n",
+                "commands": []
+              },
+              {
+                "name": "checked",
+                "path": "fab operator watch checked",
+                "short": "Record a watch check: last_checked = now; set --error or clear it when absent",
+                "usage": "fab operator watch checked <name> [flags]",
+                "text": "Usage:\n  fab operator watch checked <name> [flags]\n\nFlags:\n      --error string   error message from the check (absent clears last_error)\n",
+                "commands": []
+              },
+              {
+                "name": "complete",
+                "path": "fab operator watch complete",
+                "short": "Move an item from a watch's known list to completed",
+                "usage": "fab operator watch complete <name> <item-id>",
+                "text": "Usage:\n  fab operator watch complete <name> <item-id>\n",
+                "commands": []
+              },
+              {
+                "name": "rm",
+                "path": "fab operator watch rm",
+                "short": "Delete a watch",
+                "usage": "fab operator watch rm <name>",
+                "text": "Usage:\n  fab operator watch rm <name>\n",
+                "commands": []
+              },
+              {
+                "name": "seen",
+                "path": "fab operator watch seen",
+                "short": "Append an item to a watch's known list (idempotent; 200-cap, oldest pruned first)",
+                "usage": "fab operator watch seen <name> <item-id>",
+                "text": "Usage:\n  fab operator watch seen <name> <item-id>\n",
+                "commands": []
+              },
+              {
+                "name": "toggle",
+                "path": "fab operator watch toggle",
+                "short": "Flip (or force with --on/--off) a watch's enabled flag",
+                "usage": "fab operator watch toggle <name> [flags]",
+                "text": "Usage:\n  fab operator watch toggle <name> [flags]\n\nFlags:\n      --off   force enabled: false\n      --on    force enabled: true\n",
+                "commands": []
+              },
+              {
+                "name": "update",
+                "path": "fab operator watch update",
+                "short": "Mutate a watch's target-repo, stop-stage, instructions, or query",
+                "usage": "fab operator watch update <name> [flags]",
+                "text": "Usage:\n  fab operator watch update <name> [flags]\n\nFlags:\n      --instructions string   free-form spawn instructions (replaces the stored text)\n      --query string          query as a JSON object string (replaces the stored query)\n      --stop-stage string     stage a spawned change parks at (empty string clears)\n      --target-repo string    absolute path of the repo spawned changes land in\n",
+                "commands": []
+              }
+            ]
           }
         ]
       },
@@ -317,7 +544,7 @@
         "path": "fab pane",
         "short": "Tmux pane operations",
         "usage": "fab pane",
-        "text": "Usage:\n  fab pane [command]\n\nAvailable Commands:\n  capture     Capture terminal content from a tmux pane with fab context enrichment\n  map         Show tmux pane-to-worktree mapping with fab pipeline state\n  process     Detect the process tree running in a tmux pane\n  send        Send keystrokes to a tmux pane with validation\n  window-name Window-name prefix operations\n\nFlags:\n  -L, --server string   Target tmux socket label (passed as 'tmux -L <name>'). Defaults to $TMUX / tmux default socket.\n\nUse \"fab pane [command] --help\" for more information about a command.\n",
+        "text": "Usage:\n  fab pane [command]\n\nAvailable Commands:\n  capture     Capture terminal content from a tmux pane with fab context enrichment\n  deliver     Type a prompt into a tmux pane, verifying every step\n  kill        Kill a tmux pane\n  map         Show tmux pane-to-worktree mapping with fab pipeline state\n  open        Spawn a provider's interactive command in a tmux pane (no dispatch record)\n  process     Detect the process tree running in a tmux pane\n  ready       Probe whether a tmux pane can accept typed input (ready / booting / parked)\n  window-name Window-name prefix operations\n\nFlags:\n  -L, --server string   Target tmux socket label (passed as 'tmux -L <name>'). Defaults to $TMUX / tmux default socket.\n\nUse \"fab pane [command] --help\" for more information about a command.\n",
         "commands": [
           {
             "name": "capture",
@@ -325,6 +552,22 @@
             "short": "Capture terminal content from a tmux pane with fab context enrichment",
             "usage": "fab pane capture <pane> [flags]",
             "text": "Usage:\n  fab pane capture <pane> [flags]\n\nFlags:\n      --json        Output as JSON with metadata\n  -l, --lines int   Number of lines to capture (default 50)\n      --raw         Output raw captured text only\n\nGlobal Flags:\n  -L, --server string   Target tmux socket label (passed as 'tmux -L <name>'). Defaults to $TMUX / tmux default socket.\n",
+            "commands": []
+          },
+          {
+            "name": "deliver",
+            "path": "fab pane deliver",
+            "short": "Type a prompt into a tmux pane, verifying every step",
+            "usage": "fab pane deliver <pane> (--prompt-file <path> | --text <string>) [flags]",
+            "text": "Usage:\n  fab pane deliver <pane> (--prompt-file <path> | --text <string>) [flags]\n\nExamples:\n  fab pane deliver %12 --text \"echo hi\"\n  fab pane deliver %12 --prompt-file .fab-dispatch/b91h/apply-prompt.md\n  fab pane deliver %3 --prompt-file prompt.md --server work --json\n\nFlags:\n      --json                 Emit structured JSON output on verified delivery\n      --prompt-file string   type the pointer line naming this prompt file (Read <path> and execute it.)\n      --text string          type this text literally\n\nGlobal Flags:\n  -L, --server string   Target tmux socket label (passed as 'tmux -L <name>'). Defaults to $TMUX / tmux default socket.\n",
+            "commands": []
+          },
+          {
+            "name": "kill",
+            "path": "fab pane kill",
+            "short": "Kill a tmux pane",
+            "usage": "fab pane kill <pane>",
+            "text": "Usage:\n  fab pane kill <pane> [flags]\n\nExamples:\n  fab pane kill %12\n  fab pane kill %3 --server work\n\nGlobal Flags:\n  -L, --server string   Target tmux socket label (passed as 'tmux -L <name>'). Defaults to $TMUX / tmux default socket.\n",
             "commands": []
           },
           {
@@ -336,6 +579,14 @@
             "commands": []
           },
           {
+            "name": "open",
+            "path": "fab pane open",
+            "short": "Spawn a provider's interactive command in a tmux pane (no dispatch record)",
+            "usage": "fab pane open --provider <name> [flags]",
+            "text": "Usage:\n  fab pane open --provider <name> [flags]\n\nExamples:\n  fab pane open --provider kimi\n  fab pane open --provider claude --role fast -c /path/to/repo\n  fab pane open --provider kimi --server work --json\n\nFlags:\n  -c, --cwd string        working directory for the new pane (default: current directory)\n      --json              Emit structured JSON output\n      --provider string   provider whose interactive_command is spawned (required)\n      --role string       role whose {model}/{effort} fills apply (default \"default\")\n\nGlobal Flags:\n  -L, --server string   Target tmux socket label (passed as 'tmux -L <name>'). Defaults to $TMUX / tmux default socket.\n",
+            "commands": []
+          },
+          {
             "name": "process",
             "path": "fab pane process",
             "short": "Detect the process tree running in a tmux pane",
@@ -344,11 +595,11 @@
             "commands": []
           },
           {
-            "name": "send",
-            "path": "fab pane send",
-            "short": "Send keystrokes to a tmux pane with validation",
-            "usage": "fab pane send <pane> <text> [flags]",
-            "text": "Usage:\n  fab pane send <pane> <text> [flags]\n\nFlags:\n      --force      Skip idle validation (still validates pane existence)\n      --no-enter   Don't append Enter keystroke\n\nGlobal Flags:\n  -L, --server string   Target tmux socket label (passed as 'tmux -L <name>'). Defaults to $TMUX / tmux default socket.\n",
+            "name": "ready",
+            "path": "fab pane ready",
+            "short": "Probe whether a tmux pane can accept typed input (ready / booting / parked)",
+            "usage": "fab pane ready <pane> [flags]",
+            "text": "Usage:\n  fab pane ready <pane> [flags]\n\nExamples:\n  fab pane ready %12\n  fab pane ready %3 --server work --json\n\nFlags:\n      --json   Emit structured JSON output\n\nGlobal Flags:\n  -L, --server string   Target tmux socket label (passed as 'tmux -L <name>'). Defaults to $TMUX / tmux default socket.\n",
             "commands": []
           },
           {
@@ -399,15 +650,15 @@
         "path": "fab resolve",
         "short": "Resolve a change reference to a canonical output",
         "usage": "fab resolve [change] [flags]",
-        "text": "Usage:\n  fab resolve [change] [flags]\n\nExamples:\n  # 4-char ID of the active change (default output)\n  fab resolve\n\n  # Full folder name for a change reference\n  fab resolve --folder b91h\n\n  # Path to the change's .status.yaml\n  fab resolve --status b91h\n\n  # tmux pane ID, targeting a specific tmux socket\n  fab resolve --pane -L work b91h\n\nFlags:\n      --dir             Output directory path\n      --folder          Output full folder name\n      --id              Output 4-char change ID (default)\n      --pane            Output tmux pane ID\n  -L, --server string   Target tmux socket label for --pane (passed as 'tmux -L <name>'). Defaults to $TMUX / tmux default socket.\n      --status          Output .status.yaml path\n",
+        "text": "Usage:\n  fab resolve [change] [flags]\n\nExamples:\n  # 4-char ID of the active change (default output)\n  fab resolve\n\n  # Full folder name for a change reference\n  fab resolve --folder b91h\n\n  # Path to the change's .status.yaml\n  fab resolve --status b91h\n\n  # tmux pane ID, targeting a specific tmux socket\n  fab resolve --pane -L work b91h\n\n  # probe form: absence is data — prints \"(none)\", exit 0\n  fab resolve --folder --or-none\n\nFlags:\n      --dir             Output directory path\n      --folder          Output full folder name\n      --id              Output 4-char change ID (default)\n      --or-none         Print \"(none)\" and exit 0 when no change resolves (not-found always; ambiguous only without <change>); real errors still fail\n      --pane            Output tmux pane ID\n  -L, --server string   Target tmux socket label for --pane (passed as 'tmux -L <name>'). Defaults to $TMUX / tmux default socket.\n      --status          Output .status.yaml path\n",
         "commands": []
       },
       {
         "name": "resolve-agent",
         "path": "fab resolve-agent",
-        "short": "Resolve a pipeline stage (or role tier) to its {provider, model, effort} agent profile",
-        "usage": "fab resolve-agent <stage|tier> [flags]",
-        "text": "Usage:\n  fab resolve-agent <stage|tier> [flags]\n\nFlags:\n      --alias   emit the Claude-Code short model alias (opus/sonnet/haiku/fable) on the model= line instead of the full ID (Agent-tool adapter)\n",
+        "short": "Resolve a pipeline stage (or agent role) to its {provider, model, effort} agent profile",
+        "usage": "fab resolve-agent <stage|role> [flags]",
+        "text": "Usage:\n  fab resolve-agent <stage|role> [flags]\n\nFlags:\n      --alias             emit the Claude-Code short model alias (opus/sonnet/haiku/fable) on the model= line instead of the full ID (Agent-tool adapter)\n      --effort string     override the resolved effort (valid without --provider — a within-role override)\n      --model string      override the resolved model (valid without --provider — a within-role override)\n      --provider string   override the resolved provider (re-derives dispatch= from that provider; unoverridden model/effort refill from its per-role fills, then empty)\n",
         "commands": []
       },
       {
@@ -417,6 +668,23 @@
         "usage": "fab score <change> [flags]",
         "text": "Usage:\n  fab score <change> [flags]\n\nExamples:\n  # Compute and persist the intake confidence score\n  fab score b91h\n\n  # Read-only gate check — exits non-zero below the threshold\n  fab score --check-gate --stage intake b91h\n\nFlags:\n      --check-gate     Gate check mode (read-only)\n      --stage string   Stage for scoring (intake; spec retired in 1.10.0) (default \"intake\")\n",
         "commands": []
+      },
+      {
+        "name": "setup",
+        "path": "fab setup",
+        "short": "Set up and diagnose the fab environment",
+        "usage": "fab setup [flags]",
+        "text": "Usage:\n  fab setup [flags]\n  fab setup [command]\n\nAvailable Commands:\n  check       Read-only environment doctor — probe providers, config viability, and version skew\n\nFlags:\n      --defaults   Accept every question's default (the current effective value) non-interactively\n      --project    Write to fab/project/config.yaml instead of the system tier (~/.fab-kit/config.yaml)\n\nUse \"fab setup [command] --help\" for more information about a command.\n",
+        "commands": [
+          {
+            "name": "check",
+            "path": "fab setup check",
+            "short": "Read-only environment doctor — probe providers, config viability, and version skew",
+            "usage": "fab setup check",
+            "text": "Usage:\n  fab setup check\n\nExamples:\n  fab setup check\n  fab setup check || echo 'real problems found'  # CI gate: exit 1 only on failures\n",
+            "commands": []
+          }
+        ]
       },
       {
         "name": "shell-init",
@@ -565,8 +833,8 @@
             "name": "refresh",
             "path": "fab status refresh",
             "short": "Recompute change_type/confidence (intake.md) + plan counts (plan.md) from artifacts",
-            "usage": "fab status refresh <change>",
-            "text": "Usage:\n  fab status refresh <change>\n",
+            "usage": "fab status refresh [<change>]",
+            "text": "Usage:\n  fab status refresh [<change>]\n",
             "commands": []
           },
           {
