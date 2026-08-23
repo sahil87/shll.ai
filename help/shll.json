@@ -1,7 +1,7 @@
 {
   "tool": "shll",
-  "version": "v0.1.23",
-  "captured_at": "2026-08-22T07:44:08Z",
+  "version": "v0.1.24",
+  "captured_at": "2026-08-23T07:45:47Z",
   "schema_version": 1,
   "root": {
     "name": "shll",
