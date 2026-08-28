@@ -1,7 +1,7 @@
 {
   "tool": "run-kit",
-  "version": "v3.18.7",
-  "captured_at": "2026-08-27T18:16:32Z",
+  "version": "v3.18.9",
+  "captured_at": "2026-08-28T19:25:21Z",
   "schema_version": 1,
   "root": {
     "name": "run-kit",
@@ -251,7 +251,7 @@
             "path": "run-kit mux new",
             "short": "Create a detached tmux server on socket <name>",
             "usage": "run-kit mux new <name> [--ephemeral] [flags]",
-            "text": "Usage:\n  run-kit mux new <name> [--ephemeral] [flags]\n\nExamples:\n  rk mux new scratch1\n  rk mux new scratch2 --ephemeral\n\nFlags:\n      --ephemeral   Mark the new server @rk_ephemeral 1 (creator opt-out: reaped by rk mux reap --ephemeral, skipped by layout snapshots)\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (pane-scoped verbs: send/await/capture/kill/process, and the panes enumeration; default: the caller's own server from $TMUX, else the default server)\n",
+            "text": "Usage:\n  run-kit mux new <name> [--ephemeral] [flags]\n\nExamples:\n  rk mux new scratch1\n  rk mux new scratch2 --ephemeral\n\nFlags:\n      --ephemeral   Mark the new server @rk_srv_ephemeral 1 (creator opt-out: reaped by rk mux reap --ephemeral, skipped by layout snapshots)\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (pane-scoped verbs: send/await/capture/kill/process, and the panes enumeration; default: the caller's own server from $TMUX, else the default server)\n",
             "commands": []
           },
           {
@@ -275,7 +275,7 @@
             "path": "run-kit mux reap",
             "short": "Reap leaked test tmux servers and stale sockets by prefix",
             "usage": "run-kit mux reap [flags]",
-            "text": "Usage:\n  run-kit mux reap [flags]\n\nFlags:\n      --all             print the full list instead of the default 10-entry-per-list cap (display-only)\n      --dry-run         explicit alias for the default preview-only behavior\n      --ephemeral       also match live servers carrying the @rk_ephemeral creator opt-out mark (union with the prefix match)\n      --force           act, and bypass the dangerous-prefix guard (empty or ≤3-char prefix)\n      --prefix string   socket-name prefix to match (bare reap ≡ --prefix rk-test) (default \"rk-test\")\n      --yes             actually reap matched servers/sockets (default is dry-run preview)\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (pane-scoped verbs: send/await/capture/kill/process, and the panes enumeration; default: the caller's own server from $TMUX, else the default server)\n",
+            "text": "Usage:\n  run-kit mux reap [flags]\n\nFlags:\n      --all             print the full list instead of the default 10-entry-per-list cap (display-only)\n      --dry-run         explicit alias for the default preview-only behavior\n      --ephemeral       also match live servers carrying the @rk_srv_ephemeral creator opt-out mark (union with the prefix match)\n      --force           act, and bypass the dangerous-prefix guard (empty or ≤3-char prefix)\n      --prefix string   socket-name prefix to match (bare reap ≡ --prefix rk-test) (default \"rk-test\")\n      --yes             actually reap matched servers/sockets (default is dry-run preview)\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (pane-scoped verbs: send/await/capture/kill/process, and the panes enumeration; default: the caller's own server from $TMUX, else the default server)\n",
             "commands": []
           },
           {
