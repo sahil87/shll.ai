@@ -34,7 +34,7 @@ One line each, keyed to the subcommand or tmux option that does it:
 - `rk notify <message> [--title <t>]` — Web Push a message to every subscribed browser/device. Fail-silent by contract (see Output contracts).
 - `rk url` — print the run-kit **server URL** (config-derived: RK_HOST/RK_PORT, default `http://127.0.0.1:3000`). It is a heuristic, not a liveness probe. Run it at use-time; never hardcode the value.
 - `rk present <path|url>` — attach web content beside your own terminal: a file, a directory, a `:port`, a localhost URL, or an external URL. Prints the resolved URL to stdout. Depth: `rk skill display`.
-- `rk mux send <target> [<msg>|-]` — deliver a message into another agent's pane, gated on its `@rk_agent_state`, with probe-verified delivery. Depth: `rk skill mux`.
+- `rk mux send <target> [<msg>|-]` — deliver a message into another agent's pane, gated on its `@rk_pane_agent_state`, with probe-verified delivery. Depth: `rk skill mux`.
 - `rk mux await <target>` — block until a pane's agent state (or a `--file` signal) fires; prints a one-word report. Depth: `rk skill mux`.
 - `rk mux new <name> [--ephemeral]` — create a detached tmux server on socket `<name>`; scratch servers are created with `--ephemeral` and bulk-cleaned with `rk mux reap --ephemeral` (never bare `tmux kill-server`). Depth: `rk skill mux`.
 - `rk code exec <command> [json-arg…]` — act inside the `code` lens editor: run a VS Code palette command in an open code-server window, resolving its host via `--host`/`--folder`/the cwd's git toplevel. `rk code hosts` lists live hosts; `rk code commands` grep-lists command ids. Depth: `rk skill code`.
@@ -60,7 +60,7 @@ This bundle is static, so it can't report your live location — derive it direc
 echo "$TMUX_PANE"                                # pane ID, e.g. %82 (empty ⇒ not in tmux)
 tmux display-message -t "$TMUX_PANE" -p '#S'     # session
 tmux display-message -t "$TMUX_PANE" -p '#W'     # window
-tmux show-option -w -t "$TMUX_PANE" -qv @rk_type # window type (empty ⇒ terminal)
+tmux show-option -w -t "$TMUX_PANE" -qv @rk_win_layout # surface layout (empty ⇒ single terminal)
 rk url                                           # server URL (config-derived)
 ```
 
@@ -84,7 +84,8 @@ rk url                                           # server URL (config-derived)
 
 ## Gotchas
 
-- `@rk_type` / `@rk_url` changes are picked up by the server's SSE polling automatically — no refresh, no API call.
+- `@rk_win_layout` / `@rk_win_web_<n>` changes are picked up by the server's SSE polling automatically — no refresh, no API call. The retired `@rk_win_lens` / `@rk_win_url` are accepted only via compat for one release.
+- Legacy option names (`@rk_type`, `@rk_url`, `@rk_note`) are still read for now.
 - Killing a tmux window kills the backing process — no separate cleanup step is needed.
 - `set-option -w` targets the **current** window: create the window first, then set options from within it (or pass `-t <window>`).
 - The server URL is config-derived from this environment — always get it from `rk url`, never hardcode.
