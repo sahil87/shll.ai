@@ -1,14 +1,14 @@
 {
   "tool": "run-kit",
-  "version": "v3.18.9",
-  "captured_at": "2026-08-28T19:25:21Z",
+  "version": "v3.18.11",
+  "captured_at": "2026-08-29T13:09:02Z",
   "schema_version": 1,
   "root": {
     "name": "run-kit",
     "path": "run-kit",
     "short": "run-kit — tmux session manager with web UI",
     "usage": "run-kit [flags]",
-    "text": "Usage:\n  run-kit [flags]\n  run-kit [command]\n\nAvailable Commands:\n  agent       Agent instrumentation (state hooks setup and reporting)\n  code        Run VS Code commands in the code lens editor from the shell\n  code-server Manage the rk-owned code-server install (the /code lens editor)\n  completion  Generate the autocompletion script for the specified shell\n  daemon      Manage the background run-kit daemon (tmux-managed run-kit serve)\n  desktop     Install and update the Run Kit desktop app (macOS)\n  doctor      Check runtime dependencies\n  help        Help about any command\n  mux         Tmux substrate operations (server create, messaging, pane capture/kill/process, pane enumeration, janitor, recovery, config scaffold, tmux guard)\n  notify      Send a Web Push notification to subscribed devices\n  present     Show a file, directory, port, or URL to the user as a web tile\n  remote      Use SSH-only machines as run-kit hosts (bootstrap, tunnel, connect)\n  riff        Create a worktree, tmux window, and Claude Code session\n  role        Mark or unmark the current window as the server's operator\n  serve       Start the HTTP server (foreground)\n  skill       Print run-kit's agent skill bundle (static usage briefing)\n  status      Show tmux session summary\n  update      Update the run-kit CLI and desktop app to the latest version\n  url         Print the run-kit server URL (env → tmux option → default)\n\nFlags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit [command] --help\" for more information about a command.\n",
+    "text": "Usage:\n  run-kit [flags]\n  run-kit [command]\n\nAvailable Commands:\n  agent       Agent instrumentation (state hooks setup and reporting)\n  code        Run VS Code commands in the code lens editor from the shell\n  code-server Manage the rk-owned code-server install (the /code lens editor)\n  completion  Generate the autocompletion script for the specified shell\n  daemon      Manage the background run-kit daemon (tmux-managed run-kit serve)\n  desktop     Install and update the Run Kit desktop app (macOS)\n  doctor      Check runtime dependencies\n  help        Help about any command\n  mux         Tmux substrate operations (server create, messaging, pane capture/kill/process, pane enumeration, janitor, recovery, config scaffold, tmux guard)\n  notify      Send a Web Push notification to subscribed devices\n  present     Show a file, directory, port, or URL to the user as a web tile\n  remote      Use SSH-only machines as run-kit hosts (bootstrap, tunnel, connect)\n  riff        Create a worktree, tmux window, and Claude Code session\n  role        Mark or unmark the current window as the server's operator\n  serve       Start the HTTP server (foreground)\n  skill       Print run-kit's agent skill bundle (static usage briefing)\n  status      Show tmux session summary\n  tab         Drive a tab's UI state — layout, web tabs, code root — from the shell\n  update      Update the run-kit CLI and desktop app to the latest version\n  url         Print the run-kit server URL (env → tmux option → default)\n\nFlags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit [command] --help\" for more information about a command.\n",
     "commands": [
       {
         "name": "agent",
@@ -47,7 +47,7 @@
             "path": "run-kit code commands",
             "short": "List the command ids a code-bridge host can execute",
             "usage": "run-kit code commands [--folder <path>] [flags]",
-            "text": "Usage:\n  run-kit code commands [--folder <path>] [flags]\n\nFlags:\n      --folder string   Target host by workspace folder (default: git toplevel of the cwd)\n      --host string     Target host by id (see rk code hosts)\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "text": "Usage:\n  run-kit code commands [--folder <path>] [flags]\n\nFlags:\n      --folder string          Target host by workspace folder (default: git toplevel of the cwd)\n      --host string            Target host by id (see rk code hosts)\n      --tab string[=\"          auto\"]\u0000Target the host whose folder is the tab's @rk_win_code_root (bare --tab = the caller's own tab; pass @N for another)\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
             "commands": []
           },
           {
@@ -55,7 +55,7 @@
             "path": "run-kit code exec",
             "short": "Execute a VS Code command in a code-bridge host",
             "usage": "run-kit code exec <command> [json-arg…] [flags]",
-            "text": "Usage:\n  run-kit code exec <command> [json-arg…] [flags]\n\nFlags:\n      --all                Fan out to every live host\n      --folder string      Target host by workspace folder (default: git toplevel of the cwd)\n      --host string        Target host by id (see rk code hosts)\n      --json               Print the raw response envelope instead of the result\n      --timeout duration   Timeout the extension enforces on the command (the Go deadline adds 2s) (default 30s)\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "text": "Usage:\n  run-kit code exec <command> [json-arg…] [flags]\n\nFlags:\n      --all                    Fan out to every live host\n      --folder string          Target host by workspace folder (default: git toplevel of the cwd)\n      --host string            Target host by id (see rk code hosts)\n      --json                   Print the raw response envelope instead of the result\n      --tab string[=\"          auto\"]\u0000Target the host whose folder is the tab's @rk_win_code_root (bare --tab = the caller's own tab; pass @N for another; --all ignores it)\n      --timeout duration       Timeout the extension enforces on the command (the Go deadline adds 2s) (default 30s)\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
             "commands": []
           },
           {
@@ -433,6 +433,97 @@
         "usage": "run-kit status [flags]",
         "text": "Usage:\n  run-kit status [flags]\n\nFlags:\n      --json   Emit the session summary as JSON to stdout\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
         "commands": []
+      },
+      {
+        "name": "tab",
+        "path": "run-kit tab",
+        "short": "Drive a tab's UI state — layout, web tabs, code root — from the shell",
+        "usage": "run-kit tab",
+        "text": "Usage:\n  run-kit tab [command]\n\nAvailable Commands:\n  code        Set the code surface's folder\n  layout      Read or mutate a tab's surface layout\n  new         Create a window, optionally born with a layout\n  show        Dump every @rk_win_* option of a tab\n  web         Add, remove, select, or list a tab's web tabs\n\nFlags:\n  -L, --server string   tmux server name (default: the caller's own server from $TMUX, else the default server); requires an explicit @N\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit tab [command] --help\" for more information about a command.\n",
+        "commands": [
+          {
+            "name": "code",
+            "path": "run-kit tab code",
+            "short": "Set the code surface's folder",
+            "usage": "run-kit tab code",
+            "text": "Usage:\n  run-kit tab code [command]\n\nAvailable Commands:\n  set         Point the tab's code surface at a folder\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (default: the caller's own server from $TMUX, else the default server); requires an explicit @N\n\nUse \"run-kit tab code [command] --help\" for more information about a command.\n",
+            "commands": [
+              {
+                "name": "set",
+                "path": "run-kit tab code set",
+                "short": "Point the tab's code surface at a folder",
+                "usage": "run-kit tab code set [@N] <folder>",
+                "text": "Usage:\n  run-kit tab code set [@N] <folder> [flags]\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (default: the caller's own server from $TMUX, else the default server); requires an explicit @N\n",
+                "commands": []
+              }
+            ]
+          },
+          {
+            "name": "layout",
+            "path": "run-kit tab layout",
+            "short": "Read or mutate a tab's surface layout",
+            "usage": "run-kit tab layout [@N] [L | --add S | --rm S | --promote S | --cycle] [flags]",
+            "text": "Usage:\n  run-kit tab layout [@N] [L | --add S | --rm S | --promote S | --cycle] [flags]\n\nFlags:\n      --add string       Append a surface to the layout (grows the shape)\n      --cycle            Cycle to the next same-arity shape preset\n      --promote string   Move a surface to slot A\n      --rm string        Remove a surface from the layout (collapses the shape)\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (default: the caller's own server from $TMUX, else the default server); requires an explicit @N\n",
+            "commands": []
+          },
+          {
+            "name": "new",
+            "path": "run-kit tab new",
+            "short": "Create a window, optionally born with a layout",
+            "usage": "run-kit tab new [--session =S] [--cwd DIR] [--name N] [--layout L] [flags]",
+            "text": "Usage:\n  run-kit tab new [--session =S] [--cwd DIR] [--name N] [--layout L] [flags]\n\nFlags:\n      --cwd string       Start directory for the window (default: the caller's cwd)\n      --layout string    Layout the window is born with, e.g. split-h:tty,web (validated before creation)\n      --name string      Window name (default: tmux's own)\n      --session string   Session to create the window in, in the =S exact form (default: the caller's current session, else the server's current session)\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (default: the caller's own server from $TMUX, else the default server); requires an explicit @N\n",
+            "commands": []
+          },
+          {
+            "name": "show",
+            "path": "run-kit tab show",
+            "short": "Dump every @rk_win_* option of a tab",
+            "usage": "run-kit tab show [@N] [--json] [flags]",
+            "text": "Usage:\n  run-kit tab show [@N] [--json] [flags]\n\nFlags:\n      --json   Print the options as a flat JSON object\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (default: the caller's own server from $TMUX, else the default server); requires an explicit @N\n",
+            "commands": []
+          },
+          {
+            "name": "web",
+            "path": "run-kit tab web",
+            "short": "Add, remove, select, or list a tab's web tabs",
+            "usage": "run-kit tab web",
+            "text": "Usage:\n  run-kit tab web [command]\n\nAvailable Commands:\n  add         Attach a file, directory, port, or URL to a tab's web-tab strip\n  ls          List a tab's web tabs\n  rm          Remove a web tab from a tab's strip\n  select      Select the active web tab of a tab's strip\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (default: the caller's own server from $TMUX, else the default server); requires an explicit @N\n\nUse \"run-kit tab web [command] --help\" for more information about a command.\n",
+            "commands": [
+              {
+                "name": "add",
+                "path": "run-kit tab web add",
+                "short": "Attach a file, directory, port, or URL to a tab's web-tab strip",
+                "usage": "run-kit tab web add [@N] <target> [--show] [flags]",
+                "text": "Usage:\n  run-kit tab web add [@N] <target> [--show] [flags]\n\nFlags:\n      --show   Ensure web is in the tab's layout after adding, then select the tab\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (default: the caller's own server from $TMUX, else the default server); requires an explicit @N\n",
+                "commands": []
+              },
+              {
+                "name": "ls",
+                "path": "run-kit tab web ls",
+                "short": "List a tab's web tabs",
+                "usage": "run-kit tab web ls [@N] [--json] [flags]",
+                "text": "Usage:\n  run-kit tab web ls [@N] [--json] [flags]\n\nFlags:\n      --json   Print the family as a JSON object\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (default: the caller's own server from $TMUX, else the default server); requires an explicit @N\n",
+                "commands": []
+              },
+              {
+                "name": "rm",
+                "path": "run-kit tab web rm",
+                "short": "Remove a web tab from a tab's strip",
+                "usage": "run-kit tab web rm [@N/]web/<n>",
+                "text": "Usage:\n  run-kit tab web rm [@N/]web/<n> [flags]\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (default: the caller's own server from $TMUX, else the default server); requires an explicit @N\n",
+                "commands": []
+              },
+              {
+                "name": "select",
+                "path": "run-kit tab web select",
+                "short": "Select the active web tab of a tab's strip",
+                "usage": "run-kit tab web select [@N/]web/<n>",
+                "text": "Usage:\n  run-kit tab web select [@N/]web/<n> [flags]\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (default: the caller's own server from $TMUX, else the default server); requires an explicit @N\n",
+                "commands": []
+              }
+            ]
+          }
+        ]
       },
       {
         "name": "update",
