@@ -1,7 +1,7 @@
 {
   "tool": "run-kit",
-  "version": "v3.18.11",
-  "captured_at": "2026-08-29T13:09:02Z",
+  "version": "v3.18.16",
+  "captured_at": "2026-08-31T15:04:11Z",
   "schema_version": 1,
   "root": {
     "name": "run-kit",
@@ -283,7 +283,7 @@
             "path": "run-kit mux send",
             "short": "Deliver a message into an agent's pane, gated on its agent state",
             "usage": "run-kit mux send <target> [<message> | -] [--key <key>]... [--answer | --force] [--no-enter] [--await[=<states>]] [--timeout <secs>] [flags]",
-            "text": "Usage:\n  run-kit mux send <target> [<message> | -] [--key <key>]... [--answer | --force] [--no-enter] [--await[=<states>]] [--timeout <secs>] [flags]\n\nFlags:\n      --answer                   This send answers the target's pending question (a waiting pane accepts it)\n      --await string[=\"          auto\"]\u0000After submitting, block until the peer reaches one of these states (optional set; default idle,waiting)\n      --force                    Skip the agent-state gate (the target must still exist)\n      --key stringArray          Send a tmux key name instead of text (repeatable; e.g. --key Enter, --key C-c)\n      --no-enter                 Stage the text in the input box without submitting (no Enter)\n      --timeout running          Seconds the --await phase may run before reporting running (0 = indefinite) (default 300)\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (pane-scoped verbs: send/await/capture/kill/process, and the panes enumeration; default: the caller's own server from $TMUX, else the default server)\n",
+            "text": "Usage:\n  run-kit mux send <target> [<message> | -] [--key <key>]... [--answer | --force] [--no-enter] [--await[=<states>]] [--timeout <secs>] [flags]\n\nExamples:\n  rk mux send %5 \"keep going\"\n  rk mux send @3 - < prompt.txt\n  rk mux send =work:agent --key Enter\n\nFlags:\n      --answer                   This send answers the target's pending question (a waiting pane accepts it)\n      --await string[=\"          auto\"]\u0000After submitting, block until the peer reaches one of these states (optional set; default idle,waiting)\n      --force                    Skip the agent-state gate (the target must still exist)\n      --key stringArray          Send a tmux key name instead of text (repeatable; e.g. --key Enter, --key C-c)\n      --no-enter                 Stage the text in the input box without submitting (no Enter)\n      --timeout running          Seconds the --await phase may run before reporting running (0 = indefinite) (default 300)\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (pane-scoped verbs: send/await/capture/kill/process, and the panes enumeration; default: the caller's own server from $TMUX, else the default server)\n",
             "commands": []
           },
           {
