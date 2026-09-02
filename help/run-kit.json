@@ -1,7 +1,7 @@
 {
   "tool": "run-kit",
-  "version": "v3.18.17",
-  "captured_at": "2026-09-01T12:33:22Z",
+  "version": "v3.18.19",
+  "captured_at": "2026-09-02T12:05:39Z",
   "schema_version": 1,
   "root": {
     "name": "run-kit",
@@ -439,7 +439,7 @@
         "path": "run-kit tab",
         "short": "Drive a tab's UI state — layout, web tabs, code root — from the shell",
         "usage": "run-kit tab",
-        "text": "Usage:\n  run-kit tab [command]\n\nAvailable Commands:\n  code        Set the code surface's folder\n  layout      Read or mutate a tab's surface layout\n  new         Create a window, optionally born with a layout\n  show        Dump every @rk_win_* option of a tab\n  web         Add, remove, select, or list a tab's web tabs\n\nFlags:\n  -L, --server string   tmux server name (default: the caller's own server from $TMUX, else the default server); requires an explicit @N\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit tab [command] --help\" for more information about a command.\n",
+        "text": "Usage:\n  run-kit tab [command]\n\nAvailable Commands:\n  code        Set the code surface's folder\n  layout      Read or mutate a tab's surface layout\n  new         Create a window, optionally born with a layout\n  show        Dump every @rk_win_* option of a tab\n  web         Add, remove, move, select, or list a tab's web tabs\n\nFlags:\n  -L, --server string   tmux server name (default: the caller's own server from $TMUX, else the default server); requires an explicit @N\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit tab [command] --help\" for more information about a command.\n",
         "commands": [
           {
             "name": "code",
@@ -485,9 +485,9 @@
           {
             "name": "web",
             "path": "run-kit tab web",
-            "short": "Add, remove, select, or list a tab's web tabs",
+            "short": "Add, remove, move, select, or list a tab's web tabs",
             "usage": "run-kit tab web",
-            "text": "Usage:\n  run-kit tab web [command]\n\nAvailable Commands:\n  add         Attach a file, directory, port, or URL to a tab's web-tab strip\n  ls          List a tab's web tabs\n  rm          Remove a web tab from a tab's strip\n  select      Select the active web tab of a tab's strip\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (default: the caller's own server from $TMUX, else the default server); requires an explicit @N\n\nUse \"run-kit tab web [command] --help\" for more information about a command.\n",
+            "text": "Usage:\n  run-kit tab web [command]\n\nAvailable Commands:\n  add         Attach a file, directory, port, or URL to a tab's web-tab strip\n  ls          List a tab's web tabs\n  mv          Move a web tab to a new slot position\n  rm          Remove a web tab from a tab's strip\n  select      Select the active web tab of a tab's strip\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (default: the caller's own server from $TMUX, else the default server); requires an explicit @N\n\nUse \"run-kit tab web [command] --help\" for more information about a command.\n",
             "commands": [
               {
                 "name": "add",
@@ -503,6 +503,14 @@
                 "short": "List a tab's web tabs",
                 "usage": "run-kit tab web ls [@N] [--json] [flags]",
                 "text": "Usage:\n  run-kit tab web ls [@N] [--json] [flags]\n\nFlags:\n      --json   Print the family as a JSON object\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (default: the caller's own server from $TMUX, else the default server); requires an explicit @N\n",
+                "commands": []
+              },
+              {
+                "name": "mv",
+                "path": "run-kit tab web mv",
+                "short": "Move a web tab to a new slot position",
+                "usage": "run-kit tab web mv [@N/]web/<n> <m>",
+                "text": "Usage:\n  run-kit tab web mv [@N/]web/<n> <m> [flags]\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (default: the caller's own server from $TMUX, else the default server); requires an explicit @N\n",
                 "commands": []
               },
               {
