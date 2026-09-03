@@ -1,14 +1,14 @@
 {
   "tool": "run-kit",
-  "version": "v3.18.19",
-  "captured_at": "2026-09-02T12:05:39Z",
+  "version": "v3.19.1",
+  "captured_at": "2026-09-03T12:04:51Z",
   "schema_version": 1,
   "root": {
     "name": "run-kit",
     "path": "run-kit",
     "short": "run-kit — tmux session manager with web UI",
     "usage": "run-kit [flags]",
-    "text": "Usage:\n  run-kit [flags]\n  run-kit [command]\n\nAvailable Commands:\n  agent       Agent instrumentation (state hooks setup and reporting)\n  code        Run VS Code commands in the code lens editor from the shell\n  code-server Manage the rk-owned code-server install (the /code lens editor)\n  completion  Generate the autocompletion script for the specified shell\n  daemon      Manage the background run-kit daemon (tmux-managed run-kit serve)\n  desktop     Install and update the Run Kit desktop app (macOS)\n  doctor      Check runtime dependencies\n  help        Help about any command\n  mux         Tmux substrate operations (server create, messaging, pane capture/kill/process, pane enumeration, janitor, recovery, config scaffold, tmux guard)\n  notify      Send a Web Push notification to subscribed devices\n  present     Show a file, directory, port, or URL to the user as a web tile\n  remote      Use SSH-only machines as run-kit hosts (bootstrap, tunnel, connect)\n  riff        Create a worktree, tmux window, and Claude Code session\n  role        Mark or unmark the current window as the server's operator\n  serve       Start the HTTP server (foreground)\n  skill       Print run-kit's agent skill bundle (static usage briefing)\n  status      Show tmux session summary\n  tab         Drive a tab's UI state — layout, web tabs, code root — from the shell\n  update      Update the run-kit CLI and desktop app to the latest version\n  url         Print the run-kit server URL (env → tmux option → default)\n\nFlags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit [command] --help\" for more information about a command.\n",
+    "text": "Usage:\n  run-kit [flags]\n  run-kit [command]\n\nAvailable Commands:\n  agent       Agent instrumentation (state hooks setup and reporting)\n  code        Run VS Code commands in the code lens editor from the shell\n  code-server Manage the rk-owned code-server install (the /code lens editor)\n  completion  Generate the autocompletion script for the specified shell\n  daemon      Manage the background run-kit daemon (tmux-managed run-kit serve)\n  desktop     Install and update the Run Kit desktop app (macOS)\n  doctor      Check runtime dependencies\n  help        Help about any command\n  mux         Tmux substrate operations (server create, messaging, pane capture/kill/process, pane enumeration, janitor, recovery, config scaffold, tmux guard)\n  notify      Send a Web Push notification to subscribed devices\n  present     Show a file, directory, port, or URL to the user as a web tile\n  remote      Use SSH-only machines as run-kit hosts (bootstrap, tunnel, connect)\n  riff        Create a worktree, tmux window, and Claude Code session\n  role        Mark or unmark the current window as the server's operator\n  serve       Start the HTTP server (foreground)\n  skill       Print run-kit's agent skill bundle (static usage briefing)\n  status      Show tmux session summary\n  tab         Drive a tab's UI state — layout, web tabs, code root — from the shell\n  tutorial    Open the guided tour — an agent-run tutorial tab in this session\n  update      Update the run-kit CLI and desktop app to the latest version\n  url         Print the run-kit server URL (env → tmux option → default)\n\nFlags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit [command] --help\" for more information about a command.\n",
     "commands": [
       {
         "name": "agent",
@@ -532,6 +532,14 @@
             ]
           }
         ]
+      },
+      {
+        "name": "tutorial",
+        "path": "run-kit tutorial",
+        "short": "Open the guided tour — an agent-run tutorial tab in this session",
+        "usage": "run-kit tutorial [--tier <role>] [flags]",
+        "text": "Usage:\n  run-kit tutorial [--tier <role>] [flags]\n\nFlags:\n      --tier string   fab role tier the tour agent's launcher resolves from (default \"fast\")\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+        "commands": []
       },
       {
         "name": "update",

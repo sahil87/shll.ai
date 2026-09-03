@@ -1,7 +1,7 @@
 {
   "tool": "wt",
-  "version": "v0.1.5",
-  "captured_at": "2026-09-02T12:05:39Z",
+  "version": "v0.1.7",
+  "captured_at": "2026-09-03T12:04:51Z",
   "schema_version": 1,
   "root": {
     "name": "wt",
@@ -64,7 +64,7 @@
         "path": "wt open",
         "short": "Open a directory or worktree in an application",
         "usage": "wt open [name|path] [flags]",
-        "text": "Open a directory in a detected application (editor, terminal, file manager).\n\n\"wt open\" is the pure launcher half of the go/open split: go owns the \"which\nworktree?\" menu, open owns the \"which app?\" menu. To pick a worktree and then\nlaunch it, compose the two with \"wt go --open\".\n\nWhen called without arguments, opens the current context: the current worktree\n(inside a worktree), the repo root (in the main repo), or the current working\ndirectory (outside git).\n\nPath arguments are accepted regardless of git context. Worktree-name resolution\nrequires a git repository. --app works with every form and skips the app menu.\n\nWith --list, \"wt open\" prints the detected launchable host applications\n(editors, terminals, file managers) and exits — no menu, no launch, no git\nrepository required. Add --json for a machine-readable JSON array of\n{id, label, kind} records; each id is accepted by \"wt open <path> -a <id>\".\n\nUsage:\n  wt open [name|path] [flags]\n\nFlags:\n  -a, --app string   Open in specified app, skipping the menu\n  -h, --help         help for open\n      --json         With --list, output the app registry as a JSON array\n      --list         List detected launchable apps instead of opening anything",
+        "text": "Open a directory in a detected application (editor, terminal, file manager).\n\n\"wt open\" is the pure launcher half of the go/open split: go owns the \"which\nworktree?\" menu, open owns the \"which app?\" menu. To pick a worktree and then\nlaunch it, compose the two with \"wt go --open\".\n\nWhen called without arguments, opens the current context: the current worktree\n(inside a worktree), the repo root (in the main repo), or the current working\ndirectory (outside git).\n\nPath arguments are accepted regardless of git context. Worktree-name resolution\nrequires a git repository. --app works with every form and skips the app menu.\n\nWith --list, \"wt open\" prints the detected launchable host applications\n(editors, terminals, file managers) and exits — no menu, no launch, no git\nrepository required. Add --json for a machine-readable JSON array of\n{id, label, kind, locus} records covering every detected target; each id is\naccepted by \"wt open <path> -a <id>\". The detected default is marked with\n\"default\": true.\n\nUsage:\n  wt open [name|path] [flags]\n\nFlags:\n  -a, --app string   Open in specified app, skipping the menu\n  -h, --help         help for open\n      --json         With --list, output the app registry as a JSON array\n      --list         List detected launchable apps instead of opening anything",
         "commands": []
       },
       {

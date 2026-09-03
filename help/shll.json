@@ -1,7 +1,7 @@
 {
   "tool": "shll",
-  "version": "v0.1.25",
-  "captured_at": "2026-09-02T12:05:39Z",
+  "version": "v0.1.27",
+  "captured_at": "2026-09-03T12:04:51Z",
   "schema_version": 1,
   "root": {
     "name": "shll",
@@ -88,7 +88,7 @@
         "path": "shll skill",
         "short": "read the agent skill bundle for a shll tool (or list installed tools)",
         "usage": "shll skill [tool] [topic] [flags]",
-        "text": "Read the offline agent skill bundle for a shll tool — the one-page usage\nbriefing an agent loads before driving the tool (per the toolkit's `skill` standard).\n\nBare `shll skill` prints a one-line glossary of the installed tools (shll first,\nthen the roster) — NOT a dump of every bundle. Pick one and ask for it by name:\n\n  shll skill                 list installed tools, one line each\n  shll skill <tool>          print that tool's full agent skill bundle (raw markdown, stdout)\n  shll skill <tool> <topic>  print one of that tool's topic pages (large-scope tools)\n\n`shll skill <tool>` streams the tool's own `<tool> skill` output byte-for-byte\n(`shll skill shll` serves shll's own bundle from an embedded copy). A tool that is\nnot installed, or whose version predates its `skill` subcommand, prints a one-line\nnotice to stderr and exits 1; an unknown tool name is a usage error (exit 2).\n\n`shll skill <tool> <topic>` delegates to `<tool> skill <topic>` verbatim (a tool's\ncore bundle lists its topics). On success it streams the topic page byte-for-byte. On a\nchild failure it propagates the child's own stderr and exit code UNCHANGED — so an unknown\ntopic surfaces the tool's own diagnostic (valid topics on stderr, non-zero exit), not a\nshll-rewritten one. shll ships no topics of its own, so `shll skill shll <topic>` is a\nusage error (exit 2).\n\nUsage:\n  shll skill [tool] [topic] [flags]\n\nFlags:\n  -h, --help   help for skill\n",
+        "text": "Read the offline agent skill bundle for a shll tool — the one-page usage\nbriefing an agent loads before driving the tool (per the toolkit's `skill` standard).\n\nBare `shll skill` prints a one-line glossary of the installed tools (shll first,\nthen the roster) — NOT a dump of every bundle. Pick one and ask for it by name:\n\n  shll skill                 list installed tools, one line each\n  shll skill <tool>          print that tool's full agent skill bundle (raw markdown, stdout)\n  shll skill <tool> <topic>  print one of that tool's topic pages (large-scope tools)\n\n`shll skill <tool>` streams the tool's own `<tool> skill` output byte-for-byte\n(`shll skill shll` serves shll's own bundle from an embedded copy). A tool that is\nnot installed, or whose version predates its `skill` subcommand, prints a one-line\nnotice to stderr and exits 1; an unknown tool name is a usage error (exit 2).\n\n`shll skill <tool> <topic>` delegates to `<tool> skill <topic>` verbatim (a tool's\ncore bundle lists its topics). On success it streams the topic page byte-for-byte. On a\nchild failure it propagates the child's own stderr and exit code UNCHANGED — so an unknown\ntopic surfaces the tool's own diagnostic (valid topics on stderr, non-zero exit), not a\nshll-rewritten one.\n\n`topics` is the reserved enumeration topic: `shll skill <tool> topics` lists that tool's\ntopic names, one per line (empty output for a tool that ships none). shll itself ships no\ntopic pages — `shll skill shll topics` prints nothing and exits 0, and any other\n`shll skill shll <topic>` is a usage error (exit 2).\n\nUsage:\n  shll skill [tool] [topic] [flags]\n\nFlags:\n  -h, --help   help for skill\n",
         "commands": []
       },
       {
