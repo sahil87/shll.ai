@@ -45,6 +45,8 @@ run-kit riff                    # spawn an agent workspace (--skill /name picks 
 
 The new workspace appears in the sidebar; click into it to drive the agent — or any command — from the dashboard.
 
+Prefer a guided first run? `run-kit tutorial` (inside a tmux session) opens a `tutorial` tab whose agent walks you through the product, act by act — and re-running it switches back to that tab.
+
 The formula also installs `rk` as a fully interchangeable short alias of `run-kit`, so every command here works the same whether you type `run-kit` or `rk`.
 
 To upgrade later, run `run-kit update` — pulls the latest version via Homebrew and restarts the daemon so the new binary takes effect immediately. The desktop app updates separately: `run-kit desktop update`, or the app's **Restart to Update** menu item when it detects a new release.
@@ -149,10 +151,11 @@ The daemon also starts a managed **code-server** beside it (its own `rk-code-ser
 
 ## Status dots — read every window at a glance
 
-Each window in the sidebar, dashboard, and pane panel carries a single **status dot** that tells the window's **local story** — which journey runs in the pane and how healthy it is — using two orthogonal channels, plus a right-edge **PR glyph** for the remote story:
+Each window in the sidebar, dashboard, and pane panel carries a single **status dot** that tells the window's **local story** — which journey runs in the pane, whether anyone is working right now, and whether the pipeline failed here — using two orthogonal channels plus two additive overlays, and a right-edge **PR glyph** for the remote story:
 
 - **Hue = journey**: ![](https://img.shields.io/badge/building-60a5fa?label=) fab **building** (intake/apply/review) → ![](https://img.shields.io/badge/PR--ready-9ece6a?label=) fab **PR-ready / done** (ship/review-pr/done) · ![](https://img.shields.io/badge/agent-facc15?label=) an ad-hoc agent. A plain window is gray — color is reserved for a journey.
-- **Shape = status** (health), the same meaning in every hue: **solid** = running/live · **ring** = at rest (stage pending, parked done, idle agent) · **dotted ring + red center** = failed.
+- **Shape = liveness**, the same meaning in every hue: **solid** = work happening now (agent mid-turn; floor: output flowing) · **ring** = at rest (no live worker, idle or waiting agent, parked done, quiet shell).
+- **Overlays = additive flags**: a small **red center** flags a failed review/review-pr — inside the ring at rest, or as a **bullseye** (dark gap ring) over a solid while a rework agent is live; a **yellow halo** means an agent is waiting on you.
 - **PR glyph** (right edge): the branch's PR on GitHub — green open · yellow checks running · red failing · purple merged · gray draft. The dot never renders PR state.
 
 ![StatusDot compositional reference](https://raw.githubusercontent.com/sahil87/run-kit/main/docs/img/status-dot-reference.svg)
@@ -287,10 +290,11 @@ Supports `zsh`, `bash`, `fish`, and `powershell`. Completion-only — run-kit ha
 | Command | What it does |
 |---------|--------------|
 | `run-kit riff` | Create a worktree + tmux window + agent/command pane(s). |
+| `run-kit tutorial` | Open the guided tour — a `tutorial` window in the current tmux session whose agent walks you through run-kit (`--tier` selects the fab role, default `fast`). Re-running switches to the existing tab. |
 | `run-kit serve` | Start the HTTP server (foreground or daemon). |
 | `run-kit status` | Show a tmux session summary. |
 | `run-kit url` | Print the run-kit server URL (config-derived from `RK_HOST`/`RK_PORT`, default `http://127.0.0.1:3000`) — a heuristic for AI agents, not a liveness probe. |
-| `run-kit skill` | Print the agent skill bundle — a static usage briefing for agents operating run-kit (canonical source `docs/site/skill.md`); `run-kit skill display` prints the visual-display topic page. |
+| `run-kit skill` | Print the agent skill bundle — a static usage briefing for agents operating run-kit (canonical source `docs/site/skill.md`); topic pages are `code`, `display`, `mux`, and `tutorial`. |
 | `run-kit notify` | Send a Web Push notification to your subscribed devices (see [Push notifications](#push-notifications)). Fail-silent. |
 | `run-kit present` | Show a file, directory, `:port`, localhost URL, or external URL to the user as a web tile attached to the current window (`--window` spawns a standalone iframe window, `--notify` pushes). Prints the resolved URL. |
 | `run-kit doctor` | Check runtime dependencies. Run this first when something breaks. |
