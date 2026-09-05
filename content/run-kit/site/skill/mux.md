@@ -36,12 +36,12 @@ rk mux send %5 --key Enter                            # raw tmux key names (no p
 
 | state | plain | `--answer` |
 |-------|-------|------------|
-| unknown (no/unparseable state) | warn + send | warn + send |
+| unknown (no/unparseable state) | warn + send — the warning names a non-shell foreground (… foreground process `htop` running; sending ungated) | warn + send (same naming) |
 | `idle` | send | send |
 | `waiting` | refuse | send — this send IS the answer |
 | `active` | refuse | refuse — never interrupt a working agent |
 
-`--force` skips the gate (existence still checked). Refusals name the state on stderr, exit 1.
+`--force` skips the gate (existence still checked). Refusals name the state on stderr, exit 1. Every delivery — text paste and `--key` sends alike, including `--force` — first clears an active pane mode (probes `#{pane_in_mode}`, one `send-keys -X cancel`; a scrolled pane's copy-mode would otherwise eat the bytes — no manual `copy-mode -q` needed); a guard failure aborts before anything is delivered (exit 1).
 
 **Delivery** is paste-probed: the text is pasted via a named buffer (bracketed paste — multi-line lands as one block), then Enter is sent ONLY after the paste provably echoed into the live input buffer. If that probe fails (e.g. a permission dialog swallowed the paste), no Enter is sent, the text stays staged in the composer, and the command exits 1 — **check the terminal before retrying; a resend would duplicate the staged text**. After Enter, the engine watches for a pane change. A frame that changes at any backoff step makes no claim either way and reports `delivered` (including a busy pane repainting for its own reasons); only a byte-identical frame through every step with the paste echo still present triggers bounded clear/retype/resubmit recovery. A recovered send also reports `delivered`. `unverified %N` means the engine detected non-submission and bounded recovery did not fix it; it exits 1 — **capture the pane before resending, because the message may or may not have landed and a resend may duplicate it**. `--no-enter` stages without submitting (report: `staged %N`).
 
@@ -53,14 +53,14 @@ rk mux send %5 --key Enter                            # raw tmux key names (no p
 rk mux await %5                          # block until the pane's agent is idle
 rk mux await %5 --until idle,waiting     # wake on finish OR a question back
 rk mux await %5 --file /tmp/result.json  # OR-compose a file-appearance signal
-rk mux await %5 --ready                  # wait for BOOT: `ready %5 (state)` or `ready %5 (settled)`
+rk mux await %5 --ready                  # wait for BOOT: `ready %5 (state)`, `ready %5 (echo)`, or `parked %5`
 rk mux await %5 --timeout 120            # give up waiting after 120s
 rk mux await %5 --notify                 # Web Push yourself/the human on wake
 ```
 
 **stdout is one report word**: the reached `--until` state (default `idle`), `file`, `running` (timeout expired — exit 0; the timeout bounds YOU, never the pane), or `gone` (the pane died — exit 1). The first check runs before any sleep, so an already-fired signal returns immediately. An uninstrumented pane (no `@rk_pane_agent_state`) with no `--file` errors immediately — there is nothing to wait on.
 
-`--after-active` requires observing `active` before an `--until` state counts — use it when awaiting a pane you just sent to OUTSIDE `rk mux send --await`, so the peer's pre-send `idle` doesn't end your wait instantly. `--ready` instead waits for a freshly spawned agent to finish BOOTING: the pane's agent state is present (its hooks fired — the TUI is up) or, for hook-less agents, its screen has stopped changing. It reports which signal fired, keeps the `running`/exit-0 timeout contract, and is mutually exclusive with `--until`/`--file`/`--after-active`/`--any` (exit 2). Spawn-then-deliver for hook-less agents: `rk mux await --ready %5 && rk mux send --force %5 '<prompt>'` — plain `send` stays gated on agent state, which a hook-less pane never has, so `--force` is the documented pairing after a `--ready` wait.
+`--after-active` requires observing `active` before an `--until` state counts — use it when awaiting a pane you just sent to OUTSIDE `rk mux send --await`, so the peer's pre-send `idle` doesn't end your wait instantly. `--ready` instead waits for a freshly spawned agent to finish BOOTING: the pane's agent state is present (its hooks fired — the TUI is up) or, for hook-less agents, a settled screen is classified by a sentinel echo probe — a harmless sentinel is pasted into the pane; an echo means a live input box (`ready %N (echo)`), and no echo on a settled non-blank screen means the pane is PARKED behind a wall — a trust dialog, survey, theme picker, or login wall that would eat a delivery. `parked %N` returns immediately (exit 0 — classification succeeded; it is a report, not a failure) with the screen snippet on stderr so YOU can judge what the wall wants and answer it with the standard write channel (`rk mux send --key Enter`, `--key Down`, …); rk never auto-answers a wall. Boot churn never returns: the wait blocks through it and ends only on `ready`, `parked`, `gone` (the pane died — exit 1), or timeout. `--ready` keeps the `running`/exit-0 timeout contract and is mutually exclusive with `--until`/`--file`/`--after-active`/`--any` (exit 2). The sentinel is typed only into PRE-DELIVERY panes (no agent state yet, nothing delivered) — against a live delivered worker readiness verbs are illegal; use `--until` / `capture`. Spawn-then-deliver for hook-less agents: `rk mux await --ready %5 && rk mux send --force %5 '<prompt>'` — plain `send` stays gated on agent state, which a hook-less pane never has, so `--force` is the documented pairing after a `--ready` wait; note `parked` also exits 0, so `&&`-composers must branch on the report word.
 
 ### Any-of fleet wait (`--any`)
 
@@ -127,15 +127,15 @@ rk mux process %5 --json
 
 Discovers the pane's process tree (the shell's `#{pane_pid}` and its descendants) and prints it as indented `PID comm [class]` lines under a `Pane %5 (PID 1234)` header, with a trailing `Agent process detected.` when an agent is present. Classification by comm: `agent` (`claude`, `claude-code`, `codex`, `gemini`, `copilot`), `node`, `git` (`git`, `gh`), else `other` (tag omitted). **Agent-state cross-check**: when the pane's `@rk_pane_agent_state` carries a live pid, that tree node is `agent` regardless of comm (e.g. an agent behind a wrapper) — instrumentation beats heuristics. `--json` emits `{"pane", "pane_pid", "processes": [{pid, ppid, comm, cmdline, classification, children}], "has_agent"}`.
 
-## `rk mux panes` — enumerate every pane on the server
+## `rk mux panes` / `rk mux sessions` — server-wide enumeration
 
 ```sh
-rk mux panes                 # aligned table, one row per pane
-rk mux panes --json          # machine-readable array
-rk mux panes -L foo          # another tmux server (default: yours, from $TMUX)
+rk mux panes                 # one row per pane (aligned table; --json for the array)
+rk mux sessions --all        # one row per session; default lists user-facing only, --all adds labeled infrastructure
 ```
 
-The whole-server enumeration query — no target argument; it is the one mux member that is not pane-scoped. Every pane of every session lists exactly once; run-kit's internal sessions (`_rk-pin-*` pin-sessions, the `_rk-ctl` anchor) are excluded, so a pinned window appears via its home session only. Rows carry **substrate facts only**: `session`, `session_id`, `window_index`, `window_id`, `window_name`, `window_active`, `pane`, `pane_index`, `pane_active`, `command`, `cwd`, `agent_state`, `agent_state_duration` — no change/stage fields (choreography enrichment is fab's layer). `agent_state`/`agent_state_duration` are `null` for uninstrumented panes; the duration shows only for `idle`/`waiting`, never `active`. An alive server with nothing to list exits 0 (`[]` under `--json`); no server on the socket is exit 1 with tmux's diagnostic; a stray argument is exit 2.
+The enumeration queries — no target argument; the two mux members that are not pane-scoped. `panes` lists every pane of every session exactly once; run-kit's internal sessions (`_rk-pin-*` pin-sessions, the `_rk-ctl` anchor) are excluded, so a pinned window appears via its home session only. Rows carry **substrate facts only**: `session`, `session_id`, `window_index`, `window_id`, `window_name`, `window_active`, `pane`, `pane_index`, `pane_active`, `command`, `cwd`, `agent_state`, `agent_state_duration` — no change/stage fields (choreography enrichment is fab's layer). `agent_state`/`agent_state_duration` are `null` for uninstrumented panes; the duration shows only for `idle`/`waiting`, never `active`.
+`sessions` rows carry `name`, `role`, `attached`, `windows`, `path`, `grouped`. The role derives from the session **name** at request time — `user` for ordinary sessions; `pin` (`_rk-pin-*`), `control` (`_rk-ctl`), `operator` (`_rk-operator`), or `reserved` (any other `_rk-*` name — the prefix is run-kit's reserved namespace, so filtering on `role != "user"` stays correct when new infrastructure kinds appear). By default only `user` sessions list — the candidate set an orchestrator picking a spawn target wants; `--all` shows everything labeled. Session-group copies fold onto their leader (one row, `grouped: true`), and `attached` counts real sized viewers credited to the leader — the dashboard's own control-mode attaches never inflate it. Both consume `-L <server>` (default: yours, from `$TMUX`); an alive server with nothing to list exits 0 (`[]` under `--json`); no server on the socket is exit 1 with tmux's diagnostic; a stray argument is exit 2.
 
 ## Gotchas
 
