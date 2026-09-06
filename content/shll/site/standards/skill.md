@@ -18,6 +18,15 @@ A `<tool> skill` bundle is offline (embedded), present on every machine that has
 
 The toolkit's prior art is [`run-kit context`](https://github.com/sahil87/run-kit) (a.k.a. `rk context`) — roughly 102 lines of agent-optimized markdown that a harness loads to learn what run-kit can do. It proves the shape works. One nuance the `skill` genre draws a line on: `run-kit context` mixes **static** capability prose with a small **dynamic** Environment header (current session, pane, server URL) computed at invocation. The `skill` bundle is **static-only** — embedded, byte-identical across invocations, drift-guarded. Dynamic, environment-derived state stays in separate commands like `run-kit context`; a `skill` bundle never varies with where or when it runs.
 
+## Deliberately not absorbed (agentskills.io)
+
+The [agentskills.io Agent Skills specification](https://agentskills.io/specification) and this standard are **complementary, not converging**: the open spec governs the *placed*, harness-side `SKILL.md` format — which the one skill this standard's design places, the `shll-toolkit` bootstrap, conforms to (see [Landed design](#landed-design-shll-setup-agent)) — while the bundle genre stays binary-embedded and version-locked. The staleness problem placed files have is exactly what version-locking solves, so four of the open spec's features are deliberately NOT absorbed for bundles:
+
+- **Their ~500-line budget** — ours is deliberately tighter (≤150): bundles are pulled per-conversation via `shll skill <tool>`, so every line taxes every conversation that pulls it.
+- **Frontmatter on the bundles themselves** — bundles are stdout payloads, not placed files; there is no loader to read frontmatter.
+- **The experimental `allowed-tools` field** — not applicable to a stdout payload.
+- **The `scripts/`/`references/`/`assets/` folder conventions** — bundles defer executable behavior to the tool itself; the binary is the "script".
+
 ## Invocation contract
 
 `<tool> skill` is uniform across every tool that adopts it:
@@ -44,6 +53,7 @@ Explicitly **out** of the bundle: exhaustive flag tables (defer to `-h`), full c
 - **Static only.** The bytes are identical on every invocation, on every machine, for a given release. No timestamps, no environment lookups, no session state (contrast `run-kit context`).
 - **Bounded — ≤150 lines.** A hard budget, per principle №9. Agents pull a bundle into context at use time via `shll skill <tool>` (see [Landed design](#landed-design-shll-setup-agent)), and the bare `shll skill` glossary lists one line per installed tool; a bloated bundle taxes every conversation that pulls it. If it doesn't fit in 150 lines, it is trying to be a README — or it is a large-scope tool whose depth belongs in [topic pages](#topic-pages-large-scope-tools), never in a bigger core.
 - **Byte-identical to the canonical file.** `<tool> skill` stdout MUST equal `docs/site/skill.md` byte-for-byte. The content is embedded at build time via a **sync + drift-guard** pattern — committed embedded copies, a sync script that refreshes them from the canonical `docs/site/` source, and a drift-guard test that fails the build when they diverge. This is the exact mechanism `shll standards` established for the standards documents; reuse it.
+- **Enforced by failing tests, not review.** In each adopting repo, the ≤150-line budget (core bundle and every topic page) and the reserved [`skill topics` contract](#topic-pages-large-scope-tools) MUST be pinned by a test that fails on violation — extending the drift-guard test or adding a small conformance test both conform. The outcome (a failing test) is mandated; the mechanism is the repo's choice. Prose checklists drift between audits; tests don't.
 - **Renders on the site for free.** Because `docs/site/skill.md` is part of the pulled `docs/site/**` tree, the bundle also renders at `/<tool>/skill` on shll.ai automatically — the same page an agent reads offline via `<tool> skill`.
 
 ## Topic pages (large-scope tools)
@@ -75,6 +85,26 @@ Phased, per-repo — like help-dump's rollout was. This standard is the contract
 - **The runtime two-step.** Bare `shll skill` prints an installed-only glossary — one line per tool. `shll skill <tool>` then streams that tool's core bundle on demand, byte-identical from the installed binary, so bundle content stays version-locked by construction and is fetched only when an agent actually needs it.
 - **Hook-wiring delegation.** `shll setup agent` **delegates run-kit's dashboard-hook wiring to `run-kit agent setup`**, which is hook-only — its context-injection responsibility was removed as designed, leaving it to do only hook wiring.
 
+### The placed skill conforms to the Agent Skills spec
+
+The bootstrap skill is the one artifact this design places into harness-owned skills directories (`~/.agents/skills/`, `~/.claude/skills/`) — paths read by every [agentskills.io](https://agentskills.io/specification)-compatible client (Claude Code, Codex, Gemini CLI, Cursor, OpenCode, and any future adopter of the open standard). A placed file that violates that spec silently fails to load on some clients, so conformance is a requirement:
+
+- **Valid YAML frontmatter** carrying the portable `name` + `description` fields.
+- **Name rule**: 1–64 characters matching `^[a-z0-9]+(-[a-z0-9]+)*$` (lowercase alphanumeric + hyphens; no leading, trailing, or consecutive hyphens), equal to the skill directory name.
+- **Description ≤1024 characters**, strictly — no exemption for roster-driven vocabulary.
+
+Scope: only the **placed** skill is bound by agentskills.io. Bundles (`<tool> skill` stdout) are not placed files and are deliberately exempt (see [Deliberately not absorbed](#deliberately-not-absorbed-agentskillsio)).
+
+### Description-writing rules (the activation contract)
+
+The placed skill's `description` frontmatter is the only text in an agent's context *before* the skill is invoked — activation quality lives or dies there. The roster-driven description MUST be written as:
+
+- **Tool names front-loaded** — every roster tool's name (and legacy alias, e.g. `run-kit/rk`) appears as trigger vocabulary.
+- **Task-shaped trigger phrases, not just nouns** — each tool contributes a task-domain phrase ("git worktrees", "tmux sessions"): agents match task-shaped requests ("create a worktree"), not tool names alone.
+- **What + when structure** — the description states what the skill does AND when to use it.
+- **≤1024 characters** — the agentskills.io cap above, restated here because it is the binding budget on trigger vocabulary: compression prioritizes trigger coverage over prose completeness.
+- **Triggers in the description; operations in the body** — the description carries activation vocabulary (what + when); operational/recipe prose belongs in the skill body, which is read at activation.
+
 The mechanism changed from the original sketch, but the budget and static-only motive survives it: every `shll skill <tool>` call pulls the core bundle into a paying context, and the glossary lists every installed tool — so a bloated bundle still taxes every conversation that pulls it, which is the whole reason for the static-only rule and the ≤150-line budget above.
 
 ## Verifying conformance
@@ -90,3 +120,5 @@ Before shipping a change that touches your tool's `skill` bundle:
 - If the tool ships topic pages: the `skill` subcommand's help text names every shipped topic.
 - `<tool> skill topics` prints the shipped topic names one per line, raw to stdout, stderr empty, exit 0 — empty output when the tool ships no topic pages (binds every adopting tool).
 - No content topic is named `topics`.
+- The ≤150-line budget and the `skill topics` contract are pinned by tests that fail on violation (see Rules with teeth) — not checklist-only items.
+- If the tool places Agent Skills into harness skills directories (today: shll's `setup agent`): the placed skill validates against the agentskills.io spec — `skills-ref validate` (github.com/agentskills/agentskills) is the reference method; equivalent in-repo tests (frontmatter validity, the name rule, the ≤1024-char description) satisfy the intent where the validator is not practically installable in CI.
