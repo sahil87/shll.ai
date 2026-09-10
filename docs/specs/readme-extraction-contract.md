@@ -557,12 +557,20 @@ collision is visible in the run log without blocking the pull.
   external links; WHEN shll.ai pulls it; THEN every relative link is known-intra-set, so the consumer
   needs only the two §link-resolution transforms — no link classifier, no copied-set manifest.
 
-## §link resolution — the consumer's entire rewrite surface (two transforms, change `x0br`)
+## §link resolution — the consumer's entire rewrite surface (two transforms, change `x0br`; parser-scoped since change `mr4y`)
 
 Two transforms, applied to **link/image URL targets only** — never to prose or code that merely
-mentions the literal text, and never to absolute URLs. Both live as pure, exported, tested functions
-in [`extract-readme.ts`](../../sites/astro-starlight-terminal1/src/lib/extract-readme.ts) (same
-single-machine-anchor discipline as `extractReadme`/`findUnknownTokens`).
+mentions the literal text, and never to absolute URLs. Both live as exported, tested **remark
+plugins** in [`extract-readme.ts`](../../sites/astro-starlight-terminal1/src/lib/extract-readme.ts)
+(same single-machine-anchor discipline as `extractReadme`/`findUnknownTokens`), wired into the
+renderers via `createMarkdownProcessor({ remarkPlugins: [...] })`. Since change `mr4y` the rewrite
+runs **on the parsed mdast**, not on the raw string: the plugins visit `link`, `image`, and
+`definition` nodes (editing their `url`) plus relative `href`/`src` attributes inside `html` node
+values (`<script>`/`<style>` nodes excluded) — `code`, `inlineCode`, `text`, and every other node
+type are never touched **by construction**, so a `](`-shaped call inside a fenced block, an inline
+code span, or a raw script (e.g. `cfg.actions[act](this)`) renders verbatim. (The raw-string scanner
+they replaced could not tell code from links; that defect corrupted run-kit's
+`docs/site/cron-schedule-kinds.md` script.)
 
 **The target is rewritten to a SITE-ABSOLUTE path `/<slug>/<resolved-path>`** (reworked by the
 `x0br` review; namespace moved to root by change `3ke3` — formerly `/tools/<slug>/<resolved-path>`).
@@ -579,8 +587,9 @@ Because the resolved URL embeds the slug — and, for docs/site pages, resolves 
 page's own mount path — both transforms are **slug-aware** (and the docs/site transform is
 mount-path-aware). They are no longer slug-agnostic string transforms; that is accepted and intended.
 
-1. **`docs/site/` pages (intra-set links)** — `rewriteDocsSiteLinks(markdown, slug, mountPath)`:
-   resolve each **relative** link/image target against the page's OWN directory within the docs/site
+1. **`docs/site/` pages (intra-set links)** — `remarkDocsSiteLinks(slug, mountPath)`:
+   resolve each **relative** link/image/definition target (and relative `href`/`src` in raw-HTML
+   nodes) against the page's OWN directory within the docs/site
    tree (`mountPath` is the page's path under `site/`, no `.md`, e.g. `advanced/hooks`), normalize
    `.`/`..`, strip `.md`, and emit the site-absolute mount URL `/<slug>/<resolved>`. Closure
    (§9.1.1) guarantees relative targets are intra-set. Examples: page `advanced/hooks` linking
@@ -590,8 +599,8 @@ mount-path-aware). They are no longer slug-agnostic string transforms; that is a
    (`/<slug>/__unresolved__/<…>`) so the broken link is visibly dead rather than misrouted to a
    plausible-but-wrong page. The escape predicate is **shared** with `findClosureViolations`, so the
    rewrite and the warning agree on what "escape" means. Applied at render time by the dynamic route
-   (the committed slice stays a verbatim copy of canonical).
-2. **README slice (links into `docs/site/`)** — `rewriteReadmeDocsSiteLinks(markdown, slug)`: a relative
+   as a remark plugin (the committed slice stays a verbatim copy of canonical).
+2. **README slice (links into `docs/site/`)** — `remarkReadmeDocsSiteLinks(slug)`: a relative
    target of the form `docs/site/<p>.md` → the site-absolute mount URL `/<slug>/<p>` (the
    `docs/site/` prefix maps to the tool root `/<slug>/`, `.md` stripped, nested `<p>` subtree
    preserved). Examples: `[guide](docs/site/install.md)` → `[guide](/<slug>/install)`;
@@ -601,43 +610,38 @@ mount-path-aware). They are no longer slug-agnostic string transforms; that is a
 
 ### The rewrite guard (critical correctness boundary)
 
-Both transforms operate **only** on link/image URL targets — the `(...)` of markdown `[text](target)`
-and `![alt](target)`, and `href`/`src` in raw HTML — and (for the README) match `docs/site/` **only as
+Both plugins operate **only** on link/image URL targets — the `url` of mdast `link`, `image`, and
+`definition` nodes, and relative `href`/`src` attributes inside `html` node values (nodes opening
+`<script>`/`<style>` are skipped wholesale, so a JS string like `img.src="./x.png"` is never
+touched) — and (for the README) match `docs/site/` **only as
 a path-prefix of a RELATIVE target**. They MUST NOT touch:
 
 - absolute URLs containing the literal substring (e.g.
   `https://github.com/sahil87/idea/blob/main/docs/site/x.md` stays verbatim),
-- prose or fenced code that mentions the text `docs/site`,
+- prose or code that mentions the text `docs/site` (fenced blocks and inline code are `code`/
+  `inlineCode` mdast nodes, which the plugins never visit — code-safety is structural, change
+  `mr4y`),
 - the `.md` of anything that is not a relative link target (a `.md` in link TEXT survives).
 
 This is "rewrite the relative-link target," **not** a blind string replace. A `#fragment` / `?query`
 suffix on a relative target is preserved verbatim (the rewrite applies to the path part only).
 
-### Known limitations
-
-Two link shapes are **not** rewritten by the current transforms (honestly recorded; the canonical page
-still commits + renders, and these are rare in practice — fixing them robustly requires nested-bracket
-parsing that risks the guard's precision, so it is deferred, not scoped here):
-
-- **(a) The OUTER target of a linked image** `[![alt](img)](page.md)` is unhandled — the scanner matches
-  the inner image (whose target is an absolute image URL per §3, so untouched) but not the outer link's
-  `(page.md)`. A docs/site page linked behind a badge keeps its raw relative target. (Plain links and
-  plain images are fully handled.)
-- **(b) Reference-style link definitions** `[id]: ./x.md` are unhandled — the scanner only sees inline
-  `(...)` targets and `href`/`src`, not the `[id]: target` definition line. A reference-style link into
-  `docs/site/` is not rewritten.
-
 ### GIVEN/WHEN/THEN
 
 - **docs/site intra-set link site-absolute** — GIVEN a `docs/site/` page `advanced/hooks` with
-  `[i](../install.md)`; WHEN `rewriteDocsSiteLinks(md, 'idea', 'advanced/hooks')` runs; THEN the target
-  becomes `/idea/install` while absolute URLs, prose, and code are untouched.
+  `[i](../install.md)`; WHEN the page renders through the `remarkDocsSiteLinks('idea', 'advanced/hooks')`
+  plugin; THEN the target becomes `/idea/install` while absolute URLs, prose, and code are untouched.
 - **README `docs/site/` link site-absolute** — GIVEN a README slice with `[guide](docs/site/install.md)`;
-  WHEN `rewriteReadmeDocsSiteLinks(md, 'idea')` runs; THEN the target becomes `/idea/install`, and a
-  nested `docs/site/advanced/hooks.md` becomes `/idea/advanced/hooks`.
+  WHEN it renders through the `remarkReadmeDocsSiteLinks('idea')` plugin; THEN the target becomes
+  `/idea/install`, and a nested `docs/site/advanced/hooks.md` becomes `/idea/advanced/hooks`.
 - **Rewrite guard holds** — GIVEN a page with an absolute URL containing `docs/site`, prose mentioning
-  `docs/site`, and a relative `[x](docs/site/x.md)`; WHEN either transform runs; THEN only the relative
+  `docs/site`, and a relative `[x](docs/site/x.md)`; WHEN either plugin runs; THEN only the relative
   link target is rewritten; the absolute URL, prose, and any code mention stay verbatim.
+- **Code renders verbatim (change `mr4y`)** — GIVEN a docs/site page with a fenced block containing
+  `arr[i](x)`, an inline code span `` `foo[bar](baz)` ``, and a raw `<script>` block containing
+  `fn[k](this)`, alongside a real link `[s](./sibling.md)`; WHEN the page renders through
+  `remarkDocsSiteLinks('idea', 'advanced/hooks')`; THEN the code and script render byte-verbatim
+  (no `/idea/this`, no `/idea/x)`) AND the real link still becomes `/idea/advanced/sibling`.
 
 ## §closure lint — report-only conformance check (change `x0br`)
 
@@ -659,9 +663,9 @@ structure so scanner offsets are unchanged), reusing the same CommonMark fence d
 inside a code sample — a backtick-wrapped `` `![alt](…)` `` image-syntax example in prose, or a
 `[x](rel.md)` inside a fenced block — is NOT mistaken for a real relative link/image. A relative link
 or image in genuine (non-code) prose still flags. This masks the **detector** only; the render-side
-rewriter (`rewriteLinkTargets`, §link resolution) keeps its documented no-fence-tracking over-reach
-(rendering behavior is frozen — a code sample's relative link rewrites to the same resolved path, a
-known display wart, out of scope). The README-slice link lint (`findReadmeLinkViolations`, §8) masks
+rewriter no longer needs masking — since change `mr4y` it is parser-scoped (a remark plugin over
+`link`/`image`/`definition`/`html` mdast nodes, §link resolution), so code is excluded by
+construction. The README-slice link lint (`findReadmeLinkViolations`, §8) masks
 code the same way, for the same reason.
 
 It is implemented as a pure, single-sourced detector,
@@ -800,9 +804,11 @@ unbroken result. Do this as a single change.
    the fix is to make the link absolute in your README. Only two relative forms are auto-handled: a
    link **into** your `docs/site/` tree written as `docs/site/<path>.md` (rewritten to
    `/<slug>/<path>`), and intra-`docs/site/` links (Part 2). Everything else relative → make it
-   absolute. Avoid putting a `docs/site/` link **behind a badge/thumbnail** (`[![alt](img)](docs/site/x.md)`)
-   or as a **reference-style definition** (`[id]: docs/site/x.md`) — those two shapes are not rewritten
-   (a known consumer limitation) and would 404; write them as plain inline links.
+   absolute. A `docs/site/` link **behind a badge/thumbnail** (`[![alt](img)](docs/site/x.md)`) or as
+   a **reference-style definition** (`[id]: docs/site/x.md`) is rewritten too — the rewriter is a
+   parser-scoped remark plugin over `link`/`image`/`definition` nodes, so both wrapped shapes resolve
+   site-absolute (and code/inline-code is never touched). Plain inline links remain the most readable
+   form, but the two wrapped shapes no longer 404.
 6. **Drop GitHub-only theme tricks (§4/§6).** Do **not** use the `#gh-dark-mode-only` /
    `#gh-light-mode-only` URL-fragment trick — it's stripped on pull. For a genuine light/dark pair use a
    theme-agnostic image (covers ~90% of cases) or a `<picture><source media="(prefers-color-scheme:…)">`.
@@ -905,9 +911,10 @@ The single **machine-anchored** definition of the deduction + strip + verify beh
 > — `extractReadme(markdown)` (§1 head + §2 tail + §6 strips), `findUnknownTokens(slice, helpDoc)`
 > (§7 divergence reporter — detection logic; consumed as a non-fatal `::warning::` by
 > `extract-readme-cli.mjs`), and the §9 `docs/site/` consumer functions (SITE-ABSOLUTE,
-> slug-aware): `rewriteDocsSiteLinks(markdown, slug, mountPath)` (resolves a docs/site page's relative
-> targets against its mount path → `/<slug>/<resolved>`) / `rewriteReadmeDocsSiteLinks(markdown, slug)`
-> (a README's `docs/site/<p>.md` → `/<slug>/<p>`) — the two transforms + the shared rewrite guard
+> slug-aware): `remarkDocsSiteLinks(slug, mountPath)` (a remark plugin resolving a docs/site page's
+> relative targets against its mount path → `/<slug>/<resolved>`) / `remarkReadmeDocsSiteLinks(slug)`
+> (a remark plugin mapping a README's `docs/site/<p>.md` → `/<slug>/<p>`) — the two parser-scoped
+> transforms + the shared rewrite guard
 > — and `findClosureViolations(relPath, markdown)` (§closure lint — detection logic; consumed as a
 > non-fatal `::warning::` by `extract-docs-site-cli.mjs`), plus `findReadmeLinkViolations(slice)`
 > (the README-slice link lint — relative links not under `docs/site/`, and relative images; consumed as a
@@ -930,6 +937,7 @@ The single **machine-anchored** definition of the deduction + strip + verify beh
 
 | Date | Change |
 |------|--------|
+| 2026-09-10 | Parser-scoped link rewrite (change `mr4y`): the §link-resolution transforms are now **remark plugins over the parsed mdast** (`remarkDocsSiteLinks(slug, mountPath)` / `remarkReadmeDocsSiteLinks(slug)` visiting `link`/`image`/`definition` nodes, plus relative `href`/`src` inside `html` nodes with `<script>`/`<style>` excluded), wired via `createMarkdownProcessor({ remarkPlugins })` on both render paths — the raw-string scanner (`rewriteLinkTargets`) and the two string-transform exports are **removed**. Root cause fixed: the string scanner rewrote any `](` shape anywhere, including inside fenced code and raw `<script>` (it corrupted `cfg.actions[act](this)` on run-kit's `docs/site/cron-schedule-kinds.md`, killing the page's script; run-kit PR #906 had to contort its own source around the consumer bug). Code-safety is now structural (the parser owns the code-vs-link boundary). The §link-resolution **Known limitations** block is deleted — the mdast visitor natively handles both former gaps (reference-style `[id]: ./x.md` definitions and the outer target of a linked image `[![alt](img)](page.md)`). §closure lint note updated (the rewriter no longer keeps a no-fence-tracking over-reach; `maskCode` remains detector-only). Companion fix: `firstH1`/`stripFirstH1` (`docs-site-tree.ts`) are now **fence-aware** via one shared line scanner (a `# comment` inside a fence is neither the title nor stripped), mirrored in the `docs-site-sidebar.mjs` config-eval twin. Mapping semantics, path helpers, and both report-only lints are unchanged; no new dependency (hand-rolled tree walk, structural node types). Pinned by render-through-processor tests in `scripts/extract-readme.test.mjs` + fence cases in `scripts/docs-site-tree.test.mjs`. |
 | 2026-07-18 | Reconciled prose to consumer-code fixes (change `715p` — drift-checker false positives). New **§7.1 "Detection mechanics — the false-positive guards"**: `findUnknownTokens` now (1) stops the flag scan at a bare `--` end-of-options separator, (2) stops it at an angle-bracket `<placeholder>` token (angle-only — `[optional]` does not stop), (3) seeds cobra `completion`/`help` as valid leaf root-children (excluded from every dump by `help-dump-contract.md` §4) — **gated on the root already being a cobra parent** (≥1 real subcommand) so a leaf-root dump like `tu` (`commands: []`) is not falsely turned into a non-leaf that flags its own real tails, and (4) applies a checker-only `UNDUMPED_TOKENS` allowlist for tokens real-but-undumped (the fab-kit sibling-binary command set + hop's hidden `--shim-plan`; hiddenness is not representable in `help/<tool>.json`). Merged dumps rejected (upstream-blocked + changes rendered surfaces). **§closure lint** + the §8 **README-slice link lint** now scan **code-masked** text (fenced blocks + inline `` `code` `` spans blanked, reusing the CommonMark fence discipline) so an illustrative link/image inside a code sample is not flagged; the render-side rewriter is unchanged (its no-fence-tracking over-reach stays, rendering frozen). Remaining warning classes (hop launcher positionals, wt aliases, shll legacy/historical/fenced artifacts, `run-kit url`) stay warned — out of scope. `help-dump-contract.md` untouched (no dump-side change). Code-side change; the machine anchor `extract-readme.ts` stays authoritative and the prose is reconciled to it. |
 | 2026-07-18 | Link refresh: the producer-facing standards moved into `docs/site/standards/` in the shll repo (sahil87/shll#42 — the same change also added the fourth standard, `skill`, and a scope column to `shll standards`). Banner + §Producer conformance directive links updated to `docs/site/standards/readme-extraction.md` / `shll.ai/shll/standards/readme-extraction` (+ the principles link). Historical changelog rows keep the old paths. No content or mechanical change. |
 | 2026-07-17 | Re-scoped (producer/consumer split): the **producer-facing standard** moved to its canonical toolkit home — `sahil87/shll` `docs/site/readme-extraction.md`, rendered at `shll.ai/shll/readme-extraction` (a sibling of the new toolkit CLI principles page). Added the split banner, reframed the Overview symmetry line, and marked the §Producer conformance directive as the detailed reference the standard distills (tool repos now enter via the shll standard). No mechanical/consumer change; `extract-readme.ts` remains the machine anchor. |

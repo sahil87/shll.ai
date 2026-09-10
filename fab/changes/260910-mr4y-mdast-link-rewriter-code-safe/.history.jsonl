@@ -1,0 +1,11 @@
+{"action":"enter","driver":"fab-new","event":"stage-transition","stage":"intake","ts":"2026-09-10T07:54:44Z"}
+{"args":"[mr4y] Docs-site link rewriter (R5, rewriteDocsSiteLinks) corrupts code: rewrites relative Markdown links with a regex over the RAW page text before rendering, so any ](  inside a fenced code block, inline code, or raw HTML/\u003cscript\u003e block is treated as a link. FIX: rewrite links on the mdast (remark plugin over link/image/definition nodes); same for stripFirstH1 if string-based.","cmd":"fab-new","event":"command","ts":"2026-09-10T07:54:44Z"}
+{"delta":"+0.0","event":"confidence","score":4.3,"trigger":"calc-score","ts":"2026-09-10T07:56:38Z"}
+{"cmd":"fab-fff","event":"command","ts":"2026-09-10T07:58:23Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"apply","ts":"2026-09-10T07:58:54Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"review","ts":"2026-09-10T08:13:12Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"hydrate","ts":"2026-09-10T08:16:34Z"}
+{"event":"review","result":"passed","ts":"2026-09-10T08:16:34Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"ship","ts":"2026-09-10T08:24:10Z"}
+{"action":"enter","driver":"git-pr","event":"stage-transition","stage":"review-pr","ts":"2026-09-10T08:25:44Z"}
+{"event":"review","result":"passed","ts":"2026-09-10T08:36:20Z"}

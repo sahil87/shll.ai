@@ -56,9 +56,33 @@ function walkMarkdown(dir, prefix = '') {
   return out;
 }
 
-/** The first markdown H1's text, or null. */
+/** A fenced-code opening/closing line → the fence run (``` or ~~~).
+ *  Mirrors FENCE_RE in `extract-readme.ts` across the config-eval boundary
+ *  (this `.mjs` cannot import the `.ts` module) — keep the shapes identical. */
+const FENCE_RE = /^(\s*)(`{3,}|~{3,})/;
+
+/** The first markdown H1's text OUTSIDE a fenced code block, or null. Fence-aware
+ *  since change mr4y: the same CommonMark close rule `extract-readme.ts`'s
+ *  `isClosingFence` implements (same char family, run length >= the opener, no
+ *  info string), mirrored here — a `# comment` inside a fence is code, not the
+ *  title. Must stay in lockstep with `firstH1` in `docs-site-tree.ts`. */
 function firstH1(markdown) {
+  let open = null;
   for (const line of markdown.split('\n')) {
+    const fence = FENCE_RE.exec(line);
+    if (open !== null) {
+      // Inside a fenced block: only the matching close fence ends it.
+      if (fence) {
+        const close = { char: fence[2][0], len: fence[2].length };
+        const rest = line.slice(fence.index + fence[1].length + fence[2].length).trim();
+        if (close.char === open.char && close.len >= open.len && rest === '') open = null;
+      }
+      continue;
+    }
+    if (fence) {
+      open = { char: fence[2][0], len: fence[2].length };
+      continue;
+    }
     const m = /^#\s+(.+?)\s*#*\s*$/.exec(line);
     if (m) return m[1].trim();
   }

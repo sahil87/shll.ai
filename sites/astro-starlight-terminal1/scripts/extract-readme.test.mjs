@@ -17,6 +17,14 @@
  *     Changelog/Roadmap/FAQ KEPT; no-denylist → slice to EOF.
  *   - §5/§6 strips: inline ```mermaid removed (non-mermaid fences survive);
  *     `#gh-*-mode-only` images removed (plain images survive).
+ *   - §9 link resolution: `remarkDocsSiteLinks`/`remarkReadmeDocsSiteLinks` are
+ *     REMARK PLUGINS (change mr4y), so the link tests render markdown through the
+ *     REAL `@astrojs/markdown-remark` processor (`createMarkdownProcessor({
+ *     remarkPlugins: [...] })`) and assert on the emitted HTML — including the
+ *     code-verbatim regressions (fenced blocks, inline code, raw `<script>` are
+ *     never touched by the rewrite). `@astrojs/markdown-remark` is a real
+ *     declared package (not an `astro:` virtual module), so it imports fine
+ *     under plain `node --test`.
  *   - §7 divergence reporter: `findUnknownTokens` still DETECTS the `shll
  *     shell-install` fabricated-alias case against the REAL help/shll.json (a clean
  *     slice → empty list; fabricated subcommands + unknown flags → flagged). As of
@@ -36,12 +44,13 @@ import { execFileSync } from 'node:child_process';
 import {
   extractReadme,
   findUnknownTokens,
-  rewriteDocsSiteLinks,
-  rewriteReadmeDocsSiteLinks,
+  remarkDocsSiteLinks,
+  remarkReadmeDocsSiteLinks,
   findClosureViolations,
   findReadmeLinkViolations,
 } from '../src/lib/extract-readme.ts';
 import { parseHelp } from '../src/lib/parse-help.ts';
+import { createMarkdownProcessor } from '@astrojs/markdown-remark';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 // scripts/ -> site root -> sites/ -> repo root -> help/
@@ -432,174 +441,232 @@ test('gate (M2): fabricated subcommands are STILL flagged (true positives preser
   );
 });
 
-// ── §9 docs/site link resolution (change x0br) — SITE-ABSOLUTE model ─────────
-// Reworked (x0br review): both transforms now emit a SITE-ABSOLUTE target
-// `/<slug>/<resolved>` (not a relative `./<p>` / bare `.md`-strip), because
-// the site serves pages as trailing-slash directories — a relative target resolves
-// one segment too deep. Transforms are slug-aware; the docs/site transform also
+// ── §9 docs/site link resolution (change x0br; mdast rewrite, change mr4y) ────
+// SITE-ABSOLUTE model: both plugins emit a SITE-ABSOLUTE target
+// `/<slug>/<resolved>` (not a relative `./<p>` / bare `.md`-strip), because the
+// site serves pages as trailing-slash directories — a relative target resolves
+// one segment too deep. The plugins are slug-aware; the docs/site plugin also
 // takes the page's mount path to resolve `.`/`..` against the page's directory.
 //
+// Since change mr4y the rewrite runs ON THE PARSED MDAST (a remark plugin over
+// `link`/`image`/`definition` nodes + relative href/src inside `html` nodes), so
+// these tests render through the REAL processor and assert on the emitted HTML.
+// Shiki splits fenced-code text into per-token <span>s, so code-verbatim
+// assertions compare the TAGLESS text (textOf).
+
+/** Render `md` through the real processor with `plugin` wired as a remark
+ *  plugin; return the emitted HTML. */
+async function renderWith(plugin, md) {
+  const processor = await createMarkdownProcessor({ remarkPlugins: [plugin] });
+  return (await processor.render(md)).code;
+}
+
+/** Render a docs/site PAGE through the R5 plugin. */
+const renderDocsSite = (md, mountPath = 'install', slug = 'idea') =>
+  renderWith(remarkDocsSiteLinks(slug, mountPath), md);
+
+/** Render a README SLICE through the R6 plugin. */
+const renderReadmeSlice = (md, slug = 'idea') =>
+  renderWith(remarkReadmeDocsSiteLinks(slug), md);
+
+/** Strip HTML tags (shiki tokenizes code blocks into <span>s). */
+const textOf = (html) => html.replace(/<[^>]+>/g, '');
+
 // R5: a docs/site PAGE — resolve RELATIVE link/image targets against the page's
 // directory within the tree, strip `.md`, emit `/<slug>/<resolved>`.
 
-test('docs/site page: a sibling ./ link resolves site-absolute against the page dir (R5)', () => {
+test('docs/site page: a sibling ./ link resolves site-absolute against the page dir (R5)', async () => {
   // page advanced/hooks.md → ./sibling.md resolves in advanced/ → /idea/advanced/sibling
-  assert.equal(
-    rewriteDocsSiteLinks('See [s](./sibling.md) for details.', 'idea', 'advanced/hooks'),
-    'See [s](/idea/advanced/sibling) for details.',
-  );
+  const html = await renderDocsSite('See [s](./sibling.md) for details.', 'advanced/hooks');
+  assert.match(html, /href="\/idea\/advanced\/sibling"/);
 });
 
-test('docs/site page: a ../ link resolves up one level then site-absolute (R5)', () => {
+test('docs/site page: a ../ link resolves up one level then site-absolute (R5)', async () => {
   // page advanced/hooks.md → ../install.md pops advanced/ → /idea/install
-  assert.equal(
-    rewriteDocsSiteLinks('[i](../install.md)', 'idea', 'advanced/hooks'),
-    '[i](/idea/install)',
-  );
+  const html = await renderDocsSite('[i](../install.md)', 'advanced/hooks');
+  assert.match(html, /href="\/idea\/install"/);
 });
 
-test('docs/site page: a bare-relative target from a top-level page is site-absolute (R5)', () => {
+test('docs/site page: a bare-relative target from a top-level page is site-absolute (R5)', async () => {
   // page install.md (top-level) → [b](advanced/hooks.md) → /idea/advanced/hooks
-  assert.equal(
-    rewriteDocsSiteLinks('[a](other.md) [b](advanced/hooks.md)', 'idea', 'install'),
-    '[a](/idea/other) [b](/idea/advanced/hooks)',
-  );
+  const html = await renderDocsSite('[a](other.md) [b](advanced/hooks.md)');
+  assert.match(html, /href="\/idea\/other"/);
+  assert.match(html, /href="\/idea\/advanced\/hooks"/);
 });
 
-test('docs/site page: a #fragment / ?query suffix survives the site-absolute rewrite (R5)', () => {
-  assert.equal(
-    rewriteDocsSiteLinks('[x](./guide.md#section)', 'idea', 'install'),
-    '[x](/idea/guide#section)',
-  );
-  assert.equal(
-    rewriteDocsSiteLinks('[x](./guide.md?v=2)', 'idea', 'install'),
-    '[x](/idea/guide?v=2)',
-  );
+test('docs/site page: a #fragment / ?query suffix survives the site-absolute rewrite (R5)', async () => {
+  assert.match(await renderDocsSite('[x](./guide.md#section)'), /href="\/idea\/guide#section"/);
+  assert.match(await renderDocsSite('[x](./guide.md?v=2)'), /href="\/idea\/guide\?v=2"/);
 });
 
 // R6: the README SLICE — `docs/site/<p>.md` → `/<slug>/<p>` (site-absolute).
 
-test('readme slice: docs/site/ link becomes a site-absolute /<slug>/ path (R6)', () => {
-  assert.equal(
-    rewriteReadmeDocsSiteLinks('Read the [guide](docs/site/install.md).', 'idea'),
-    'Read the [guide](/idea/install).',
-  );
+test('readme slice: docs/site/ link becomes a site-absolute /<slug>/ path (R6)', async () => {
+  const html = await renderReadmeSlice('Read the [guide](docs/site/install.md).');
+  assert.match(html, /href="\/idea\/install"/);
 });
 
-test('readme slice: nested docs/site path preserves subtree shape site-absolute (R6)', () => {
-  assert.equal(
-    rewriteReadmeDocsSiteLinks('[hooks](docs/site/advanced/hooks.md)', 'idea'),
-    '[hooks](/idea/advanced/hooks)',
-  );
+test('readme slice: nested docs/site path preserves subtree shape site-absolute (R6)', async () => {
+  const html = await renderReadmeSlice('[hooks](docs/site/advanced/hooks.md)');
+  assert.match(html, /href="\/idea\/advanced\/hooks"/);
 });
 
-test('readme slice: an anchor on a docs/site link is preserved site-absolute (R6)', () => {
-  assert.equal(
-    rewriteReadmeDocsSiteLinks('[flags](docs/site/install.md#flags)', 'idea'),
-    '[flags](/idea/install#flags)',
-  );
+test('readme slice: an anchor on a docs/site link is preserved site-absolute (R6)', async () => {
+  const html = await renderReadmeSlice('[flags](docs/site/install.md#flags)');
+  assert.match(html, /href="\/idea\/install#flags"/);
 });
 
-test('readme slice: a docs/site link that ..-escapes the tree gets the unresolved marker (R3)', () => {
+test('readme slice: a docs/site link that ..-escapes the tree gets the unresolved marker (R3)', async () => {
   // Shared resolvePath means the README side emits the same __unresolved__ marker
   // as the docs/site page side on an escape — a visibly-dead link, not a real page.
-  assert.equal(
-    rewriteReadmeDocsSiteLinks('[x](docs/site/../../etc/passwd.md)', 'idea'),
-    '[x](/idea/__unresolved__/etc/passwd)',
-  );
+  const html = await renderReadmeSlice('[x](docs/site/../../etc/passwd.md)');
+  assert.match(html, /href="\/idea\/__unresolved__\/etc\/passwd"/);
 });
 
-test('readme slice: a relative link NOT under docs/site/ is left as-is (R6)', () => {
+test('readme slice: a relative link NOT under docs/site/ is left as-is (R6)', async () => {
   // README→external relative links self-heal via the absolute-by-author producer
   // rule (deferred consumer rewrite); this transform only touches docs/site/.
-  assert.equal(
-    rewriteReadmeDocsSiteLinks('[spec](docs/specs/overview.md)', 'idea'),
-    '[spec](docs/specs/overview.md)',
-  );
+  const html = await renderReadmeSlice('[spec](docs/specs/overview.md)');
+  assert.match(html, /href="docs\/specs\/overview\.md"/);
 });
 
-test('readme slice: a NON-.md docs/site target is NOT rewritten (only .md pages mount) (R6)', () => {
+test('readme slice: a NON-.md docs/site target is NOT rewritten (only .md pages mount) (R6)', async () => {
   // docs/site/img/logo.png is not a mounted page — rewriting it would silently
   // produce a dead /idea/img/logo URL. Leave it relative so the README link
   // lint catches it instead. (Copilot PR #43 finding.)
-  assert.equal(
-    rewriteReadmeDocsSiteLinks('![logo](docs/site/img/logo.png)', 'idea'),
-    '![logo](docs/site/img/logo.png)',
-  );
+  const html = await renderReadmeSlice('![logo](docs/site/img/logo.png)');
+  assert.match(html, /src="docs\/site\/img\/logo\.png"/);
 });
 
-// R7: the rewrite guard — the correctness boundary. Absolute URLs containing the
-// literal `docs/site`, prose, and code that merely mention the text are untouched;
-// only relative link/image TARGETS are rewritten (markdown + raw-HTML href/src).
+// R7/R2: the rewrite guard — the correctness boundary. Absolute URLs containing
+// the literal `docs/site`, prose, and code that merely mention the text are
+// untouched; only relative link/image TARGETS are rewritten (markdown
+// link/image/definition nodes + relative href/src inside `html` nodes).
 
-test('guard: an absolute URL containing docs/site is NOT rewritten (R7)', () => {
+test('guard: an absolute URL containing docs/site is NOT rewritten (R7)', async () => {
   const md = 'Blob: [src](https://github.com/sahil87/idea/blob/main/docs/site/x.md)';
-  assert.equal(rewriteReadmeDocsSiteLinks(md, 'idea'), md, 'absolute URL untouched by README transform');
-  assert.equal(rewriteDocsSiteLinks(md, 'idea', 'install'), md, 'absolute URL untouched by docs/site transform');
+  const want = /href="https:\/\/github\.com\/sahil87\/idea\/blob\/main\/docs\/site\/x\.md"/;
+  assert.match(await renderReadmeSlice(md), want, 'absolute URL untouched by README plugin');
+  assert.match(await renderDocsSite(md), want, 'absolute URL untouched by docs/site plugin');
 });
 
-test('guard: prose / code mentioning docs/site is NOT rewritten (R7)', () => {
+test('guard: prose / code mentioning docs/site is NOT rewritten (R7)', async () => {
   const prose = 'Put site-only docs in docs/site/ — they end in .md, like install.md.';
-  assert.equal(rewriteReadmeDocsSiteLinks(prose, 'idea'), prose);
-  assert.equal(rewriteDocsSiteLinks(prose, 'idea', 'install'), prose);
+  const html = await renderReadmeSlice(prose);
+  assert.ok(!html.includes('href='), 'prose yields no link at all');
+  assert.ok(textOf(html).includes('docs/site/ — they end in .md, like install.md.'));
   const code = '`mv notes.md docs/site/notes.md`';
-  // The inline-code path is prose to the link scanner (no `[](...)` shape), so
-  // its mention of docs/site/notes.md is not a link target → untouched.
-  assert.equal(rewriteReadmeDocsSiteLinks(code, 'idea'), code);
+  const codeHtml = await renderReadmeSlice(code);
+  assert.match(codeHtml, /<code>mv notes\.md docs\/site\/notes\.md<\/code>/);
 });
 
-test('guard: raw-HTML href/src relative targets ARE rewritten site-absolute; absolute ones are not (R7)', () => {
-  assert.equal(
-    rewriteReadmeDocsSiteLinks('<a href="docs/site/install.md">install</a>', 'idea'),
-    '<a href="/idea/install">install</a>',
+test('guard: raw-HTML href/src relative targets ARE rewritten site-absolute; absolute ones are not (R7/R2)', async () => {
+  assert.match(
+    await renderReadmeSlice('<a href="docs/site/install.md">install</a>'),
+    /href="\/idea\/install"/,
   );
-  assert.equal(
-    rewriteDocsSiteLinks('<a href="./advanced/hooks.md">hooks</a>', 'idea', 'install'),
-    '<a href="/idea/advanced/hooks">hooks</a>',
+  assert.match(
+    await renderDocsSite('<a href="./advanced/hooks.md">hooks</a>'),
+    /href="\/idea\/advanced\/hooks"/,
   );
   const abs = '<img src="https://raw.githubusercontent.com/x/y/docs/site/a.png">';
-  assert.equal(rewriteDocsSiteLinks(abs, 'idea', 'install'), abs, 'absolute src untouched');
+  const absHtml = await renderDocsSite(abs);
+  assert.match(absHtml, /src="https:\/\/raw\.githubusercontent\.com\/x\/y\/docs\/site\/a\.png"/, 'absolute src untouched');
 });
 
-test('guard: only the link target is rewritten, link TEXT mentioning .md is preserved (R7)', () => {
-  assert.equal(
-    rewriteDocsSiteLinks('[see install.md here](./install.md)', 'idea', 'guide'),
-    '[see install.md here](/idea/install)',
-    'the .md in the link TEXT survives; only the target is rewritten',
-  );
+test('guard: only the link target is rewritten, link TEXT mentioning .md is preserved (R7)', async () => {
+  const html = await renderDocsSite('[see install.md here](./install.md)', 'guide');
+  assert.match(html, /href="\/idea\/install"/);
+  assert.match(html, />see install\.md here<\/a>/, 'the .md in the link TEXT survives');
 });
 
-test('transforms are total: empty input does not throw (R5/R6)', () => {
-  assert.equal(rewriteDocsSiteLinks('', 'idea', 'install'), '');
-  assert.equal(rewriteReadmeDocsSiteLinks('', 'idea'), '');
+test('plugins are total: empty input renders without throwing (R5/R6)', async () => {
+  assert.equal((await renderDocsSite('')).trim(), '');
+  assert.equal((await renderReadmeSlice('')).trim(), '');
 });
 
 // A docs/site relative link that `..`-escapes the tree root is a closure violation
 // (reported by findClosureViolations) AND is rewritten to a non-colliding
 // `__unresolved__` marker (R3) — NOT clamped to a real page. The marker and the
 // closure escape use the SAME predicate, so they agree on what "escape" means.
-test('docs/site page: a ..-escape rewrites to a non-colliding marker, not a real page (R3/R8)', () => {
+test('docs/site page: a ..-escape rewrites to a non-colliding marker, not a real page (R3/R8)', async () => {
   // page install.md (top-level) → ../../secret.md climbs above the tree root.
   // The rewriter emits the reserved __unresolved__ segment (a visibly-dead link),
   // NOT `/idea/secret` (which would misroute to a plausible-but-wrong page).
-  assert.equal(
-    rewriteDocsSiteLinks('[x](../../secret.md)', 'idea', 'install'),
-    '[x](/idea/__unresolved__/secret)',
-  );
+  const html = await renderDocsSite('[x](../../secret.md)');
+  assert.match(html, /href="\/idea\/__unresolved__\/secret"/);
   // And the same target is independently reported as a closure escape:
   const v = findClosureViolations('install.md', '[x](../../secret.md)');
   assert.equal(v.length, 1);
   assert.equal(v[0].kind, 'escape');
 });
 
-test('docs/site page: a non-escaping .. still resolves normally (R3)', () => {
+test('docs/site page: a non-escaping .. still resolves normally (R3)', async () => {
   // advanced/hooks → ../install.md pops [advanced], stays intra-set → real page.
-  assert.equal(
-    rewriteDocsSiteLinks('[i](../install.md)', 'idea', 'advanced/hooks'),
-    '[i](/idea/install)',
-  );
+  const html = await renderDocsSite('[i](../install.md)', 'advanced/hooks');
+  assert.match(html, /href="\/idea\/install"/);
   // ...and is NOT reported as an escape.
   assert.deepEqual(findClosureViolations('advanced/hooks.md', '[i](../install.md)'), []);
+});
+
+// ── mr4y regressions: code and raw <script>/<style> are NEVER rewritten ──────
+// The pre-mr4y string scanner rewrote any `](` shape anywhere — including inside
+// fenced code, inline code, and raw <script> blocks (it corrupted
+// `cfg.actions[act](this)` on run-kit's cron-schedule-kinds page). The mdast
+// plugin makes code-safety structural: the parser owns the code-vs-link
+// boundary, so these shapes render byte-verbatim.
+
+test('regression: a fenced code block with arr[i](x) renders VERBATIM (R1)', async () => {
+  const html = await renderDocsSite(['```js', 'cfg.actions[act](this)', 'arr[i](x)', '```'].join('\n'));
+  const text = textOf(html);
+  assert.ok(text.includes('cfg.actions[act](this)'), 'fenced code verbatim');
+  assert.ok(text.includes('arr[i](x)'), 'fenced code verbatim');
+  assert.ok(!html.includes('/idea/this') && !html.includes('/idea/x)'), 'no rewrite inside code');
+});
+
+test('regression: a raw <script> block is emitted byte-verbatim (R1/R2)', async () => {
+  const md = ['<script>', 'fn[k](this); img.src="./x.png";', '</script>'].join('\n');
+  for (const html of [await renderDocsSite(md), await renderReadmeSlice(md)]) {
+    assert.ok(html.includes('fn[k](this);'), 'script body verbatim');
+    assert.ok(html.includes('img.src="./x.png";'), 'a JS attribute-shaped string is untouched');
+    assert.ok(!html.includes('/idea/this') && !html.includes('/idea/x.png'), 'no rewrite inside <script>');
+  }
+});
+
+test('regression: inline code with a ]( shape is verbatim (R1)', async () => {
+  const html = await renderDocsSite('Use `foo[bar](baz)` here.');
+  assert.match(html, /<code>foo\[bar\]\(baz\)<\/code>/);
+});
+
+test('regression: a <style> block is skipped entirely (R2)', async () => {
+  // The comment's src="./y.png" would be rewritten if the node were not skipped.
+  const md = ['<style>', '/* <img src="./y.png"> */', '.a { background: url("./bg.png"); }', '</style>'].join('\n');
+  const html = await renderDocsSite(md);
+  assert.ok(html.includes('./y.png') && html.includes('./bg.png'), 'style block verbatim');
+  assert.ok(!html.includes('/idea/y.png') && !html.includes('/idea/bg.png'), 'no rewrite inside <style>');
+});
+
+test('regression: a real relative link on the same page as code is STILL rewritten (R1)', async () => {
+  // The fix is parser-scoping, not disabling the rewrite.
+  const md = ['```js', 'arr[i](x)', '```', '', 'See [s](./sibling.md).'].join('\n');
+  const html = await renderDocsSite(md);
+  assert.ok(textOf(html).includes('arr[i](x)'), 'code verbatim');
+  assert.match(html, /href="\/idea\/sibling"/, 'real link rewritten');
+});
+
+// R5 additions (change mr4y): the mdast visitor sees shapes the string scanner
+// never rewrote — reference-style definitions and the outer target of a linked
+// image (the spec's former Known limitations (a) and (b), now closed).
+
+test('reference-style definition [id]: ./x.md is rewritten (R5)', async () => {
+  const html = await renderDocsSite('[ref][id]\n\n[id]: ./x.md');
+  assert.match(html, /href="\/idea\/x"/);
+});
+
+test('linked image: outer target rewritten, inner absolute src untouched (R5)', async () => {
+  const html = await renderDocsSite('[![alt](https://h/i.png)](./p.md)');
+  assert.match(html, /href="\/idea\/p"/);
+  assert.match(html, /src="https:\/\/h\/i\.png"/);
 });
 
 // ── §closure lint detector (R8) — report-only ───────────────────────────────

@@ -108,7 +108,7 @@ const MERMAID_OPEN_RE = /^(\s*)(`{3,}|~{3,})\s*mermaid\s*$/i;
 const FENCE_RE = /^(\s*)(`{3,}|~{3,})/;
 
 /** A parsed open fence: its char family and its run length. */
-interface OpenFence {
+export interface OpenFence {
   /** The fence char family: '`' (backtick) or '~' (tilde). */
   char: string;
   /** The number of fence chars in the opening run (>= 3). */
@@ -121,9 +121,10 @@ interface OpenFence {
  * load-bearing: per CommonMark a closing fence must be at least as long as the
  * opening one, so an opening ```` (4 backticks) is NOT closed by a later ```
  * (3 backticks) — see {@link isClosingFence}. Single-sources fence-open parsing
- * for `tailBoundary`, `stripMermaid`, and `codeSpans`.
+ * for `tailBoundary`, `stripMermaid`, `codeSpans`, `maskCode`, and the
+ * fence-aware H1 scanner in `docs-site-tree.ts` (change mr4y).
  */
-function openFence(line: string): OpenFence | null {
+export function openFence(line: string): OpenFence | null {
   const m = FENCE_RE.exec(line);
   if (!m) return null;
   return { char: m[2][0], len: m[2].length };
@@ -134,9 +135,10 @@ function openFence(line: string): OpenFence | null {
  * fence must be of the SAME char family AND have a run length >= the opening
  * run (and carry no info string). Tracking the open run's length is what stops a
  * 4-backtick block from being wrongly terminated by an inner 3-backtick fence.
- * Single-sourced so all three scanners apply the identical rule.
+ * Single-sourced so all scanners (here and `docs-site-tree.ts`) apply the
+ * identical rule.
  */
-function isClosingFence(line: string, open: OpenFence): boolean {
+export function isClosingFence(line: string, open: OpenFence): boolean {
   const m = FENCE_RE.exec(line);
   if (!m) return false;
   const close: OpenFence = { char: m[2][0], len: m[2].length };
@@ -627,16 +629,16 @@ export function findUnknownTokens(slice: string, doc: HelpDoc): string[] {
 
 // ── §9 docs/site link resolution + closure lint (change x0br) ────────────────
 //
-// The consumer side of the `docs/site/` closed-set contract. THREE pure,
-// exported functions, all dependency-free and build-time (Constitution I/VI),
-// the same single-machine-anchor discipline as extractReadme/findUnknownTokens:
+// The consumer side of the `docs/site/` closed-set contract. All dependency-free
+// and build-time (Constitution I/VI), the same single-machine-anchor discipline
+// as extractReadme/findUnknownTokens:
 //
-//   - rewriteDocsSiteLinks(md, slug, mountPath) — a docs/site PAGE: resolve each
+//   - remarkDocsSiteLinks(slug, mountPath) — a docs/site PAGE plugin: resolve each
 //                                      RELATIVE link/image target against the page's
 //                                      own directory within the docs/site tree,
 //                                      strip `.md`, emit the SITE-ABSOLUTE path
 //                                      `/<slug>/<resolved>`.
-//   - rewriteReadmeDocsSiteLinks(md, slug) — the README slice: a relative target
+//   - remarkReadmeDocsSiteLinks(slug) — the README slice plugin: a relative target
 //                                      `docs/site/<p>.md` → `/<slug>/<p>`.
 //   - findClosureViolations(rel, md) — REPORT-ONLY detector: relative link/image
 //                                      targets that escape docs/site (`..` climb)
@@ -653,12 +655,18 @@ export function findUnknownTokens(slice: string, doc: HelpDoc): string[] {
 // `/idea/install/`). Both transforms are therefore SLUG-AWARE (and the
 // docs/site transform is also mount-path-aware to resolve `.`/`..`) — intended.
 //
-// ALL link-target editing flows through one scanner (`rewriteLinkTargets`) so the
-// rewrite guard (the correctness boundary) lives in exactly one place: we only
-// ever touch the `(...)` target of a markdown link/image and the href/src of raw
-// HTML, and only when the target is RELATIVE. Absolute URLs (even ones whose path
-// contains the literal `docs/site`), prose, and fenced/inline code that merely
-// mention the text are never rewritten.
+// ALL link-target editing flows through one remark plugin factory
+// (`remarkRewriteLinkTargets`, change mr4y) so the rewrite guard (the correctness
+// boundary) lives in exactly one place — and is now PARSER-SCOPED: the plugin
+// visits only `link`/`image`/`definition` mdast nodes (editing their `url`) and
+// `html` nodes (editing `href`/`src` in their `value`), and only when the target
+// is RELATIVE. `code`, `inlineCode`, `text`, and every other node type are never
+// touched BY CONSTRUCTION — the parser owns the code-vs-link boundary, so a
+// `[x](y)` inside a fenced block, an inline code span, or a raw `<script>` block
+// can no longer be mistaken for a link (the defect that corrupted
+// `cfg.actions[act](this)` on run-kit's cron-schedule-kinds page). Absolute URLs
+// (even ones whose path contains the literal `docs/site`) and prose that merely
+// mentions the text are never rewritten.
 
 /** The repo-relative prefix a README uses to link into a docs/site page. */
 const DOCS_SITE_PREFIX = 'docs/site/';
@@ -700,8 +708,9 @@ const HTML_SRCSET_RE = /\bsrcset\s*=\s*(["'])([^"']*)(\1)/gi;
  * agree on where code is: a longer outer fence is not closed by a shorter inner
  * one. Inline spans use the same `` `[^`]+` `` shape `codeSpans` uses. Fence
  * marker lines are blanked too (harmless — they carry no link target). Pure and
- * total. NOTE: this masks the DETECTORS only — the rewriter (`rewriteLinkTargets`)
- * keeps its documented no-fence-tracking over-reach (rendering frozen).
+ * total. NOTE: this masks the DETECTORS only; the render-side rewriter no longer
+ * needs masking — since change mr4y it is a remark plugin scoped by the parser to
+ * `link`/`image`/`definition`/`html` nodes, so code is excluded by construction.
  */
 function maskCode(markdown: string): string {
   const blankLine = (line: string): string => ' '.repeat(line.length);
@@ -752,43 +761,88 @@ function splitTargetSuffix(target: string): [string, string] {
 }
 
 /**
- * The one scanner all link rewriting goes through (the rewrite guard lives here).
- * Applies `fn` to every markdown link/image target and raw-HTML href/src target
- * in `markdown`, ABSOLUTE targets excluded (fn never sees them). `fn` returns the
- * replacement target (return the input unchanged to leave it as-is). Prose and
- * code that merely mention a path are never passed to `fn` — only real targets.
- *
- * Note on code fences: an inline `[x](y)` inside a fenced code block is rendered
- * as literal text by markdown, not a link, so rewriting it would be a (harmless)
- * over-reach. In practice docs/site link targets we care about are real links in
- * prose; we keep the scanner simple (no fence tracking) because the guard already
- * restricts edits to link/image-target SHAPES and relative paths — a code sample
- * showing a *relative* `[x](docs/site/y.md)` is vanishingly unlikely and would at
- * worst render the same resolved path. Absolute-URL code samples (the common case)
- * are untouched by the isAbsoluteTarget guard.
+ * Apply `fn` to ONE relative link/image target (the lifted guard formerly inline
+ * in the string scanner): ABSOLUTE targets and pure `#`/`?` targets are returned
+ * unchanged; otherwise the path part is mapped through `fn` and the trailing
+ * `#fragment`/`?query` suffix is re-appended verbatim.
  */
-function rewriteLinkTargets(
-  markdown: string,
-  fn: (target: string) => string,
-): string {
-  const applyToTarget = (target: string): string => {
-    if (isAbsoluteTarget(target)) return target; // guard: never touch absolute
-    const [path, suffix] = splitTargetSuffix(target);
-    if (path === '') return target; // pure `?`/`#` target — nothing to rewrite
-    return fn(path) + suffix;
-  };
+function applyToTarget(target: string, fn: (path: string) => string): string {
+  if (isAbsoluteTarget(target)) return target; // guard: never touch absolute
+  const [path, suffix] = splitTargetSuffix(target);
+  if (path === '') return target; // pure `?`/`#` target — nothing to rewrite
+  return fn(path) + suffix;
+}
 
-  let out = markdown.replace(
-    MD_LINK_RE,
-    (_m, lead: string, target: string, tail: string) =>
-      lead + applyToTarget(target) + tail,
-  );
-  out = out.replace(
+/** An `html` node whose trimmed value opens a raw `<script>` or `<style>` block.
+ *  Its content is JS/CSS, not markup — attribute-shaped strings inside it (e.g.
+ *  `img.src="./x.png"`) MUST NOT be rewritten, so the whole node is skipped. */
+const RAW_CODE_BLOCK_RE = /^\s*<(script|style)\b/i;
+
+/**
+ * Rewrite the relative `href`/`src` attribute targets inside ONE `html` node's
+ * `value` via `fn` (the surviving string-regex edit, now bounded by the parser to
+ * genuine raw-HTML regions). A node opening a `<script>`/`<style>` block is
+ * returned unchanged so JS/CSS strings are never touched.
+ */
+function rewriteHtmlAttrTargets(value: string, fn: (path: string) => string): string {
+  if (RAW_CODE_BLOCK_RE.test(value)) return value;
+  return value.replace(
     HTML_ATTR_RE,
     (_m, attr: string, q: string, target: string) =>
-      `${attr}=${q}${applyToTarget(target)}${q}`,
+      `${attr}=${q}${applyToTarget(target, fn)}${q}`,
   );
-  return out;
+}
+
+/** Minimal STRUCTURAL mdast node shape — just the fields the link rewriter reads
+ *  (`type`) and edits (`url` on link/image/definition, `value` on html), plus
+ *  `children` for the walk. Structural typing keeps this module free of
+ *  `@types/mdast` (Constitution VI); any real mdast node satisfies it. */
+interface MdNode {
+  type: string;
+  url?: string;
+  value?: string;
+  children?: MdNode[];
+}
+
+/** A remark plugin in the shape `createMarkdownProcessor({ remarkPlugins })`
+ *  accepts: a function returning a transformer over the parsed mdast tree.
+ *  Structural — no `unified`/`remark` type import (transitive-only under pnpm
+ *  strict; declaring one would be a new dependency — Constitution VI). */
+type RemarkPlugin = () => (tree: MdNode) => void;
+
+/**
+ * Depth-first walk over an mdast tree, invoking `visit` on every node.
+ * Hand-rolled (not `unist-util-visit`): that package is transitive-only in the
+ * lockfile, an undeclared import fails under pnpm strict, and declaring it would
+ * be a new dependency for a walk this small (Constitution VI).
+ */
+function walk(node: MdNode, visit: (n: MdNode) => void): void {
+  visit(node);
+  if (node.children) for (const child of node.children) walk(child, visit);
+}
+
+/**
+ * The one place a link target is edited (the rewrite guard), as a remark plugin
+ * factory (change mr4y): the returned plugin visits `link`, `image`, and
+ * `definition` mdast nodes and rewrites their relative `url` via `fn`, and
+ * rewrites relative `href`/`src` attributes inside `html` node values
+ * ({@link rewriteHtmlAttrTargets}, `<script>`/`<style>` excluded). `code`,
+ * `inlineCode`, `text`, and every other node type are never visited for editing —
+ * the parser owns the code-vs-link boundary, so code can never be corrupted by
+ * the rewrite (the raw-string scanner it replaces could not tell `[x](y)`-in-code
+ * from a real link). `fn` returns the replacement path (return the input
+ * unchanged to leave it as-is); absolute targets never reach it.
+ */
+function remarkRewriteLinkTargets(fn: (path: string) => string): RemarkPlugin {
+  return () => (tree: MdNode) => {
+    walk(tree, (n) => {
+      if (n.type === 'link' || n.type === 'image' || n.type === 'definition') {
+        if (typeof n.url === 'string') n.url = applyToTarget(n.url, fn);
+      } else if (n.type === 'html' && typeof n.value === 'string') {
+        n.value = rewriteHtmlAttrTargets(n.value, fn);
+      }
+    });
+  };
 }
 
 /** Strip a single trailing `.md` (case-insensitive) from a relative path. */
@@ -845,27 +899,25 @@ function toolMountUrl(slug: string, segments: string[]): string {
 }
 
 /**
- * R5 — a docs/site PAGE transform (SITE-ABSOLUTE). Resolve every RELATIVE
- * link/image target against the page's OWN directory within the docs/site tree
+ * R5 — a docs/site PAGE remark plugin (SITE-ABSOLUTE). Rewrites every RELATIVE
+ * link/image/definition target (and relative `href`/`src` in raw-HTML nodes) by
+ * resolving it against the page's OWN directory within the docs/site tree
  * (`mountPath`, the page's path under `site/` without `.md`, e.g. `advanced/hooks`),
- * normalize `.`/`..`, strip `.md`, and emit the site-absolute mount URL
+ * normalizing `.`/`..`, stripping `.md`, and emitting the site-absolute mount URL
  * `/<slug>/<resolved>`. Closure (§9.1.1) guarantees relative targets are
  * intra-set; a `..`-escape is flagged by the §closure lint AND, here, rewritten to
  * a non-colliding `/<slug>/__unresolved__/…` marker (R3) — NOT clamped to a
  * real page (which would misroute the broken link to a confidently-wrong page).
- * Absolute URLs, prose, and code are untouched; a `#`/`?` suffix is preserved.
- * Pure and total. Example: page `advanced/hooks` linking `../install.md` →
- * `/<slug>/install`; `./sibling.md` → `/<slug>/advanced/sibling`;
+ * Absolute URLs, prose, and code are untouched (code by construction — the plugin
+ * never visits `code`/`inlineCode` nodes); a `#`/`?` suffix is preserved.
+ * Example: page `advanced/hooks` linking `../install.md` → `/<slug>/install`;
+ * `./sibling.md` → `/<slug>/advanced/sibling`;
  * an escaping `../../x.md` → `/<slug>/__unresolved__/x`.
  */
-export function rewriteDocsSiteLinks(
-  markdown: string,
-  slug: string,
-  mountPath: string,
-): string {
+export function remarkDocsSiteLinks(slug: string, mountPath: string): RemarkPlugin {
   // The page's directory segments within the docs/site tree (drop the filename).
   const baseDir = mountPath.split('/').slice(0, -1);
-  return rewriteLinkTargets(markdown, (path) => {
+  return remarkRewriteLinkTargets((path) => {
     const { segments, escaped } = resolvePath(baseDir, stripMdExt(path));
     // An escape is rewritten under the reserved marker segment so the broken
     // link is visibly dead (matching the §closure `escape` warning), never a
@@ -876,18 +928,18 @@ export function rewriteDocsSiteLinks(
 }
 
 /**
- * R6 — the README SLICE transform (SITE-ABSOLUTE). A relative target of the form
- * `docs/site/<p>.md` → the site-absolute mount URL `/<slug>/<p>` (the
+ * R6 — the README SLICE remark plugin (SITE-ABSOLUTE). A relative target of the
+ * form `docs/site/<p>.md` → the site-absolute mount URL `/<slug>/<p>` (the
  * `docs/site/` prefix maps to the tool root, `.md` stripped, nested `<p>` subtree
  * preserved). Example: `[guide](docs/site/install.md)` → `[guide](/<slug>/install)`;
  * `docs/site/advanced/hooks.md` → `/<slug>/advanced/hooks`. Relative targets
  * NOT under `docs/site/` are left as-is (a README's own relative links into
  * non-docs/site files are out of scope and self-heal via the absolute-by-author
- * producer rule). Absolute URLs / prose / code untouched; `#`/`?` suffix preserved.
- * Pure and total.
+ * producer rule). Absolute URLs / prose / code untouched (code by construction);
+ * `#`/`?` suffix preserved.
  */
-export function rewriteReadmeDocsSiteLinks(markdown: string, slug: string): string {
-  return rewriteLinkTargets(markdown, (path) => {
+export function remarkReadmeDocsSiteLinks(slug: string): RemarkPlugin {
+  return remarkRewriteLinkTargets((path) => {
     // ONLY `docs/site/<p>.md` PAGES are mounted as routes — a non-`.md` docs/site
     // target (e.g. `docs/site/img/logo.png`) is NOT pulled and would 404, so do
     // NOT rewrite it: leaving it relative keeps it visible to the README link lint
@@ -917,7 +969,7 @@ export interface ClosureViolation {
  * Resolve `target` (a relative path) against `fromRel` (the offending file's path
  * RELATIVE TO docs/site root, e.g. `advanced/hooks.md`) and return true when it
  * climbs OUT of docs/site. Delegates to the SHARED {@link resolvePath} so the
- * detector and `rewriteDocsSiteLinks` agree on what "escape" means (R3). Pure.
+ * detector and `remarkDocsSiteLinks` agree on what "escape" means (R3). Pure.
  */
 function escapesDocsSite(fromRel: string, target: string): boolean {
   // Start from the offending file's DIRECTORY segments within docs/site.
@@ -1008,7 +1060,7 @@ export function findClosureViolations(
 // What counts as a violation:
 //   - a RELATIVE link target that is NOT a `docs/site/<p>.md` link — the only
 //     relative README links the consumer rewrites are `docs/site/` ones (via
-//     rewriteReadmeDocsSiteLinks); every other relative link target reaches the
+//     remarkReadmeDocsSiteLinks); every other relative link target reaches the
 //     rendered page unrewritten and 404s. (Scope decision, intake assumption #9:
 //     a relative link to a non-`.md` docs/site asset is NOT special-cased.)
 //   - a RELATIVE image target (images MUST be absolute everywhere, §3).
@@ -1054,7 +1106,7 @@ export function findReadmeLinkViolations(slice: string): ReadmeLinkViolation[] {
       return;
     }
     // A relative LINK is fine ONLY if it is a `docs/site/<p>.md` link (the one
-    // relative shape the consumer rewrites — see rewriteReadmeDocsSiteLinks).
+    // relative shape the consumer rewrites — see remarkReadmeDocsSiteLinks).
     // Anything else 404s — INCLUDING a `docs/site/` target that is NOT `.md`
     // (e.g. `docs/site/img/logo.png`): only `.md` pages mount, so a non-`.md`
     // docs/site asset is neither rewritten nor resolvable, and MUST be flagged.

@@ -15,11 +15,15 @@
  *   - Strip targets the SAME line `firstH1` derives the title from, incl. a first
  *     H1 not on line 1 (title/strip alignment — the load-bearing invariant).
  *   - An `## H2`-only document is unchanged (only ATX H1 is stripped).
+ *   - FENCE-AWARE (change mr4y): both `firstH1` and `stripFirstH1` skip lines
+ *     inside fenced code blocks via one shared scanner — a `# comment` inside a
+ *     fence is neither the derived title nor stripped (tilde fences and a
+ *     longer-outer/shorter-inner fence included).
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { stripFirstH1 } from '../src/lib/docs-site-tree.ts';
+import { firstH1, stripFirstH1 } from '../src/lib/docs-site-tree.ts';
 
 // ── H1 on line 1 ─────────────────────────────────────────────────────────────
 
@@ -76,4 +80,36 @@ test('leaves a SECOND H1 in place (only the first is stripped)', () => {
 
 test('handles an empty string without error', () => {
   assert.equal(stripFirstH1(''), '');
+});
+
+// ── Fence-awareness (change mr4y) ────────────────────────────────────────────
+// A `# comment` line inside a fenced code block is code, not a heading: it is
+// neither the derived title nor stripped. Both functions share one fence-aware
+// scanner, so title and strip stay aligned by construction.
+
+test('a leading fenced block containing `# not a title` is skipped by BOTH title and strip', () => {
+  const md = '```bash\n# not a title\necho hi\n```\n\n# Real Title\n\nBody.\n';
+  assert.equal(firstH1(md), 'Real Title');
+  const out = stripFirstH1(md);
+  // The fence and its `# not a title` line are preserved; only the real H1
+  // (plus one following blank) is removed.
+  assert.equal(out, '```bash\n# not a title\necho hi\n```\n\nBody.\n');
+});
+
+test('a TILDE fence also hides a `# x` line from title and strip', () => {
+  const md = '~~~js\n# x\n~~~\n\n# After Tilde\n\ntext\n';
+  assert.equal(firstH1(md), 'After Tilde');
+  assert.equal(stripFirstH1(md), '~~~js\n# x\n~~~\n\ntext\n');
+});
+
+test('a 4-backtick fence is NOT closed by an inner 3-backtick line (CommonMark)', () => {
+  const md = '````\n```\n# x\n````\n\n# Real Title\n\nbody\n';
+  assert.equal(firstH1(md), 'Real Title', 'the inner ``` does not close the outer fence');
+  assert.equal(stripFirstH1(md), '````\n```\n# x\n````\n\nbody\n');
+});
+
+test('a page whose ONLY `# ...` line is inside a fence: title null, strip no-op', () => {
+  const md = '```bash\n# only a comment\n```\n\nNo heading here.\n';
+  assert.equal(firstH1(md), null);
+  assert.equal(stripFirstH1(md), md);
 });

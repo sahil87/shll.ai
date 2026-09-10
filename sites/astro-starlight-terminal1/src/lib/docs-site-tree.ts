@@ -7,13 +7,17 @@
  * root by change 3ke3) and the page set live in exactly one place and cannot drift
  * between route and sidebar.
  *
- * Build-time + dependency-free (Constitution I/VI): plain `node:fs` walk, no npm
- * import. A tool with no committed `site/` tree simply contributes no pages — a
- * missing tree is an expected interim state (the daily pull lands trees over time),
- * never an error.
+ * Build-time (Constitution I): plain `node:fs` walk; the only non-`node:` import
+ * is the shared CommonMark fence discipline (`openFence`/`isClosingFence`) from
+ * `extract-readme.ts` — itself dependency-free — so this module stays npm-free
+ * (Constitution VI). A tool with no committed `site/` tree simply contributes no
+ * pages — a missing tree is an expected interim state (the daily pull lands
+ * trees over time), never an error.
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { openFence, isClosingFence } from './extract-readme.ts';
+import type { OpenFence } from './extract-readme.ts';
 
 /** One committed docs/site page. */
 export interface DocsSitePage {
@@ -55,12 +59,45 @@ function walkMarkdown(dir: string, prefix = ''): string[] {
 /** Matches a single ATX H1 line (`# Title`), capturing its text in group 1.
  *  Single source of the H1-line shape shared by `firstH1` (title derivation) and
  *  `stripFirstH1` (render-side de-duplication) so the derived title and the
- *  stripped line can never diverge. */
+ *  stripped line can never diverge. Applied only to lines the fence-aware
+ *  scanner yields (see {@link proseLines}) — a `# comment` inside a fenced code
+ *  block is neither the title nor stripped (change mr4y). */
 const ATX_H1_LINE = /^#\s+(.+?)\s*#*\s*$/;
 
-/** The first markdown ATX H1 (`# Title`) text, or null if none. */
-function firstH1(markdown: string): string | null {
-  for (const line of markdown.split('\n')) {
+/**
+ * The ONE fence-aware line scanner (change mr4y): yields `[index, line]` for
+ * every line of `lines` that is OUTSIDE a fenced code block, tracking fences with
+ * the shared CommonMark discipline ({@link openFence}/{@link isClosingFence} from
+ * `extract-readme.ts` — a close must be the same char family with run length >=
+ * the opener and carry no info string, so a 4-backtick block is not closed by an
+ * inner 3-backtick line). Both `firstH1` and `stripFirstH1` consume THIS
+ * generator, so the line the strip removes is by construction a line the title
+ * derivation could have matched — the load-bearing same-line invariant.
+ */
+function* proseLines(lines: string[]): Generator<[number, string]> {
+  let open: OpenFence | null = null;
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
+    if (open !== null) {
+      if (isClosingFence(line, open)) open = null;
+      continue;
+    }
+    const fence = openFence(line);
+    if (fence) {
+      open = fence;
+      continue;
+    }
+    yield [i, line];
+  }
+}
+
+/**
+ * The first markdown ATX H1 (`# Title`) text OUTSIDE a fenced code block, or
+ * null if none. Fence-aware since change mr4y (a `# comment` line inside a
+ * fenced block is code, not a heading).
+ */
+export function firstH1(markdown: string): string | null {
+  for (const [, line] of proseLines(markdown.split('\n'))) {
     const m = ATX_H1_LINE.exec(line);
     if (m) return m[1].trim();
   }
@@ -75,13 +112,19 @@ function firstH1(markdown: string): string | null {
  * case, so the strip is inherently conditional on a title having been derived from
  * an H1). Dependency-free plain string processing.
  *
+ * Fence-aware via the shared {@link proseLines} scanner (change mr4y): a `# …`
+ * line inside a fenced code block is neither stripped here nor taken as the
+ * title by `firstH1`, so a page opening with a code sample keeps its fence
+ * intact. The previously fence-blind scan could take (and strip) a `# comment`
+ * line out of a leading code block.
+ *
  * Applied render-side by the docs/site dynamic route (`[slug]/[...path].astro`)
  * to de-duplicate the heading that Starlight already renders as the page title
  * from the same H1; the committed on-disk page stays byte-verbatim.
  */
 export function stripFirstH1(markdown: string): string {
   const lines = markdown.split('\n');
-  for (let i = 0; i < lines.length; i++) {
+  for (const [i] of proseLines(lines)) {
     if (!ATX_H1_LINE.test(lines[i])) continue;
     // Drop the H1 line, plus one immediately-following blank line if present.
     const drop = lines[i + 1] !== undefined && lines[i + 1].trim() === '' ? 2 : 1;
