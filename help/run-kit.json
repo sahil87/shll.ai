@@ -1,14 +1,14 @@
 {
   "tool": "run-kit",
-  "version": "v3.19.37",
-  "captured_at": "2026-09-09T12:19:11Z",
+  "version": "v3.19.41",
+  "captured_at": "2026-09-10T12:12:45Z",
   "schema_version": 1,
   "root": {
     "name": "run-kit",
     "path": "run-kit",
     "short": "run-kit — tmux session manager with web UI",
     "usage": "run-kit [flags]",
-    "text": "Usage:\n  run-kit [flags]\n  run-kit [command]\n\nAvailable Commands:\n  agent       Agent instrumentation (state hooks setup and reporting)\n  code        Run VS Code commands in the code lens editor from the shell\n  code-server Manage the rk-owned code-server install (the /code lens editor)\n  completion  Generate the autocompletion script for the specified shell\n  cron        Scheduled agent prompts (add, list, rm, mute, pin, tick)\n  daemon      Manage the background run-kit daemon (tmux-managed run-kit serve)\n  desktop     Install and update the Run Kit desktop app (macOS)\n  doctor      Check runtime dependencies\n  help        Help about any command\n  mux         Tmux substrate operations (server create, messaging, pane capture/kill/process, pane/session enumeration, janitor, recovery, config scaffold, tmux guard)\n  notify      Send a Web Push notification to subscribed devices\n  operator    Open the operator — the server-wide orchestrator agent tab (singleton)\n  present     Show a file, directory, port, or URL to the user as a web tile\n  remote      Use SSH-only machines as run-kit hosts (bootstrap, tunnel, connect)\n  riff        Create a worktree, tmux window, and Claude Code session\n  role        Mark or unmark the current window as the server's operator\n  serve       Start the HTTP server (foreground)\n  skill       Print run-kit's agent skill bundle (static usage briefing)\n  status      Show tmux session summary\n  tab         Drive a tab's UI state — layout, web tabs, code root — from the shell\n  tutorial    Open the guided tour — an agent-run tutorial tab in this session\n  update      Update the run-kit CLI and desktop app to the latest version\n  url         Print the run-kit server URL (env → tmux option → default)\n\nFlags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit [command] --help\" for more information about a command.\n",
+    "text": "Usage:\n  run-kit [flags]\n  run-kit [command]\n\nAvailable Commands:\n  agent       Agent instrumentation (state hooks setup and reporting)\n  code        Run VS Code commands in the code lens editor from the shell\n  code-server Manage the rk-owned code-server install (the /code lens editor)\n  completion  Generate the autocompletion script for the specified shell\n  cron        Scheduled agent prompts (add, list, rm, mute, pin, tick)\n  daemon      Manage the background run-kit daemon (tmux-managed run-kit serve)\n  desktop     Install and update the Run Kit desktop app (macOS)\n  doctor      Check runtime dependencies\n  gui         Manage the host GUI surface (the rk-gui desktop session)\n  help        Help about any command\n  mux         Tmux substrate operations (server create, messaging, pane capture/kill/process, pane/session enumeration, janitor, recovery, config scaffold, tmux guard)\n  notify      Send a Web Push notification to subscribed devices\n  operator    Open the operator — the server-wide orchestrator agent tab (singleton)\n  present     Show a file, directory, port, or URL to the user as a web tile\n  remote      Use SSH-only machines as run-kit hosts (bootstrap, tunnel, connect)\n  riff        Create a worktree, tmux window, and Claude Code session\n  role        Mark or unmark the current window as the server's operator\n  serve       Start the HTTP server (foreground)\n  skill       Print run-kit's agent skill bundle (static usage briefing)\n  status      Show tmux session summary\n  tab         Drive a tab's UI state — layout, web tabs, code root — from the shell\n  tutorial    Open the guided tour — an agent-run tutorial tab in this session\n  update      Update the run-kit CLI and desktop app to the latest version\n  url         Print the run-kit server URL (env → tmux option → default)\n\nFlags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit [command] --help\" for more information about a command.\n",
     "commands": [
       {
         "name": "agent",
@@ -112,8 +112,8 @@
             "name": "add",
             "path": "run-kit cron add",
             "short": "Add a cron entry to the server's intent file",
-            "usage": "run-kit cron add <payload> --every <dur> | --backoff | --cron \"<expr>\" [flags]",
-            "text": "Usage:\n  run-kit cron add <payload> --every <dur> | --backoff | --cron \"<expr>\" [flags]\n\nExamples:\n  rk cron add \"check PRs\" --every 1h\n  rk cron add \"tick\" --backoff --min 2m --max 30m\n  rk cron add \"nightly\" --cron \"0 3 * * *\" --role operator\n  rk cron add \"operator tick\" --backoff --role operator --if-absent respawn --respawn rk --respawn operator --respawn -L --respawn '{server}'\n  rk cron add \"follow up\" --every 2h --session 4fe2abc-1c3b-4f7e-9a2d-8b5c4e1f0a37\n\nFlags:\n      --backoff               Fire on a backoff ladder keyed on the target pane's idle epoch — resets on genuine activity, continues otherwise (60s→30m by default; refine with --min/--max)\n      --catch-up string       With --cron: fire once late after a gap (only: once)\n      --cron string           Fire on a 5-field cron expression (daemon local time, validated at add time)\n      --deliver string        Delivery policy: immediate|when-idle (default \"immediate\")\n      --every duration        Fire on a fixed interval (Go duration, e.g. 1h, 90s)\n      --if-absent string      Absent-target policy: skip|notify|respawn (default \"skip\")\n      --max duration          Backoff ladder maximum gap (with --backoff) (default 30m0s)\n      --min duration          Backoff ladder minimum gap (with --backoff) (default 1m0s)\n      --name string           Display name (default: a payload prefix)\n      --pane string           Target a pane id (%N)\n      --pinned                Pin the entry (exempt from orphan expiry)\n      --respawn stringArray   With --if-absent respawn: one argv element of the respawn command per occurrence (repeatable; {server} resolves to the entry's server at fire time)\n      --role string           Target a server role (the @rk_win_role value, e.g. operator)\n      --session string        Target an agent session ref (e.g. 4fe2abc-…)\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (entry-file-scoped verbs: add/list/rm/mute/pin; default: the caller's own server from $TMUX, else the default server)\n",
+            "usage": "run-kit cron add <prompt> --every <dur> | --backoff | --cron \"<expr>\" [flags]",
+            "text": "Usage:\n  run-kit cron add <prompt> --every <dur> | --backoff | --cron \"<expr>\" [flags]\n\nExamples:\n  rk cron add \"check PRs\" --every 1h\n  rk cron add \"tick\" --backoff --min 2m --max 30m\n  rk cron add \"nightly\" --cron \"0 3 * * *\" --role operator\n  rk cron add \"operator tick\" --backoff --role operator --if-absent respawn --respawn rk --respawn operator --respawn -L --respawn '{server}'\n  rk cron add \"follow up\" --every 2h --session 4fe2abc-1c3b-4f7e-9a2d-8b5c4e1f0a37\n\nFlags:\n      --backoff               Fire on a backoff ladder keyed on the target pane's idle epoch — resets on genuine activity, continues otherwise (60s→30m by default; refine with --min/--max)\n      --catch-up string       With --cron: fire once late after a gap (only: once)\n      --cron string           Fire on a 5-field cron expression (daemon local time, validated at add time)\n      --deliver string        Delivery policy: immediate|when-idle (default \"immediate\")\n      --every duration        Fire on a fixed interval (Go duration, e.g. 1h, 90s)\n      --if-absent string      Absent-target policy: skip|notify|respawn (default \"skip\")\n      --max duration          Backoff ladder maximum gap (with --backoff) (default 30m0s)\n      --min duration          Backoff ladder minimum gap (with --backoff) (default 1m0s)\n      --name string           Display name (default: a prompt prefix)\n      --pane string           Target a pane id (%N)\n      --pinned                Pin the entry (exempt from orphan expiry)\n      --respawn stringArray   With --if-absent respawn: one argv element of the respawn command per occurrence (repeatable; {server} resolves to the entry's server at fire time)\n      --role string           Target a server role (the @rk_win_role value, e.g. operator)\n      --session string        Target an agent session ref (e.g. 4fe2abc-…)\n\nGlobal Flags:\n      --quiet           Suppress progress/decoration/chatter (data and errors still print)\n  -L, --server string   tmux server name (entry-file-scoped verbs: add/list/rm/mute/pin; default: the caller's own server from $TMUX, else the default server)\n",
             "commands": []
           },
           {
@@ -247,6 +247,79 @@
         "usage": "run-kit doctor [flags]",
         "text": "Usage:\n  run-kit doctor [flags]\n\nFlags:\n      --json   Emit the dependency report as JSON to stdout\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
         "commands": []
+      },
+      {
+        "name": "gui",
+        "path": "run-kit gui",
+        "short": "Manage the host GUI surface (the rk-gui desktop session)",
+        "usage": "run-kit gui",
+        "text": "Usage:\n  run-kit gui [command]\n\nAvailable Commands:\n  env         Print DISPLAY/RK_GUI_SOCKET exports for eval\n  exec        Run a command on the GUI display (DISPLAY set)\n  launch      Open a terminal or browser on the GUI display\n  off         Turn the GUI off and kill the rk-gui session\n  on          Turn the GUI on and start the rk-gui session\n  restart     Kill and respawn the rk-gui session\n  shot        Screenshot the GUI display to a PNG and print its path\n  status      Show the GUI state\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n\nUse \"run-kit gui [command] --help\" for more information about a command.\n",
+        "commands": [
+          {
+            "name": "env",
+            "path": "run-kit gui env",
+            "short": "Print DISPLAY/RK_GUI_SOCKET exports for eval",
+            "usage": "run-kit gui env",
+            "text": "Usage:\n  run-kit gui env [flags]\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "commands": []
+          },
+          {
+            "name": "exec",
+            "path": "run-kit gui exec",
+            "short": "Run a command on the GUI display (DISPLAY set)",
+            "usage": "run-kit gui exec <cmd> [args…] [flags]",
+            "text": "Usage:\n  run-kit gui exec <cmd> [args…] [flags]\n\nFlags:\n  -d, --detach   Start the command as its own session and return immediately\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "commands": []
+          },
+          {
+            "name": "launch",
+            "path": "run-kit gui launch",
+            "short": "Open a terminal or browser on the GUI display",
+            "usage": "run-kit gui launch <terminal|browser>",
+            "text": "Usage:\n  run-kit gui launch <terminal|browser> [flags]\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "commands": []
+          },
+          {
+            "name": "off",
+            "path": "run-kit gui off",
+            "short": "Turn the GUI off and kill the rk-gui session",
+            "usage": "run-kit gui off [flags]",
+            "text": "Usage:\n  run-kit gui off [flags]\n\nFlags:\n      --yes   Skip the running-apps confirmation\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "commands": []
+          },
+          {
+            "name": "on",
+            "path": "run-kit gui on",
+            "short": "Turn the GUI on and start the rk-gui session",
+            "usage": "run-kit gui on",
+            "text": "Usage:\n  run-kit gui on [flags]\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "commands": []
+          },
+          {
+            "name": "restart",
+            "path": "run-kit gui restart",
+            "short": "Kill and respawn the rk-gui session",
+            "usage": "run-kit gui restart",
+            "text": "Usage:\n  run-kit gui restart [flags]\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "commands": []
+          },
+          {
+            "name": "shot",
+            "path": "run-kit gui shot",
+            "short": "Screenshot the GUI display to a PNG and print its path",
+            "usage": "run-kit gui shot [flags]",
+            "text": "Usage:\n  run-kit gui shot [flags]\n\nFlags:\n  -o, --out string   Write the PNG to this path (parent created, existing file overwritten)\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "commands": []
+          },
+          {
+            "name": "status",
+            "path": "run-kit gui status",
+            "short": "Show the GUI state",
+            "usage": "run-kit gui status [flags]",
+            "text": "Usage:\n  run-kit gui status [flags]\n\nFlags:\n      --json   Emit the status document as JSON\n\nGlobal Flags:\n      --quiet   Suppress progress/decoration/chatter (data and errors still print)\n",
+            "commands": []
+          }
+        ]
       },
       {
         "name": "mux",

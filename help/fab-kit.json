@@ -1,21 +1,21 @@
 {
   "tool": "fab",
-  "version": "2.20.8",
-  "captured_at": "2026-09-09T12:19:11Z",
+  "version": "2.24.9",
+  "captured_at": "2026-09-10T12:12:45Z",
   "schema_version": 1,
   "root": {
     "name": "fab",
     "path": "fab",
     "short": "Fab workflow engine — single binary replacement for kit shell scripts",
     "usage": "fab",
-    "text": "Usage:\n  fab [command]\n\nAvailable Commands:\n  agent         Launch (or --print) the resolved agent session command in the current shell\n  batch         Multi-target batch operations\n  change        Change lifecycle management\n  completion    Generate the autocompletion script for the specified shell\n  config        Inspect, modify, and maintain fab configuration\n  dispatch      Process manager for CLI-dispatched pipeline stages (headless or tmux-pane worker)\n  fab-help      Show fab workflow overview and available commands\n  help          Help about any command\n  impact        Compute git diff line counts (added/deleted/net) between two refs\n  kit-path      Print the resolved kit directory path\n  log           Append-only JSON logging to .history.jsonl\n  memory-index  Deterministically (re)generate docs/memory index files\n  operator      Launch operator in a dedicated tmux tab (singleton)\n  pane          Tmux pane operations\n  pr-meta       Render the `## Meta` block of a fab-generated PR as final markdown\n  preflight     Validate project state and output structured YAML\n  resolve       Resolve a change reference to a canonical output\n  resolve-agent Resolve a pipeline stage (or agent role) to its {provider, model, effort} agent profile\n  score         Compute confidence score from Assumptions table\n  setup         Set up and diagnose the fab environment\n  shell-init    Emit shell completion script for sourcing (alias for 'completion <shell>')\n  skill         Print the fab agent skill bundle (offline, embedded, static)\n  status        Manage workflow stages, states, and .status.yaml\n\nUse \"fab [command] --help\" for more information about a command.\n",
+    "text": "Usage:\n  fab [command]\n\nAvailable Commands:\n  agent         Launch (or --print) the resolved agent session command in the current shell\n  batch         Multi-target batch operations\n  change        Change lifecycle management\n  completion    Generate the autocompletion script for the specified shell\n  config        Inspect, modify, and maintain fab configuration\n  dispatch      Process manager for CLI-dispatched pipeline stages (headless or tmux-pane worker)\n  docs-index    Deterministically regenerate configured documentation indexes\n  fab-help      Show fab workflow overview and available commands\n  help          Help about any command\n  impact        Compute git diff line counts (added/deleted/net) between two refs\n  kit-path      Print the resolved kit directory path\n  log           Append-only JSON logging to .history.jsonl\n  memory-index  Deprecated alias for docs-index docs/memory\n  operator      Launch operator in a dedicated tmux tab (singleton)\n  pane          Tmux pane operations\n  pr-meta       Render the `## Meta` block of a fab-generated PR as final markdown\n  preflight     Validate project state and output structured YAML\n  resolve       Resolve a change reference to a canonical output\n  resolve-agent Resolve a pipeline stage (or agent role) to its {provider, model, effort} agent profile\n  score         Compute confidence score from Assumptions table\n  setup         Set up and diagnose the fab environment\n  shell-init    Emit shell completion script for sourcing (alias for 'completion <shell>')\n  skill         Print the fab agent skill bundle (offline, embedded, static)\n  status        Manage workflow stages, states, and .status.yaml\n\nUse \"fab [command] --help\" for more information about a command.\n",
     "commands": [
       {
         "name": "agent",
         "path": "fab agent",
         "short": "Launch (or --print) the resolved agent session command in the current shell",
-        "usage": "fab agent [role] [flags]",
-        "text": "Usage:\n  fab agent [role] [flags]\n\nFlags:\n      --effort string     reasoning effort for the --provider form (empty: the effort token is dropped)\n      --model string      model id for the --provider form (empty: the provider command's model token is dropped, so its CLI default applies)\n      --print             print the fully-resolved command instead of executing it\n      --provider string   address a provider directly (bypasses role resolution); mutually exclusive with the [role] positional\n      --repo string       repo root to read the config from (default: current repo)\n      --workers string    set FAB_AGENT_WORKERS for the launched agent session\n",
+        "usage": "fab agent [role|stage] [-- <agent-args>...] [flags]",
+        "text": "Usage:\n  fab agent [role|stage] [-- <agent-args>...] [flags]\n\nFlags:\n      --effort string     final effort override (empty: on the bare --provider form the effort token is dropped)\n      --headless          resolve the provider's headless_command instead of interactive_command (print-family modes only)\n      --model string      final model override (empty: on the bare --provider form the provider command's model token is dropped, so its CLI default applies)\n  -o, --output string     print the resolution as a structured document; only \"yaml\" is accepted\n  -p, --print             print the fully-resolved command instead of executing it\n      --provider string   provider override: with a [role|stage] selector, re-resolve from that provider's fills; alone, address the provider directly (bypasses role resolution)\n      --repo string       repo root to read the config from (default: current repo)\n  -t, --template          print the selected provider's command template un-substituted (placeholders intact); implies --print\n      --workers string    set FAB_AGENT_WORKERS for the launched agent session\n",
         "commands": []
       },
       {
@@ -129,7 +129,7 @@
         "path": "fab config",
         "short": "Inspect, modify, and maintain fab configuration",
         "usage": "fab config",
-        "text": "Usage:\n  fab config [command]\n\nInspect Commands:\n  explain     Explain available config keys\n  show        Print the effective (post-cascade) config, optionally with per-field provenance\n\nModify Commands:\n  set         Set one config override without rewriting comments\n  unset       Remove one override and restore inheritance\n\nLifecycle Commands:\n  init        Generate a project config, or a system scaffold with --system\n  upgrade     Reconcile fab/project/config.yaml against the current field registry\n\nUse \"fab config [command] --help\" for more information about a command.\n",
+        "text": "Usage:\n  fab config [command]\n\nInspect Commands:\n  explain     Explain available config keys\n  show        Print the effective (post-cascade) config, optionally with per-field provenance\n\nModify Commands:\n  set         Set one config override without rewriting comments\n  unset       Remove one override and restore inheritance\n\nLifecycle Commands:\n  init        Generate a project config, or a system scaffold with --system\n  upgrade     Reconcile project or system config against the current field registry\n\nUse \"fab config [command] --help\" for more information about a command.\n",
         "commands": [
           {
             "name": "explain",
@@ -174,9 +174,9 @@
           {
             "name": "upgrade",
             "path": "fab config upgrade",
-            "short": "Reconcile fab/project/config.yaml against the current field registry",
+            "short": "Reconcile project or system config against the current field registry",
             "usage": "fab config upgrade [flags]",
-            "text": "Usage:\n  fab config upgrade [flags]\n\nFlags:\n      --check   Report what an upgrade would change without writing; exit non-zero when the file has drifted\n",
+            "text": "Usage:\n  fab config upgrade [flags]\n\nExamples:\n  fab config upgrade\n  fab config upgrade --system\n  fab config upgrade --system --check\n  fab config upgrade --all --check\n\nFlags:\n      --all       Reconcile both project and system config (requires a fab repo)\n      --check     Report what an upgrade would change without writing; exit non-zero when the file has drifted\n      --project   Reconcile fab/project/config.yaml (the default; requires a fab repo)\n      --system    Reconcile ~/.fab-kit/config.yaml without requiring a fab repo\n",
             "commands": []
           }
         ]
@@ -279,6 +279,14 @@
         ]
       },
       {
+        "name": "docs-index",
+        "path": "fab docs-index",
+        "short": "Deterministically regenerate configured documentation indexes",
+        "usage": "fab docs-index [root-path] [flags]",
+        "text": "Usage:\n  fab docs-index [root-path] [flags]\n\nExamples:\n  fab docs-index\n  fab docs-index docs/specs --check --json\n  fab docs-index docs/memory --rebuild\n\nFlags:\n      --check     Write nothing; exit 0 clean / 1 benign drift or blocking findings / 2 destructive loss\n      --json      With --check, emit tier/drift/losses/malformed/warnings as JSON\n      --rebuild   DESTRUCTIVE: rebuild frozen logs for log:true roots; ignored with --check\n",
+        "commands": []
+      },
+      {
         "name": "fab-help",
         "path": "fab fab-help",
         "short": "Show fab workflow overview and available commands",
@@ -346,9 +354,9 @@
       {
         "name": "memory-index",
         "path": "fab memory-index",
-        "short": "Deterministically (re)generate docs/memory index files",
+        "short": "Deprecated alias for docs-index docs/memory",
         "usage": "fab memory-index [flags]",
-        "text": "Usage:\n  fab memory-index [flags]\n\nFlags:\n      --check description:   Write nothing; encode index-drift severity in the exit code (0 clean / 1 benign drift / 2 destructive loss). Blocking source findings (malformed frontmatter, a change-id in description:, or a `description:` over 1000 runes) floor the exit at 1 independent of drift\n      --json malformed       With --check, emit the loss report as JSON on stdout (suppresses human-readable text); includes an additive malformed array (blocking findings) and an additive `warnings` array carrying the advisory kinds — description-length (the 501–1000 nag), narration-density, file-size, unsorted-nonempty, broken-link\n      --rebuild              DESTRUCTIVE: discard the frozen log.md state and re-project every log.md from current git (the pre-freeze behavior, opt-in). Ignored with --check (which never writes)\n",
+        "text": "Usage:\n  fab memory-index [flags]\n\nExamples:\n  fab docs-index\n  fab docs-index docs/specs --check --json\n  fab docs-index docs/memory --rebuild\n\nFlags:\n      --check     Write nothing; exit 0 clean / 1 benign drift or blocking findings / 2 destructive loss\n      --json      With --check, emit tier/drift/losses/malformed/warnings as JSON\n      --rebuild   DESTRUCTIVE: rebuild frozen logs for log:true roots; ignored with --check\n",
         "commands": []
       },
       {
@@ -356,7 +364,7 @@
         "path": "fab operator",
         "short": "Launch operator in a dedicated tmux tab (singleton)",
         "usage": "fab operator [flags]",
-        "text": "Usage:\n  fab operator [flags]\n  fab operator [command]\n\nAvailable Commands:\n  autopilot   Manage the operator autopilot queue\n  branch-map  Manage the operator state file's branch_map\n  enroll      Create (or replace) a monitored entry and record its branch_map pair\n  remove      Remove a monitored entry (its branch_map entry is retained)\n  state       Print the operator state file (creates the empty skeleton when missing)\n  tick-start  Increment tick_count and record last_tick_at in the server-keyed operator state file\n  time        Print current time and optionally next-tick time\n  update      Mutate per-tick observed fields of a monitored entry\n  watch       Manage watches in the operator state file\n\nFlags:\n      --workers string   set FAB_AGENT_WORKERS in the launched operator tab\n\nUse \"fab operator [command] --help\" for more information about a command.\n",
+        "text": "Usage:\n  fab operator [flags]\n  fab operator [command]\n\nAvailable Commands:\n  autopilot   Manage the operator autopilot queue\n  branch-map  Manage the operator state file's branch_map\n  enroll      Create (or replace) a monitored entry and record its branch_map pair\n  note        Manage narrative-state notes in the operator state file\n  remove      Remove a monitored entry (its branch_map entry is retained)\n  state       Print the operator state file (creates the empty skeleton when missing)\n  tick-start  Increment tick_count and record last_tick_at in the server-keyed operator state file\n  time        Print current time and optionally next-tick time\n  update      Mutate per-tick observed fields of a monitored entry\n  watch       Manage watches in the operator state file\n\nFlags:\n      --workers string   set FAB_AGENT_WORKERS in the launched operator tab\n\nUse \"fab operator [command] --help\" for more information about a command.\n",
         "commands": [
           {
             "name": "autopilot",
@@ -394,7 +402,7 @@
                 "path": "fab operator autopilot start",
                 "short": "Start an autopilot queue (--queue id,id,...)",
                 "usage": "fab operator autopilot start [flags]",
-                "text": "Usage:\n  fab operator autopilot start [flags]\n\nFlags:\n      --mode string     merge mode: cherry-pick-ladder | merge-auto | stacked-prs (default \"cherry-pick-ladder\")\n      --queue strings   comma-separated change IDs, in order (required)\n",
+                "text": "Usage:\n  fab operator autopilot start [flags]\n\nFlags:\n      --mode string     merge mode: cherry-pick-ladder | merge-auto | stacked-prs (default: autopilot.merge_mode config, else cherry-pick-ladder) (default \"cherry-pick-ladder\")\n      --queue strings   comma-separated change IDs, in order (required)\n",
                 "commands": []
               },
               {
@@ -433,6 +441,47 @@
             "commands": []
           },
           {
+            "name": "note",
+            "path": "fab operator note",
+            "short": "Manage narrative-state notes in the operator state file",
+            "usage": "fab operator note",
+            "text": "Usage:\n  fab operator note [command]\n\nAvailable Commands:\n  add         Create a note (binary-assigned n<N> id from the persisted notes_seq)\n  list        List notes (open by default; --all includes resolved)\n  resolve     Mark a note resolved (idempotent; prunes resolved notes past the 50-cap, oldest-first)\n  update      Replace a note's text in place (refreshes updated_at)\n\nUse \"fab operator note [command] --help\" for more information about a command.\n",
+            "commands": [
+              {
+                "name": "add",
+                "path": "fab operator note add",
+                "short": "Create a note (binary-assigned n<N> id from the persisted notes_seq)",
+                "usage": "fab operator note add <text> [flags]",
+                "text": "Usage:\n  fab operator note add <text> [flags]\n\nFlags:\n      --kind string       note kind: dependency_wait|phase_plan|coordination|correction (required)\n      --ref stringArray   reference (change id / repo); repeatable\n",
+                "commands": []
+              },
+              {
+                "name": "list",
+                "path": "fab operator note list",
+                "short": "List notes (open by default; --all includes resolved)",
+                "usage": "fab operator note list [flags]",
+                "text": "Usage:\n  fab operator note list [flags]\n\nFlags:\n      --all    include resolved notes\n      --json   emit the notes as JSON\n      --open   list open notes only (the default)\n",
+                "commands": []
+              },
+              {
+                "name": "resolve",
+                "path": "fab operator note resolve",
+                "short": "Mark a note resolved (idempotent; prunes resolved notes past the 50-cap, oldest-first)",
+                "usage": "fab operator note resolve <id>",
+                "text": "Usage:\n  fab operator note resolve <id>\n",
+                "commands": []
+              },
+              {
+                "name": "update",
+                "path": "fab operator note update",
+                "short": "Replace a note's text in place (refreshes updated_at)",
+                "usage": "fab operator note update <id> <text>",
+                "text": "Usage:\n  fab operator note update <id> <text>\n",
+                "commands": []
+              }
+            ]
+          },
+          {
             "name": "remove",
             "path": "fab operator remove",
             "short": "Remove a monitored entry (its branch_map entry is retained)",
@@ -445,15 +494,15 @@
             "path": "fab operator state",
             "short": "Print the operator state file (creates the empty skeleton when missing)",
             "usage": "fab operator state [flags]",
-            "text": "Usage:\n  fab operator state [flags]\n\nFlags:\n      --json   print the state as JSON instead of YAML\n",
+            "text": "Usage:\n  fab operator state [flags]\n\nFlags:\n      --all    include resolved notes in the notes list (excluded by default)\n      --json   print the state as JSON instead of YAML\n",
             "commands": []
           },
           {
             "name": "tick-start",
             "path": "fab operator tick-start",
             "short": "Increment tick_count and record last_tick_at in the server-keyed operator state file",
-            "usage": "fab operator tick-start",
-            "text": "Usage:\n  fab operator tick-start\n",
+            "usage": "fab operator tick-start [flags]",
+            "text": "Usage:\n  fab operator tick-start [flags]\n\nFlags:\n      --diff    also diff a pane snapshot against the monitored baseline: emit deltas/candidates/fleet blocks and update the baseline in the same write\n      --quiet   with --diff: on a no-delta tick that is not every 10th, replace the fleet: block with a fleet_summary: count block\n",
             "commands": []
           },
           {
@@ -544,7 +593,7 @@
         "path": "fab pane",
         "short": "Tmux pane operations",
         "usage": "fab pane",
-        "text": "Usage:\n  fab pane [command]\n\nAvailable Commands:\n  capture     Capture terminal content from a tmux pane with fab context enrichment\n  deliver     Type a prompt into a tmux pane, verifying every step\n  kill        Kill a tmux pane\n  map         Show tmux pane-to-worktree mapping with fab pipeline state\n  open        Spawn a provider's interactive command in a tmux pane (no dispatch record)\n  process     Detect the process tree running in a tmux pane\n  ready       Probe whether a tmux pane can accept typed input (ready / booting / parked)\n  window-name Window-name prefix operations\n\nFlags:\n  -L, --server string   Target tmux socket label (passed as 'tmux -L <name>'). Defaults to $TMUX / tmux default socket.\n\nUse \"fab pane [command] --help\" for more information about a command.\n",
+        "text": "Usage:\n  fab pane [command]\n\nAvailable Commands:\n  capture     Capture terminal content from a tmux pane with fab context enrichment\n  deliver     Type a prompt into a tmux pane, verifying every step\n  kill        Kill a tmux pane\n  map         Show tmux pane-to-worktree mapping with fab pipeline state\n  open        Spawn a provider's interactive command in a tmux pane (no dispatch record)\n  process     Detect the process tree running in a tmux pane\n  questions   Sweep candidate panes for pending questions/prompts\n  ready       Probe whether a tmux pane can accept typed input (ready / booting / parked)\n  window-name Window-name prefix operations\n\nFlags:\n  -L, --server string   Target tmux socket label (passed as 'tmux -L <name>'). Defaults to $TMUX / tmux default socket.\n\nUse \"fab pane [command] --help\" for more information about a command.\n",
         "commands": [
           {
             "name": "capture",
@@ -592,6 +641,14 @@
             "short": "Detect the process tree running in a tmux pane",
             "usage": "fab pane process <pane> [flags]",
             "text": "Usage:\n  fab pane process <pane> [flags]\n\nFlags:\n      --json   Output as JSON\n\nGlobal Flags:\n  -L, --server string   Target tmux socket label (passed as 'tmux -L <name>'). Defaults to $TMUX / tmux default socket.\n",
+            "commands": []
+          },
+          {
+            "name": "questions",
+            "path": "fab pane questions",
+            "short": "Sweep candidate panes for pending questions/prompts",
+            "usage": "fab pane questions [flags]",
+            "text": "Usage:\n  fab pane questions [flags]\n\nFlags:\n      --all-sessions    Sweep candidate panes across all tmux sessions\n      --json            Output as JSON\n      --panes strings   Explicit pane IDs to sweep (repeatable or comma-separated)\n\nGlobal Flags:\n  -L, --server string   Target tmux socket label (passed as 'tmux -L <name>'). Defaults to $TMUX / tmux default socket.\n",
             "commands": []
           },
           {
