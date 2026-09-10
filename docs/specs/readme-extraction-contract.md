@@ -804,9 +804,11 @@ unbroken result. Do this as a single change.
    the fix is to make the link absolute in your README. Only two relative forms are auto-handled: a
    link **into** your `docs/site/` tree written as `docs/site/<path>.md` (rewritten to
    `/<slug>/<path>`), and intra-`docs/site/` links (Part 2). Everything else relative → make it
-   absolute. Avoid putting a `docs/site/` link **behind a badge/thumbnail** (`[![alt](img)](docs/site/x.md)`)
-   or as a **reference-style definition** (`[id]: docs/site/x.md`) — those two shapes are not rewritten
-   (a known consumer limitation) and would 404; write them as plain inline links.
+   absolute. A `docs/site/` link **behind a badge/thumbnail** (`[![alt](img)](docs/site/x.md)`) or as
+   a **reference-style definition** (`[id]: docs/site/x.md`) is rewritten too — the rewriter is a
+   parser-scoped remark plugin over `link`/`image`/`definition` nodes, so both wrapped shapes resolve
+   site-absolute (and code/inline-code is never touched). Plain inline links remain the most readable
+   form, but the two wrapped shapes no longer 404.
 6. **Drop GitHub-only theme tricks (§4/§6).** Do **not** use the `#gh-dark-mode-only` /
    `#gh-light-mode-only` URL-fragment trick — it's stripped on pull. For a genuine light/dark pair use a
    theme-agnostic image (covers ~90% of cases) or a `<picture><source media="(prefers-color-scheme:…)">`.
