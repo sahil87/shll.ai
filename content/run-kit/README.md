@@ -200,15 +200,16 @@ eval "$(rk shell-init zsh)"   # in ~/.zshrc — also: bash, fish, powershell
 | `rk status` | Show a tmux session summary. |
 | `rk url` | Print the run-kit server URL (config-derived; a heuristic for agents, not a liveness probe). |
 | `rk skill` | Print the agent skill bundle — a static usage briefing for agents operating run-kit. |
+| `rk mcp` | MCP server over stdio — an allowlisted proxy over rk verbs for chat clients with no shell on the box (Claude Desktop connector command: `ssh <box> rk mcp`). |
 | `rk notify` | Send a Web Push notification to your subscribed devices. Fail-silent. |
 | `rk present` | Show a file, directory, `:port`, or URL to the user as a web tile on the current window. |
-| `rk cron` | Scheduled agent prompts (`add`, `list`, `rm`, `mute`, `pin`, `tick`). |
+| `rk cron` | Scheduled agent prompts (`add`, `edit`, `list`, `rm`, `mute`, `pin`, `tick`). |
 | `rk doctor` | Check runtime dependencies. Run this first when something breaks. |
 | `rk agent` | Agent instrumentation — `setup` installs the state hooks + tmux guard shim, usually via `shll setup agent` (see [Agent state](#agent-state)). |
 | `rk code` | Run VS Code palette commands in the open `code` lens editor from the shell. |
 | `rk code-server` | Manage the rk-owned code-server install (`install`, `update`). |
 | `rk mux` | Tmux substrate operations — server create/adopt/reap, messaging, pane capture, config scaffold, tmux guard. |
-| `rk tab` | Drive a tab's UI state — layout, web tabs, code root — from the shell. |
+| `rk tab` | Drive a tab's UI state — layout, web tabs, code root, sidebar signals (`color`/`mark`/`note`/`flair`/`owner`) — from the shell. |
 | `rk role` | Mark or unmark the current window as the server's operator. |
 | `rk update` | Upgrade via Homebrew and restart the daemon. |
 | `rk desktop` | Install/update the macOS desktop app, quarantine-free (`install`, `update`, `status`). |
