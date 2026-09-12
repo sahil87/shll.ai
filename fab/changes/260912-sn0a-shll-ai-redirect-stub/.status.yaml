@@ -1,0 +1,51 @@
+id: sn0a
+name: 260912-sn0a-shll-ai-redirect-stub
+created: 2026-09-12T15:54:02Z
+created_by: sahil-noon
+change_type: feat
+issues: []
+progress:
+    intake: done
+    apply: done
+    review: done
+    hydrate: done
+    ship: active
+    review-pr: pending
+plan:
+    generated: true
+    task_count: 13
+    acceptance_count: 26
+    acceptance_completed: 26
+confidence:
+    certain: 9
+    confident: 5
+    tentative: 0
+    unresolved: 0
+    score: 4.2
+    fuzzy: true
+    dimensions:
+        signal: 71.1
+        reversibility: 86.8
+        competence: 85.0
+        disambiguation: 78.9
+stage_metrics:
+    intake: {started_at: "2026-09-12T15:54:02Z", driver: fab-new, iterations: 1, completed_at: "2026-09-12T16:02:27Z"}
+    apply: {started_at: "2026-09-12T16:02:27Z", driver: fab-fff, iterations: 1, completed_at: "2026-09-12T16:09:45Z"}
+    review: {started_at: "2026-09-12T16:09:45Z", driver: fab-fff, iterations: 1, completed_at: "2026-09-12T16:14:21Z"}
+    hydrate: {started_at: "2026-09-12T16:14:21Z", driver: fab-fff, iterations: 1, completed_at: "2026-09-12T16:19:43Z"}
+    ship: {started_at: "2026-09-12T16:19:43Z", driver: fab-fff, iterations: 1}
+prs: []
+change_type_source: explicit
+true_impact:
+    added: 0
+    deleted: 0
+    net: 0
+    excluding:
+        added: 0
+        deleted: 0
+        net: 0
+    computed_at: "2026-09-12T16:19:43Z"
+    computed_at_stage: hydrate
+summary: 'replaced memory of the deleted Astro site: rewrote build-deploy/deployment.md for the fail-closed daily-cron stub deploy, added build-deploy/redirect-stub.md for the generator, and removed the entire conventions/ domain'
+# true_impact: lazily created on first stage-finish that computes it (no placeholder here).
+last_updated: 2026-09-12T16:19:43Z

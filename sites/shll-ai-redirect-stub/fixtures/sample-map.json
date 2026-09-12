@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "generated_at": "2026-09-12T00:00:00.000Z",
+  "from": "https://shll.ai",
+  "to": "https://hexokit.com",
+  "keep": ["/install", "/versions.json"],
+  "redirects": {
+    "/": "https://hexokit.com/",
+    "/getting-started/install/": "https://hexokit.com/toolkit/install/",
+    "/llms-full.txt": "https://hexokit.com/llms-full.txt",
+    "/llms.txt": "https://hexokit.com/llms.txt",
+    "/run-kit/": "https://hexokit.com/docs/",
+    "/run-kit/gui/": "https://hexokit.com/docs/gui/",
+    "/tools/wt/readme/": "https://hexokit.com/wt/readme/",
+    "/wt/": "https://hexokit.com/wt/"
+  },
+  "rules": [
+    ["^/tools/?$", "/toolkit/"],
+    ["^/(?:tools/)?run-kit/overview/?$", "/docs/"],
+    ["^/(?:tools/)?run-kit(/.*)?$", "/docs$1"],
+    ["^/tools/([^/]+)/overview/?$", "/$1/"],
+    ["^/tools/([^/]+)(/.*)?$", "/$1$2"],
+    ["^/getting-started/overview/?$", "/toolkit/"],
+    ["^/getting-started(/.*)?$", "/toolkit$1"],
+    ["^(/.*)$", "$1"]
+  ]
+}

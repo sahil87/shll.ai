@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    - cron: '13 9 * * *'   # daily, 2h after hexokit-site's 07:13 UTC help refresh + deploy, so the
+                           # byte copies of /versions.json and /install pick up that day's values
 
 permissions:
   contents: read
@@ -14,10 +17,12 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
-# Path to the site that ships to shll.ai. Change this single value to swap
-# which site under sites/ is built and deployed.
+# Path to the site that ships to shll.ai. shll.ai is a permanent redirect
+# host for hexokit.com (HexoKit rebrand row X2): the generator fetches the
+# redirect map and byte copies from hexokit.com and fails closed — any fetch
+# or validation failure stops the build, so the last-good site stays live.
 env:
-  SITE_DIR: sites/astro-starlight-terminal1
+  SITE_DIR: sites/shll-ai-redirect-stub
 
 jobs:
   build:
@@ -26,41 +31,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
-          cache-dependency-path: ${{ env.SITE_DIR }}/pnpm-lock.yaml
 
-      - name: Install dependencies
+      - name: Build redirect stub
         working-directory: ${{ env.SITE_DIR }}
-        run: pnpm install --frozen-lockfile
-
-      # The canonical script lives in sahil87/shll (versioned next to the CLI
-      # it bootstraps); the site serves a deploy-time copy at shll.ai/install.
-      # -f is deliberate: if the script is missing upstream, fail the deploy
-      # rather than ship a site whose documented one-liner 404s.
-      - name: Fetch install script (served at shll.ai/install)
-        working-directory: ${{ env.SITE_DIR }}
-        run: curl -fsSL https://raw.githubusercontent.com/sahil87/shll/main/scripts/install.sh -o public/install
-
-      - name: Build with Astro
-        working-directory: ${{ env.SITE_DIR }}
-        run: pnpm build
-        env:
-          # Automatic token for the build-time per-tool star-count fetch
-          # (src/lib/github-stars.ts): unauthenticated GitHub API calls from
-          # shared Actions-runner IPs rate-limit unpredictably; the token
-          # raises the limit with zero secret management. The fetch is
-          # fail-soft — without the token (or on any API failure) the build
-          # still succeeds and the counts are simply omitted.
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node build.mjs
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

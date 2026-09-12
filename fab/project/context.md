@@ -1,36 +1,33 @@
 # Project Context
 
-Landing page for the **shll AI coding toolkit** at [shll.ai](https://shll.ai). The site is a front door into seven Go CLIs: `idea`, `hop`, `fab-kit`, `wt`, `run-kit`, `tu`, `shll`.
-
-This repo is in an active **design-iteration phase** — content, tech stack, and visual theme are all in flux. To enable parallel exploration without churning the live site, the repo hosts multiple self-contained website variants under `sites/`.
+[shll.ai](https://shll.ai) is a **permanent redirect host** for [hexokit.com](https://hexokit.com), the one website for the shll AI coding toolkit (HexoKit rebrand). This repo builds and deploys that host — nothing else. It is **downstream of [sahil87/hexokit-site](https://github.com/sahil87/hexokit-site)**: the redirect map, the install script, the version manifest, and the agent endpoints are all produced there and fetched from `hexokit.com` at build time.
 
 ## Repo layout
 
 ```
 sites/
-├── astro-starlight-terminal1/  # currently LIVE at shll.ai (Astro 6 + Starlight, terminal theme)
-├── astro-tailwind-terminal1/   # variant (not deployed)
-└── _playground/                # scratch space — experiments (no deploy)
-.github/workflows/deploy.yml    # SITE_DIR env var selects which site ships
+└── shll-ai-redirect-stub/      # the entire live site — a zero-dependency Node 22 generator
+.github/workflows/deploy.yml    # builds the stub on push to main, manual dispatch, and a daily cron
 fab/                            # project meta (config, constitution, this file)
-docs/                           # project-level memory + specs (NOT per-site)
+docs/                           # project-level memory + specs (three cross-repo specs are tombstones — maintained in hexokit-site)
 ```
 
-Per-site implementation details (stack choices, file conventions, styling system) live inside that site's directory — typically a `README.md` and `docs/memory/site/` under the site root. Top-level `docs/memory/` is reserved for project-level concerns that span sites (deploy strategy, cross-site conventions).
+There is exactly one site and no experiments: `sites/shll-ai-redirect-stub/` emits one redirect stub per old shll.ai URL, a client-side `404.html` catch-all, and byte copies of `/install` and `/versions.json` (baked into shipped `shll` binaries — they must stay real files forever). No `package.json`, no npm dependencies — Node 22 built-ins only.
 
 ## Deployment
 
-GitHub Pages via `.github/workflows/deploy.yml` on push to `main`. The workflow's `SITE_DIR` env var picks which subdirectory under `sites/` is built and deployed — swap the live site by editing that one line.
+GitHub Pages via `.github/workflows/deploy.yml`. The build **fails closed**: any fetch or validation error (map 404, dropped endpoint, completeness-floor regression, HTML body at `/install`) stops the build before `dist/` is written, so the last-good deployment stays live. The daily schedule keeps the byte copies ≤ ~24 h behind hexokit.com.
 
-`dist/` is gitignored at any depth; CI is the single source of truth for what's live (Constitution VI). Custom domain `shll.ai` set via `public/CNAME` inside the live site's directory.
+`dist/` is gitignored at any depth; CI is the single source of truth for what's live. Custom domain `shll.ai` via the emitted `dist/CNAME`.
 
 ## What this project is
 
-- **A repo of website experiments** competing to be the front door to shll.ai.
-- **Static-first** — every site SHALL produce fully static output. No SSR adapters, no server endpoints, no runtime data fetching for primary content.
+- **A redirect host** — every URL shll.ai ever served lands on its final hexokit.com page.
+- **Static-first** — the stub is generated at build time from hexokit.com endpoints; no server, no runtime fetch.
+- **Fail-closed** — a broken upstream means a red build, never a broken deploy.
 
 ## What this project is NOT
 
-- Not a docs site for any one tool — each tool's full docs live in its own repo's README. Pages here are short "directory entries" linking out.
-- Not a monorepo with shared dependencies — each site under `sites/` owns its own `package.json` and stack. Sharing is opt-in, not the default.
-- Not server-rendered.
+- Not a content site — there are no pages, docs, or pull pipelines here; the toolkit's content lives in hexokit-site.
+- Not a multi-site workspace — one site, one purpose, no variants.
+- Not server-rendered, and no client-side data fetching.

@@ -2,11 +2,10 @@
 checklist:
     extra_categories: []
 project:
-    description: Landing page for the shll AI coding toolkit — multi-site repo (live build under sites/, experiments in sites/_playground/)
+    description: Permanent redirect host for hexokit.com — every old shll.ai URL redirects to its final hexokit.com page; /install and /versions.json stay byte copies (never lapse)
     name: ai.shll.in
 source_paths:
-    - sites/astro-starlight-terminal1/src/
-    - sites/astro-starlight-terminal1/scripts/
+    - sites/shll-ai-redirect-stub/
 # Glob/pathspec patterns identifying test files. Used by the true-impact
 # breakdown to attribute lines to tests vs. implementation (impl = total − tests).
 # Language-specific — no kit default. Patterns are :(glob) magic pathspecs, so
@@ -25,7 +24,6 @@ source_paths:
 true_impact_exclude:
     - fab/
     - docs/
-    - sites/_playground/
 
 # >>> fab reference (kit 2.24.9) >>> ---------------------------------------
 # Overridable fields you have NOT overridden, with current defaults.
