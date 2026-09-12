@@ -1,0 +1,11 @@
+{"action":"enter","driver":"fab-new","event":"stage-transition","stage":"intake","ts":"2026-09-12T15:54:02Z"}
+{"args":"shll-ai-redirect-stub — X2 of the hexokit-rebrand plan: replace the shll.ai repo contents with a redirect stub consuming hexokit.com/shll-ai-redirects.json (one meta-refresh page per old URL + 404.html rules catch-all), byte copies of /install and /versions.json, remove the cron workflows","cmd":"fab-new","event":"command","ts":"2026-09-12T15:54:02Z"}
+{"delta":"+0.0","event":"confidence","score":4.2,"trigger":"calc-score","ts":"2026-09-12T15:57:07Z"}
+{"cmd":"fab-fff","event":"command","ts":"2026-09-12T15:58:34Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"apply","ts":"2026-09-12T16:02:27Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"review","ts":"2026-09-12T16:09:45Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"hydrate","ts":"2026-09-12T16:14:21Z"}
+{"event":"review","result":"passed","ts":"2026-09-12T16:14:21Z"}
+{"action":"enter","driver":"fab-fff","event":"stage-transition","stage":"ship","ts":"2026-09-12T16:19:43Z"}
+{"action":"enter","driver":"git-pr","event":"stage-transition","stage":"review-pr","ts":"2026-09-12T16:21:22Z"}
+{"event":"review","result":"passed","ts":"2026-09-12T16:36:45Z"}

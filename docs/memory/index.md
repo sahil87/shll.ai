@@ -18,5 +18,5 @@ fkf_version: "0.1"
 
 | Domain | Description |
 |--------|-------------|
+| [_shared](_shared/index.md) | — |
 | [build-deploy](build-deploy/index.md) | How the site is built and deployed |
-| [conventions](conventions/index.md) | Recurring shapes and patterns that span multiple files |
