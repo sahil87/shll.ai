@@ -86,6 +86,16 @@ test('validateMap rejects an off-origin value', () => {
   assert.throws(() => validateMap(map), /\/wt\//);
 });
 
+test('validateMap rejects a to origin other than hexokit.com', () => {
+  assert.throws(() => validateMap(mapWith({ to: 'https://example.com' })), /to must be 'https:\/\/hexokit\.com'/);
+});
+
+test('validateMap rejects a redirects key with a dot segment', () => {
+  const map = mapWith({});
+  map.redirects = { ...map.redirects, '/../../outside/': 'https://hexokit.com/../../outside/' };
+  assert.throws(() => validateMap(map), /dot segment/);
+});
+
 test('validateMap rejects a keep path used as a redirects key', () => {
   const map = mapWith({});
   map.redirects = { ...map.redirects, '/install/': 'https://hexokit.com/install' };
@@ -116,6 +126,7 @@ test('validateByteCopy accepts good copies and rejects the failures they exist t
   assert.throws(() => validateByteCopy('/install', '<html>404</html>'), /\/install.*#!\/bin\/sh/);
   assert.throws(() => validateByteCopy('/versions.json', '<html>404</html>'), /\/versions\.json/);
   assert.throws(() => validateByteCopy('/versions.json', JSON.stringify({ schema: 1, tools: {} })), /tools/);
+  assert.throws(() => validateByteCopy('/versions.json', JSON.stringify({ schema: 1, tools: ['run-kit'] })), /tools/);
   assert.throws(() => validateByteCopy('/llms.txt', '<html>404</html>'), /llms\.txt/);
   assert.throws(() => validateByteCopy('/llms.txt', ''), /llms\.txt/);
 });
@@ -277,6 +288,23 @@ test('integration: build emits exactly the R6 file set from a served sample map'
   assert.match(stub, /content="0; url=https:\/\/hexokit\.com\/wt\/readme\/"/);
   const notFound = await readFile(path.join(out, '404.html'), 'utf8');
   assert.match(notFound, /"to":"https:\/\/hexokit\.com"/);
+});
+
+test('integration: a 3xx from the origin fails the build — redirects are never followed', async (t) => {
+  const server = http.createServer((req, res) => {
+    res.writeHead(302, { location: 'http://127.0.0.1:1/' }).end();
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  const tmp = await mkdtemp(path.join(tmpdir(), 'shll-ai-stub-'));
+  t.after(async () => {
+    server.close();
+    await rm(tmp, { recursive: true, force: true });
+  });
+
+  const result = await runBuild(['--origin', origin, '--out', path.join(tmp, 'dist'), '--floor', path.join(tmp, 'floor.txt')]);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /HTTP 302/);
 });
 
 test('integration: a 404 map fails closed and writes nothing', async (t) => {

@@ -122,6 +122,9 @@ function validateMapHeader(map) {
   if (toUrl.protocol !== 'https:' || toUrl.origin !== map.to) {
     throw new Error(`redirect map: to must be an https origin with no path, got ${JSON.stringify(map.to)}`);
   }
+  if (map.to !== HEXOKIT_ORIGIN) {
+    throw new Error(`redirect map: to must be '${HEXOKIT_ORIGIN}' (shll.ai redirects to hexokit.com only), got ${JSON.stringify(map.to)}`);
+  }
   const keep = map.keep;
   if (
     !Array.isArray(keep) ||
@@ -146,6 +149,9 @@ function validateRedirects(map) {
     const canonical = canonicalPath(key);
     if (key !== canonical) {
       throw new Error(`redirect map: redirects key '${key}' is not canonical (expected '${canonical}')`);
+    }
+    if (key.split('/').some((segment) => segment === '.' || segment === '..')) {
+      throw new Error(`redirect map: redirects key '${key}' contains a dot segment (path traversal)`);
     }
     if (keeps.has(key)) {
       throw new Error(`redirect map: redirects key '${key}' collides with a keep path`);
@@ -243,7 +249,7 @@ export function validateByteCopy(path, bytes) {
     } catch {
       throw new Error(`byte copy ${path}: not valid JSON`);
     }
-    if (parsed?.schema !== MAP_SCHEMA || typeof parsed.tools !== 'object' || parsed.tools === null || Object.keys(parsed.tools).length === 0) {
+    if (parsed?.schema !== MAP_SCHEMA || typeof parsed.tools !== 'object' || parsed.tools === null || Array.isArray(parsed.tools) || Object.keys(parsed.tools).length === 0) {
       throw new Error(`byte copy ${path}: must be a schema ${MAP_SCHEMA} manifest with a non-empty tools object`);
     }
     return;

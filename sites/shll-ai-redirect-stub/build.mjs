@@ -54,13 +54,21 @@ function parseArgs(argv) {
   return args;
 }
 
-/** GET `url` as text with a bounded timeout; any non-2xx is a build-stop. */
-async function fetchText(url) {
-  const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+/** GET `url` as raw bytes with a bounded timeout; any non-2xx is a
+ *  build-stop. Redirects are NOT followed (`redirect: 'manual'`) — a 3xx
+ *  means the origin moved the endpoint, and following it would silently
+ *  fetch from a fallback location R2 forbids. */
+async function fetchBytes(url) {
+  const res = await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   if (!res.ok) {
     throw new Error(`fetch ${url} → HTTP ${res.status}`);
   }
-  return res.text();
+  return new Uint8Array(await res.arrayBuffer());
+}
+
+/** GET `url` decoded as UTF-8 text (used for the map; byte copies stay raw). */
+async function fetchText(url) {
+  return new TextDecoder().decode(await fetchBytes(url));
 }
 
 async function fetchMap(origin) {
@@ -102,13 +110,15 @@ async function emitSite(map, copies, out) {
 async function main() {
   const { origin, out, floor } = parseArgs(process.argv.slice(2));
 
-  // 1. Fetch: the map, then every keep path and every file-like key.
+  // 1. Fetch: the map, then every keep path and every file-like key. Copies
+  // stay raw bytes so dist/ is byte-for-byte (D4); they are decoded only for
+  // validation below.
   const map = await fetchMap(origin);
   validateMap(map);
   const copyPaths = [...map.keep, ...Object.keys(map.redirects).filter(isFileLike)];
   const copies = new Map();
   for (const copyPath of copyPaths) {
-    copies.set(copyPath, await fetchText(origin + copyPath));
+    copies.set(copyPath, await fetchBytes(origin + copyPath));
   }
 
   // 2. Validate: the completeness floor, then the byte copies. Everything is
@@ -119,8 +129,9 @@ async function main() {
   if (missing.length > 0) {
     throw new Error(`floor check failed — ${missing.length} path(s) missing from the fetched map:\n${missing.map((p) => `  ${p}`).join('\n')}`);
   }
+  const decoder = new TextDecoder();
   for (const [copyPath, bytes] of copies) {
-    validateByteCopy(copyPath, bytes);
+    validateByteCopy(copyPath, decoder.decode(bytes));
   }
 
   // 3. Emit and report.
