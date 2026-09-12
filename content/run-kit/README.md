@@ -1,14 +1,14 @@
-**Your tmux, in the browser and on your phone.** run-kit is a remote console for the machine you actually work on — every tmux session and pane as a live terminal, in a sidebar, from your desk or your couch. It's the modern, terminal-native answer to the old server web-console: nothing to configure, no database, state read straight from tmux.
+**Your tmux, in the browser and on your phone.** HexoKit is a remote console for the machine you actually work on — every tmux session and pane as a live terminal, in a sidebar, from your desk or your couch. It's the modern, terminal-native answer to the old server web-console: nothing to configure, no database, state read straight from tmux.
 
-What makes it so good right now is what tends to run in those panes: **AI coding agents, many at once.** `rk riff` spawns each one in its own [git worktree](https://github.com/sahil87/wt), and the dashboard lets you watch the whole fleet. But run-kit never wraps the agent — a pane is just a pane. It's equally a build, a REPL, an ssh session, `htop`. **The agent is one of the things you run, not the thing run-kit is.** That's the point: when the agent tooling churns underneath you (and it does, monthly), the terminal layer stays put.
+What makes it so good right now is what tends to run in those panes: **AI coding agents, many at once.** `rk riff` spawns each one in its own [git worktree](https://github.com/sahil87/wt), and the dashboard lets you watch the whole fleet. But HexoKit never wraps the agent — a pane is just a pane. It's equally a build, a REPL, an ssh session, `htop`. **The agent is one of the things you run, not the thing HexoKit is.** That's the point: when the agent tooling churns underneath you (and it does, monthly), the terminal layer stays put.
 
 ## Install
 
 ```sh
-curl -fsSL https://shll.ai/install | sh
+curl -fsSL https://hexokit.com/install | sh
 ```
 
-Installs the entire shll toolkit via Homebrew, handling tap trust automatically. run-kit relies on its sibling tools (`wt` for the riff worktree flow), so the full-toolkit install is the supported path. The formula also installs `rk` as a fully interchangeable short alias of `run-kit` — every command here works with either.
+Installs the entire HexoKit toolkit via Homebrew, handling tap trust automatically. HexoKit relies on its sibling tools (`wt` for the riff worktree flow), so the full-toolkit install is the supported path. The formula also installs `rk` as a fully interchangeable short alias of `run-kit` — every command here works with either.
 
 Requires **tmux ≥ 3.4** (checked at runtime; `rk doctor` reports your version). See the [install & access guide](docs/site/install.md) for prerequisites, upgrades, and troubleshooting.
 
@@ -39,9 +39,9 @@ Two optional extras:
 
 To upgrade later, `rk update` pulls the latest version via Homebrew and restarts the daemon. Coming from the old `rk` Homebrew formula, or something failing? See the [install & access guide](docs/site/install.md) and `rk doctor`.
 
-## Why run-kit?
+## Why HexoKit?
 
-|  | run-kit |
+|  | HexoKit |
 |--|---------|
 | **It is** | A remote, phone-first **console for your tmux** — agent-agnostic, no database, state derived from tmux + filesystem. A spawner (`rk riff`) and a dashboard (`rk serve`) that compose. |
 | **It isn't** | An agent wrapper. It doesn't speak any agent's protocol, parse any agent's output, or care what's in the pane. That's deliberate — it's what makes it outlive whichever agent you run. |
@@ -49,7 +49,7 @@ To upgrade later, `rk update` pulls the latest version via Homebrew and restarts
 - **One command per parallel agent** — `rk riff` creates a worktree, opens a tmux window in it, and launches your agent. `rk riff -N 3` spawns three workspaces in parallel; failures roll back cleanly.
 - **Watch a whole fleet, from anywhere** — every tmux session and pane shows up in a sidebar. Click for a live browser terminal; pin several into a [board](#boards--watch-many-panes-at-once); open the same dashboard on your phone over Tailscale.
 - **Mobile-first, keyboard-first** — `Cmd+K` command palette is the primary discovery surface. Touch targets are tuned for mobile so you can steer a session from your phone while away from your desk.
-- **The dashboard layer over [`fab-kit`](https://github.com/sahil87/fab-kit) and [`wt`](https://github.com/sahil87/wt)** — `rk riff --skill /fab-fff` launches a full fab-kit pipeline in an isolated worktree. Reach for run-kit when you have more parallel changes than one terminal can hold.
+- **The dashboard layer over [`fab-kit`](https://github.com/sahil87/fab-kit) and [`wt`](https://github.com/sahil87/wt)** — `rk riff --skill /fab-fff` launches a full fab-kit pipeline in an isolated worktree. Reach for HexoKit when you have more parallel changes than one terminal can hold.
 
 ## Screenshots
 
@@ -65,7 +65,7 @@ To upgrade later, `rk update` pulls the latest version via Homebrew and restarts
 
 ## The mental model
 
-run-kit is two independent halves that compose:
+HexoKit is two independent halves that compose:
 
 ```
 rk riff              rk serve
@@ -129,26 +129,30 @@ Windows running an AI agent can report a live lifecycle state in the sidebar and
 This is opt-in and needs a one-time setup per machine — the toolkit-wide wiring covers it (and runs automatically at the end of a toolkit install):
 
 ```bash
-shll setup agent            # places the shll toolkit skill + installs run-kit's dashboard hooks
+shll setup agent            # places the shll toolkit skill + installs HexoKit's dashboard hooks
 ```
 
-It delegates the hook install to `rk agent setup`, which shows the settings diff and asks before writing; `rk agent setup --uninstall` removes exactly the run-kit-owned entries.
+It delegates the hook install to `rk agent setup`, which shows the settings diff and asks before writing; `rk agent setup --uninstall` removes exactly the HexoKit-owned entries.
 
-The setup installs agent-harness hooks into your user-global agent configs — Claude Code, Codex, Gemini CLI, GitHub Copilot CLI, Kimi Code, OpenCode, and Antigravity CLI, each wired when its binary is on `PATH` — that stamp a `@rk_pane_agent_state` tmux pane option on lifecycle events. Each hook is a thin wrapper delegating to `rk agent hook`, so hook fixes ship in the binary and track `rk update` — no settings changes, no session restarts. Hooks work for any session, in any repo, under any workflow; re-running the setup is idempotent and never touches your other hooks. Until it's run (and agent sessions are restarted), agent state shows `—`. Codex additionally needs its native trust review: open `codex` and trust the run-kit entries via `/hooks`.
+The setup installs agent-harness hooks into your user-global agent configs — Claude Code, Codex, Gemini CLI, GitHub Copilot CLI, Kimi Code, OpenCode, and Antigravity CLI, each wired when its binary is on `PATH` — that stamp a `@rk_pane_agent_state` tmux pane option on lifecycle events. Each hook is a thin wrapper delegating to `rk agent hook`, so hook fixes ship in the binary and track `rk update` — no settings changes, no session restarts. Hooks work for any session, in any repo, under any workflow; re-running the setup is idempotent and never touches your other hooks. Until it's run (and agent sessions are restarted), agent state shows `—`. Codex additionally needs its native trust review: open `codex` and trust the HexoKit entries via `/hooks`.
 
 The per-harness capability matrix (verified versions, event mappings, transcript support, honest gaps) lives in the [agent hook integrations guide](docs/site/agent-hooks.md); the cross-repo convention is documented in [`docs/specs/agent-state.md`](https://github.com/sahil87/run-kit/blob/main/docs/specs/agent-state.md); upgrading from an older hook generation is covered in the [install & access guide](docs/site/install.md#upgrade).
 
 ## The operator — one agent to run the server
 
-`rk operator` opens the **operator** — a per-tmux-server singleton window running the fab-kit operator-tier agent, role-marked so the dashboard pins it. Where `rk riff` spawns workers, the operator is the coordinator you talk to: it watches the fleet, dispatches and unblocks changes, and escalates to your phone when something needs you. Requires fab-kit on `PATH`; re-running switches to the existing tab.
+`rk operator` opens the **operator** — a per-tmux-server singleton window running the fab-kit operator-tier agent, role-marked so the dashboard pins it. Where `rk riff` spawns workers, the operator is the coordinator you talk to: it watches the fleet, dispatches and unblocks changes, and escalates to your phone when something needs you. Requires fab-kit on `PATH`; re-running switches to the existing tab. Hand it a templated work item from the shell with `rk operator request <template>` (`--list` prints the registry; a busy operator queues the request and it drains when idle).
 
 ## Boards — watch many panes at once
 
 A **board** is a named, cross-server pane dashboard: pin any tmux window from any server into it, and the board renders all pinned panes side-by-side — perfect for watching three parallel agent sessions next to the `just dev` server they're editing. Pin from the sidebar's pin icon or the `Cmd+K` palette; pin state lives in tmux, so the same board URL shows the same panes on your phone. See the [boards guide](docs/site/boards.md) for pinning, keyboard cycling, resizing, and mobile behavior.
 
+## GUI — the host's desktop in a tile
+
+The GUI surface runs the host's desktop as a fourth tile beside `tty`/`code`/`web`, off by default and shared by every viewer and every agent. `rk gui on` starts a private X display with a window manager and reveals the 4th tile button (⌘4). IceWM is the default desktop; pick another (LXQt, XFCE, Plasma, LXDE, MATE, Cinnamon) from Settings → `gui.wm` or with `rk gui wm <name>` — `rk gui wm --list` shows what's installed and what each missing one takes to install. See the [GUI guide](docs/site/gui.md) for desktops, resolution, phone controls, and troubleshooting.
+
 ## Drive it from your phone (HTTPS over Tailscale)
 
-Some browser features (clipboard, secure context) require HTTPS. Accessing run-kit from another machine on your tailnet also requires HTTPS:
+Some browser features (clipboard, secure context) require HTTPS. Accessing HexoKit from another machine on your tailnet also requires HTTPS:
 
 1. Enable HTTPS at [DNS > HTTPS Certificates](https://login.tailscale.com/admin/dns).
 2. Run `sudo tailscale set --operator=$USER` (one-time — lets `tailscale serve` run without sudo).
@@ -166,7 +170,7 @@ rk desktop install    # fetch the latest release DMG, install to /Applications
 rk desktop update     # same, but a no-op when already current
 ```
 
-The CLI path matters: it produces a quarantine-free, digest-verified install that opens cleanly — a browser-downloaded DMG gets blocked by Gatekeeper on every install and update. The app's welcome page connects three ways: **This Mac** (one-click daemon start), **over SSH** (bootstraps run-kit on the remote box via `rk remote`), or **a URL**. It never starts, stops, or updates anything on its own, and your tmux sessions survive every daemon action. Details and the manual fallback are in the [install & access guide](docs/site/install.md#desktop-app-macos).
+The CLI path matters: it produces a quarantine-free, digest-verified install that opens cleanly — a browser-downloaded DMG gets blocked by Gatekeeper on every install and update. The app's welcome page connects three ways: **This Mac** (one-click daemon start), **over SSH** (bootstraps HexoKit on the remote box via `rk remote`), or **a URL**. It never starts, stops, or updates anything on its own, and your tmux sessions survive every daemon action. Details and the manual fallback are in the [install & access guide](docs/site/install.md#desktop-app-macos).
 
 ## Push notifications
 
@@ -194,26 +198,28 @@ eval "$(rk shell-init zsh)"   # in ~/.zshrc — also: bash, fish, powershell
 |---------|--------------|
 | `rk riff` | Create a worktree + tmux window + agent/command pane(s). |
 | `rk tutorial` | Open the guided tour — an agent-run `tutorial` tab in this session. |
-| `rk operator` | Open the operator — the server-wide orchestrator agent tab (singleton). |
+| `rk operator` | Open the operator — the server-wide orchestrator agent tab (singleton); `request <template>` hands it a templated work item. |
 | `rk serve` | Start the HTTP server (foreground). |
 | `rk daemon` | Manage the background daemon (`start`, `restart`, `stop`, `status`). |
 | `rk status` | Show a tmux session summary. |
-| `rk url` | Print the run-kit server URL (config-derived; a heuristic for agents, not a liveness probe). |
-| `rk skill` | Print the agent skill bundle — a static usage briefing for agents operating run-kit. |
+| `rk url` | Print the HexoKit server URL (config-derived; a heuristic for agents, not a liveness probe). `--mcp` prints the `/mcp` MCP endpoint. |
+| `rk skill` | Print the agent skill bundle — a static usage briefing for agents operating HexoKit. |
 | `rk mcp` | MCP server over stdio — an allowlisted proxy over rk verbs for chat clients with no shell on the box (Claude Desktop connector command: `ssh <box> rk mcp`). |
 | `rk notify` | Send a Web Push notification to your subscribed devices. Fail-silent. |
 | `rk present` | Show a file, directory, `:port`, or URL to the user as a web tile on the current window. |
 | `rk cron` | Scheduled agent prompts (`add`, `edit`, `list`, `rm`, `mute`, `pin`, `tick`). |
+| `rk gui` | The host's desktop as a tile — `on`/`off`/`status`, `wm` (pick a desktop; `--list` shows installed and installable ones), `resize`, and the agent verbs (`exec`, `shot`, `key`). |
 | `rk doctor` | Check runtime dependencies. Run this first when something breaks. |
 | `rk agent` | Agent instrumentation — `setup` installs the state hooks + tmux guard shim, usually via `shll setup agent` (see [Agent state](#agent-state)). |
 | `rk code` | Run VS Code palette commands in the open `code` lens editor from the shell. |
 | `rk code-server` | Manage the rk-owned code-server install (`install`, `update`). |
 | `rk mux` | Tmux substrate operations — server create/adopt/reap, messaging, pane capture, config scaffold, tmux guard. |
 | `rk tab` | Drive a tab's UI state — layout, web tabs, code root, sidebar signals (`color`/`mark`/`note`/`flair`/`owner`) — from the shell. |
+| `rk board` | List boards and pin/unpin/reorder windows on the cross-server board dashboards (`show`/`pin`/`unpin`/`reorder`). Needs `rk serve` up. |
 | `rk role` | Mark or unmark the current window as the server's operator. |
 | `rk update` | Upgrade via Homebrew and restart the daemon. |
 | `rk desktop` | Install/update the macOS desktop app, quarantine-free (`install`, `update`, `status`). |
-| `rk remote` | Use SSH-only machines as run-kit hosts (`add`, `connect`, `list`, `status`, `disconnect`, `remove`). |
+| `rk remote` | Use SSH-only machines as HexoKit hosts (`add`, `connect`, `list`, `status`, `disconnect`, `remove`). |
 | `rk completion` | Generate shell completion scripts (or use `rk shell-init` for eval-safe output). |
 
 Run `rk <command> --help` for full flag details, or see the [full command reference](https://shll.ai/run-kit/commands/) for every command and flag.

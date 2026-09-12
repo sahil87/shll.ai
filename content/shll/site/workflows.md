@@ -33,7 +33,7 @@ One command to upgrade everything you have installed. The sequence:
 2. **Self-upgrade.** If `shll` itself was installed via brew, it runs `brew upgrade sahil87/tap/shll` first. A from-source `shll` is skipped here (no formula to upgrade).
 3. **Per-tool upgrade, by delegation.** For each *installed* roster tool, `shll update` invokes that tool's **own `update` subcommand** (with `--skip-brew-update` when the tool advertises it) rather than calling `brew upgrade` directly. This preserves each tool's post-upgrade side effects — e.g. `rk`'s daemon restart — that a bare `brew upgrade` would silently drop. rk-desktop delegates to `rk desktop update` (it has no brew formula). A brew-managed tool that exposes no `update` subcommand falls back to `brew upgrade`.
 
-Uninstalled tools are skipped (graceful degradation), and the loop is best-effort: a single tool's failure doesn't abort the rest. `brew`'s progress streams straight to your terminal.
+Uninstalled tools are skipped (graceful degradation), and the loop is best-effort: a single tool's failure doesn't abort the rest. `brew`'s progress streams straight to your terminal. A step that goes quiet for 30 seconds — usually a slow download inside brew — gets a still-waiting line on stderr (backing off between repeats) rather than silence; shll never puts a deadline on brew.
 
 `shll update` prints a `[N/M]` progress header before each tool and a timing summary tail at the end (`Done — N of M tools succeeded in <dur>.`, or a `X succeeded, Y failed in <dur>` form on partial failure). The tail reports exit-code outcomes and run duration — it never claims "updated" vs. "up-to-date", since the sub-tools' own output streamed past.
 

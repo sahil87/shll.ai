@@ -6,7 +6,7 @@ An interactive explainer for `rk cron`: the three schedule kinds (`every`, `cron
 
 <div class="rk-cron-clocks not-content"><div class="wrap">
   <header>
-    <div class="eyebrow">run-kit · rk cron</div>
+    <div class="eyebrow">HexoKit · rk cron</div>
     <div class="title" role="heading" aria-level="2">Four ways a clock can wake an agent</div>
     <p>An <code>rk cron</code> entry is a small intent file: <em>what</em> text to deliver, <em>which</em> pane to deliver it to, and <em>when</em>. The “when” comes in three schedule kinds plus one optional edge trigger, and a <code>deliver</code> policy on the entry says what to do if the agent is busy at that moment — send anyway, hold until idle, or skip the fire. A ticker polls every 30 seconds and asks a pure function, “given the entries, the delivery log and the panes’ agent states on disk right now, what is due?” Nothing is remembered in memory, so a restart never loses the clock.</p>
     <div class="legend">
@@ -160,15 +160,15 @@ An interactive explainer for `rk cron`: the three schedule kinds (`every`, `cron
   <section class="panel summary" id="p-together">
     <h2>Put together: the operator’s clock</h2>
     <div>
-      <p>The operator tick that <code>rk operator</code> seeds on every tmux server is one entry using two of these mechanisms at once. <strong>wake_on</strong> is the reactive channel: an agent asks a question, the operator is pinged within a poll. <strong>backoff</strong> is the fallback poll: it thins out to every 30 minutes when nothing is happening and snaps back to 1 minute the moment someone touches the operator.</p>
+      <p>The operator tick seeded on every tmux server — rk defines the clock and <code>rk operator</code> plants the entry today; its tuning belongs to the operator consumer (fab), which is taking over the seeding as well — is one entry using two of these mechanisms at once. <strong>wake_on</strong> is the reactive channel: an agent asks a question, the operator is pinged within a poll. <strong>backoff</strong> is the fallback poll: it thins out to every 24 minutes when nothing is happening and snaps back to 3 minutes the moment someone touches the operator.</p>
       <p>Either channel’s fire is a “delivery” of the same entry, appended to a per-server log as <code>{ts, entry, target, reason, outcome}</code>. That log, plus the panes’ state options, is the entire memory of the clock. The only way to silence an entry is to tell it: <code>rk cron mute &lt;id&gt; --for 30m</code>.</p>
       <pre><code>id: uqdy
 name: operator tick
-schedule: { kind: backoff, min: 1m, max: 30m }
+schedule: { kind: backoff, min: 3m, max: 24m }
 wake_on:  { event: agent-state-change, scope: server, debounce: 1m }
 target:   { kind: role, role: operator }
 payload:  operator tick
-deliver:  immediate
+deliver:  skip-if-busy
 if_absent: respawn   # dead operator? relaunch `rk operator`, then deliver
 pinned:   true</code></pre>
     </div>

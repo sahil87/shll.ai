@@ -51,7 +51,7 @@ The asymmetry is deliberate: an env mismatch on a droppable cache cannot fork be
 
 - **`hop` is the reference implementation**: `src/internal/config/resolve.go` — fixed `$HOME/.config/hop/hop.yaml`, `filepath.Join` from `$HOME`, no `$HOP_CONFIG`, no `$XDG_CONFIG_HOME`, and a test asserting env vars cannot move the path.
 - **`idea` conforms**: `systemConfigDir` → `~/.config/idea`, "$XDG_CONFIG_HOME is intentionally ignored" — so `--help` is accurate everywhere.
-- **`run-kit` is adopting**: its config-consolidation plan moves `~/.rk/settings.yaml` to `$HOME/.config/run-kit/config.yaml` under this standard.
+- **`run-kit` (becoming `hexokit`) is adopting**: its config-consolidation plan moves `~/.rk/settings.yaml` to `$HOME/.config/hexokit/config.yaml` under this standard.
 - **`wt`, `tu`**: no config file today — bound when they grow one.
 - **`fab-kit`**: the documented exception above.
 

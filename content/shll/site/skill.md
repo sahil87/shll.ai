@@ -1,6 +1,6 @@
 # shll skill
 
-The agent skill bundle for **shll** — the meta-CLI that installs, updates, wires, and inspects the [shll toolkit](https://shll.ai) (`run-kit`, `rk-desktop`, `fab-kit`, `wt`, `idea`, `tu`, `hop`). shll is stateless and composes each tool's own CLI; it never replaces them.
+The agent skill bundle for **shll** — the meta-CLI that installs, updates, wires, and inspects the [HexoKit toolkit](https://hexokit.com/toolkit/) (`run-kit`, `rk-desktop`, `fab-kit`, `wt`, `idea`, `tu`, `hop`). shll is stateless and composes each tool's own CLI; it never replaces them.
 
 ## When to use shll
 
@@ -19,7 +19,7 @@ One line each, keyed to the subcommand:
 
 - `shll install [tool...]` — `brew install` every missing brew-managed roster tool (trust-then-install); rk-desktop delegates to `rk desktop install` (skipped with a note when `rk` is absent or the platform refuses — never a failure). Idempotent. `--dry-run` previews; `--no-trust` skips trust.
 - `shll update [tool...]` — `brew update` once, self-upgrade, then delegate to each installed tool's own `update` (`rk desktop update` for rk-desktop); ends by re-running `shll setup agent` when a placement exists. `--dry-run` previews.
-- `shll check-updates` — read-only "is anything outdated?" check: installed vs latest for shll + every tool. `--source released` (default, shll.ai versions manifest with notify policy) or `--source github` (release tags); `--json` for the machine contract. Never updates.
+- `shll check-updates` — read-only "is anything outdated?" check: installed vs latest for shll + every tool. `--source released` (default, hexokit.com versions manifest with notify policy) or `--source github` (release tags); `--json` for the machine contract. Never updates.
 - `shll uninstall [tool...]` — remove brew-managed roster tools via brew, reverse order with shll-self last (rk-desktop is non-brew: skipped with a note); confirm-gated (`--yes` skips, non-TTY refuses), `--dry-run` previews.
 - `shll changelog [tool[@old..new]...]` — GitHub release notes; no range = installed→latest ("what would an update bring?").
 - `shll shell-init <shell>` — emit one eval-safe shell-init blob composing every installed tool's shell-init. Stdout is meant to be `eval`'d.

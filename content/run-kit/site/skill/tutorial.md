@@ -1,8 +1,8 @@
-# run-kit skill: tutorial
+# HexoKit skill: tutorial
 
-An agent-run, live first-use tour of run-kit: five chapters in about ten minutes. This is a static topic page (`rk skill tutorial`); the [core bundle](../skill.md) is the general usage briefing.
+An agent-run, live first-use tour of HexoKit: five chapters in about ten minutes. This is a static topic page (`rk skill tutorial`); the [core bundle](../skill.md) is the general usage briefing.
 
-**Who it serves**: a first-time run-kit user — assume a product manager, not a terminal native. They care about outcomes: delegating work, knowing when an agent needs them, seeing results, running several at once. Teach through **their** actions, never command narration. Don't explain internals (tmux, options, state models) unless asked — answer briefly, return to the tour.
+**Who it serves**: a first-time HexoKit user — assume a product manager, not a terminal native. They care about outcomes: delegating work, knowing when an agent needs them, seeing results, running several at once. Teach through **their** actions, never command narration. Don't explain internals (tmux, options, state models) unless asked — answer briefly, return to the tour.
 
 Gate first:
 
@@ -10,7 +10,7 @@ Gate first:
 command -v rk >/dev/null 2>&1 && [ -n "$TMUX_PANE" ]
 ```
 
-If either check fails, STOP: tell the user to open the run-kit dashboard, create a session/window for this directory, run the agent inside it, then ask again.
+If either check fails, STOP: tell the user to open the HexoKit dashboard, create a session/window for this directory, run the agent inside it, then ask again.
 
 ## Pacing and failure posture
 
@@ -28,13 +28,13 @@ If either check fails, STOP: tell the user to open the run-kit dashboard, create
 
    ```sh
    mkdir -p /tmp/rk-tutorial
-   rk tab show --json > /tmp/rk-tutorial/original-state.json
+   rk tab show --json > /tmp/rk-tutorial/original-state.json   # envelope — the tab data sits under .result
    rk tab web ls --json > /tmp/rk-tutorial/original-webtabs.json 2>/dev/null || true
    RK="$(rk url)"
    tmux list-windows -a -f '#{||:#{==:#{@rk_win_role},operator},#{==:#{window_name},operator}}' -F '#{window_id} #{window_name}' || true
    ```
 
-**Greeting** (the whole first turn — no mechanics): run-kit is **mission control for AI agents** — start, watch, and unblock them from any browser, phone included; one operator agent can drive all of it. Promise: *delegate, get interrupted only when needed, run two at once, get pinged when done — in ~10 minutes.* **next / skip / stop**; plain language; nothing can break. One ask: **enable notifications now** (the top-bar bell) — how agents reach you in Chapter 4. End the turn.
+**Greeting** (the whole first turn — no mechanics): HexoKit is **mission control for AI agents** — start, watch, and unblock them from any browser, phone included; one operator agent can drive all of it. Promise: *delegate, get interrupted only when needed, run two at once, get pinged when done — in ~10 minutes.* **next / skip / stop**; plain language; nothing can break. One ask: **enable notifications now** (the top-bar bell) — how agents reach you in Chapter 4. End the turn.
 
 ## Chapter 1 — You have an agent (`#ch1`)
 
@@ -58,7 +58,7 @@ Teach the phrase: end any request with **"…and present it to me"** — results
 rk present "$RK/tutorial/tutorial.html#ch3"
 ```
 
-run-kit is agents in **parallel**, and the operator hires — from anywhere: **⌘J** (⇧Ctrl+J) drops the operator console under the top bar; type into the top-bar box ("Ask…"), Enter sends, the reply streams in the drawer; ⌘J or Esc tucks it away. Everything can start from that box.
+HexoKit is agents in **parallel**, and the operator hires — from anywhere: **⌘J** (⇧Ctrl+J) drops the operator console under the top bar; type into the top-bar box ("Ask…"), Enter sends, the reply streams in the drawer; ⌘J or Esc tucks it away. Everything can start from that box.
 
 - **Console path (preferred)**: operator found in Preflight → the **user** presses ⌘J and types: *"Start an agent in a new window — call it tour-worker — that builds a one-page brief of this project; have it ask me ONE question first, then present the result and notify me."*
 - **No operator**: run `rk operator` — it opens the pinned singleton and boots the operator agent; hire via ⌘J as above. If fab is missing it fails — one line, then hire directly: `rk tab new --name tour-worker`, start the same agent CLI, deliver the same brief (one question — "exec or engineer?" — then present + notify).
@@ -83,6 +83,6 @@ Three closers, user-driven. **Phone**: same address, any device — offer `rk no
 
 ## Cleanup and recap
 
-Ask first: keep or remove the worker window and its brief (their first artifact — default keep). Restore this tab: compare `rk tab web ls --json` with the web-tab capture and remove tabs absent from it, highest index first; restore every `@rk_win_*` key from the original-state capture with `tmux set-option -w <key> <value>`; unset (`tmux set-option -wu <key>`) current keys absent from it; verify with `rk tab show --json`; then `rm -rf /tmp/rk-tutorial`.
+Ask first: keep or remove the worker window and its brief (their first artifact — default keep). Restore this tab: both captures and the live reads are envelopes, so compare `rk tab web ls --json`'s `.result` with the web-tab capture's `.result` and remove tabs absent from it, highest index first; restore every `@rk_win_*` key from the original-state capture's `.result` with `tmux set-option -w <key> <value>`; unset (`tmux set-option -wu <key>`) current keys absent from it; verify with `rk tab show --json` (again reading `.result`); then `rm -rf /tmp/rk-tutorial`.
 
 Recap in their words: **rows are agents; the halo means "needs you"; "present it to me" gets pages; ⌘J asks the operator; ⌘K finds everything; your phone works too.** Invite the solo experiment and end.

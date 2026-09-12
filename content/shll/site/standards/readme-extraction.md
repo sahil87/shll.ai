@@ -9,7 +9,7 @@ This page is the **producer-facing standard**: the structure your repo keeps. Th
 **1. Head — the slice starts after the GitHub chrome.** Keep the top of the README in this exact order: a single markdown `# Title` H1, then the canonical toolkit blockquote, then a contiguous run of badge lines, then your prose. The first non-chrome line is where the site slice begins — make it your tagline. No YAML frontmatter, HTML `<h1>`, or HTML comment above the H1 (anything unrecognized as chrome leaks into the slice as content). The blockquote is this exact line in all seven repos:
 
 ```markdown
-> Part of the [shll toolkit](https://shll.ai) — see all projects there.
+> Part of [HexoKit](https://hexokit.com) — see all projects there.
 ```
 
 **2. Tail — the slice ends at the first footer heading.** The pull stops immediately before the first heading (case-insensitive `##`/`###`) named `Contributing`, `Development`, `Building`, `License`, or `Acknowledgements`. Everything site-worthy goes above the first of those. `Install`, `Changelog`, `Roadmap`, and `FAQ` are deliberately **kept** — tool-specific install detail belongs on the site.

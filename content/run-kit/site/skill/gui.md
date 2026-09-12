@@ -1,10 +1,10 @@
-# run-kit skill: gui
+# HexoKit skill: gui
 
-Depth for one job: **driving and screenshotting the host GUI display** — the host's desktop, run by the `rk-gui` session and rendered for the human as the GUI tile: they see the same pixels you act on. This is a static topic page (`rk skill gui`); the [core bundle](../skill.md) covers when to reach for run-kit at all. Everything here is byte-identical on every invocation.
+Depth for one job: **driving and screenshotting the host GUI display** — the host's desktop, run by the `rk-gui` session and rendered for the human as the GUI tile: they see the same pixels you act on. This is a static topic page (`rk skill gui`); the [core bundle](../skill.md) covers when to reach for HexoKit at all; the human-facing guide (desktops, resolution, phone controls) is [gui](../gui.md). Everything here is byte-identical on every invocation.
 
 Reach for it when the job needs a real display: chromium, `xdg-open`, Playwright headed mode, or a computer-use loop. One screen per host (`id = host`), shared with the human.
 
-Gate first — run-kit is optional, and the GUI surface exists **only when the user turned it on**:
+Gate first — HexoKit is optional, and the GUI surface exists **only when the user turned it on**:
 
 ```sh
 command -v rk >/dev/null 2>&1 || exit 0
@@ -26,13 +26,13 @@ rk gui exec --detach chromium https://example.com  # launch and return
 rk gui exec -- xdotool key --clearmodifiers minus  # `--` ends flag parsing
 ```
 
-`env` prints the two export lines when the display is live (exit 1 with the hint otherwise); `rk agent setup` installs exactly this eval into the user's shell startup files (gated on `$TMUX_PANE` and an unset `DISPLAY`), so **new shells inside panes land on the display automatically once the user runs `rk gui on`** — a shell started before that needs the eval run by hand. `exec` runs a command with `DISPLAY` pointed at the rk display (an existing `DISPLAY` is **overridden** — the rk display is the point) and `RK_GUI_SOCKET` set: foreground is a process-replacing passthrough (the app's tty, signals, and exit status are its own), `--detach` (`-d`) starts it as its own session with stdio on `/dev/null` and prints `started <pid> on :N`; unknown program → `error: <cmd>: not found on PATH`, exit 1. Prefer the dedicated verbs below over `exec xdotool …` — they gate, guard, and name windows for you.
+`env` prints the two export lines when the display is live (exit 1 with the hint otherwise); `rk agent setup` installs exactly this eval into the user's shell startup files (gated on `$TMUX_PANE` and an unset `DISPLAY`), so **new shells inside panes land on the display automatically once the user runs `rk gui on`** — a shell started before that needs the eval run by hand. `exec` runs a command with `DISPLAY` pointed at the rk display (an existing `DISPLAY` is **overridden** — the rk display is the point) and `RK_GUI_SOCKET` set: foreground is a process-replacing passthrough (the app's tty, signals, and exit status are its own), `--detach` (`-d`) starts it as its own session with stdio on `/dev/null` and prints `started <pid> on :N` (`--json` — which requires `--detach`, since the foreground path replaces the process and can print no receipt — prints `{"pid","display"}`); unknown program → `error: <cmd>: not found on PATH`, exit 1. Prefer the dedicated verbs below over `exec xdotool …` — they gate, guard, and name windows for you.
 
 ## Windows: `rk gui windows` / `rk gui focus`
 
 ```sh
 rk gui windows          # ID PID GEOMETRY TITLE rows, sorted by X id; the active row ends in " *"
-rk gui windows --json   # [{id, pid, x, y, width, height, title, active, app}]
+rk gui windows --json   # {"ok":true,"result":[{id, pid, x, y, width, height, title, active, app}]}
 rk gui focus --title Terminal   # or: rk gui focus <id>
 ```
 
@@ -59,9 +59,10 @@ Coordinates are **display pixels**, integers ≥ 0. Typed text rides stdin to `x
 rk gui shot [--out x.png]                # full-res; default prints an absolute temp PNG path
 rk gui shot --scale 0.5                  # 960x540 on a 1920x1080 display — the loop's cheap look (--max-width derives the scale)
 rk gui shot --window <id>                # one window (id from `windows`)
+rk gui shot --json                       # {"ok":true,"result":{path,width,height,scale,display[,window]}}
 ```
 
-stdout is **only the absolute PNG path** — read that file to *look* at the display. stderr always carries `geometry WxH scale S` (the source geometry and applied scale): divide shot coordinates by S to get the display pixels the input verbs take. Tool ladder: `import`, then `scrot`, then `xwd`+`convert`; none installed → the apt hint, exit 1. Scaling and `--window` need ImageMagick (`--scale needs imagemagick — sudo apt install imagemagick`; scrot has no by-id capture, so `--window` refuses on that rung). `--scale` (0, 1] with `--max-width` is usage (exit 2).
+stdout is **only the absolute PNG path** — read that file to *look* at the display; under `--json` stdout is the envelope instead, `result` carrying the `path` plus the source `width`/`height`, the applied `scale`, the `display`, and `window` only with `--window`. stderr always carries `geometry WxH scale S` (the source geometry and applied scale — the same three facts `result` carries under `--json`): divide shot coordinates by S to get the display pixels the input verbs take. Tool ladder: `import`, then `scrot`, then `xwd`+`convert`; none installed → the apt hint, exit 1. Scaling and `--window` need ImageMagick (`--scale needs imagemagick — sudo apt install imagemagick`; scrot has no by-id capture, so `--window` refuses on that rung). `--scale` (0, 1] with `--max-width` is usage (exit 2).
 
 ## `rk gui wait` — stop guessing sleeps
 
@@ -136,4 +137,4 @@ Pairing: `rk notify` for out-of-band pings, `rk present` when the content is HTM
 - **Coordinates are display pixels** — a click computed from a `--scale 0.5` shot multiplies by 2 (stderr's `geometry WxH scale S` carries S). `rk gui lock` keeps the geometry from shifting mid-loop.
 - **Apps you start die with `rk gui off`** — the switch kills the `rk-gui` session and everything on the display (the user confirms first). Detached apps survive your shell, not the switch.
 - **Nothing is installed for you** — xdotool, ImageMagick, xclip/xsel, xdg-utils are probed at run time; a miss refuses with the apt hint.
-- **The desktop may be a full DE** — IceWM is the default, but the user may pin LXQt/XFCE (`rk gui wm lxqt`); every verb on this page works identically regardless. On a full desktop `rk gui windows` also lists the DE's panel as a window — filter by `app` when looking for user apps.
+- **The desktop may be a full DE** — IceWM is the default; the user may pin any known desktop (`rk gui wm --list` names them, `rk gui wm lxqt` pins one); every verb on this page works identically regardless. On a full desktop `rk gui windows` also lists the DE's panel as a window — filter by `app` when looking for user apps.
